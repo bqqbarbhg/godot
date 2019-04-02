@@ -5,6 +5,21 @@ respective folder names. Use two empty lines to separate categories for
 readability.
 
 
+## alembic
+
+- Upstream: https://github.com/alembic/alembic.git
+- Version: 1.7.10
+- License: Modified BSD License
+
+## assimp
+
+- Upstream: https://github.com/assimp
+- Version: git (933fe5eb43ff665807c180c245df7969642987cd) with modifications
+- License: bsd
+
+Added custom alembic import.
+
+
 ## brotli
 
 - Upstream: https://github.com/google/brotli
@@ -440,6 +455,13 @@ core/device.h
 core/transfer_function.cpp
 
 scripts/resource_to_cpp.py (used in modules/denoise/resource_to_cpp.py)
+
+
+## openexr's IlmBase
+
+- Upstream: https://github.com/openexr/openexr/tree/release/2.3/IlmBase
+- Version: v2.3.0
+- License: Modified BSD License
 
 
 ## opus
