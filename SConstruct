@@ -342,6 +342,9 @@ if methods.get_cmdline_bool("fast_unsafe", env_base["target"] == "debug"):
     env_base.SetOption("implicit_cache", 1)
     env_base.SetOption("max_drift", 60)
 
+# ensure that anything depending on eigen will only be linked with permissively licensed code.
+env_base.Append(CPPDEFINES=["EIGEN_MPL2_ONLY"])
+
 if env_base["use_precise_math_checks"]:
     env_base.Append(CPPDEFINES=["PRECISE_MATH_CHECKS"])
 
