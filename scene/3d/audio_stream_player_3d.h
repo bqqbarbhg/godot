@@ -140,7 +140,10 @@ private:
 
 	OutOfRangeMode out_of_range_mode;
 
-	float _get_attenuation_db(float p_distance) const;
+	float _accumulate_unit_db_for_attenuation(float attenuation) const;
+	float _get_attenuation_for_distance(float p_distance) const;
+
+	void _update_sound_resonance(float distance);
 
 	float panning_strength = 1.0f;
 	float cached_global_panning_strength = 1.0f;
