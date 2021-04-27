@@ -164,6 +164,9 @@ void AudioStreamPlayer::seek(float p_seconds) {
 void AudioStreamPlayer::stop() {
 	for (Ref<AudioStreamPlayback> &playback : stream_playbacks) {
 		AudioServer::get_singleton()->stop_playback_stream(playback);
+		if (playback.is_valid() && active.is_set()) {
+			set_scheduled_time(0.0);
+		}
 	}
 	stream_playbacks.clear();
 	active.clear();
@@ -327,8 +330,12 @@ void AudioStreamPlayer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_pitch_scale"), &AudioStreamPlayer::get_pitch_scale);
 
 	ClassDB::bind_method(D_METHOD("play", "from_position"), &AudioStreamPlayer::play, DEFVAL(0.0));
+	ClassDB::bind_method(D_METHOD("play_scheduled", "abs_mix_time"), &AudioStreamPlayer::play_scheduled);
 	ClassDB::bind_method(D_METHOD("seek", "to_position"), &AudioStreamPlayer::seek);
 	ClassDB::bind_method(D_METHOD("stop"), &AudioStreamPlayer::stop);
+
+	ClassDB::bind_method(D_METHOD("set_scheduled_time", "sec"), &AudioStreamPlayer::set_scheduled_time);
+	ClassDB::bind_method(D_METHOD("get_scheduled_time"), &AudioStreamPlayer::get_scheduled_time);
 
 	ClassDB::bind_method(D_METHOD("is_playing"), &AudioStreamPlayer::is_playing);
 	ClassDB::bind_method(D_METHOD("get_playback_position"), &AudioStreamPlayer::get_playback_position);
@@ -364,6 +371,8 @@ void AudioStreamPlayer::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "max_polyphony", PROPERTY_HINT_NONE, ""), "set_max_polyphony", "get_max_polyphony");
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "bus", PROPERTY_HINT_ENUM, ""), "set_bus", "get_bus");
 
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "scheduled_time_usec"), "set_scheduled_time", "get_scheduled_time");
+
 	ADD_SIGNAL(MethodInfo("finished"));
 
 	BIND_ENUM_CONSTANT(MIX_TARGET_STEREO);
@@ -376,4 +385,29 @@ AudioStreamPlayer::AudioStreamPlayer() {
 }
 
 AudioStreamPlayer::~AudioStreamPlayer() {
+}
+
+void AudioStreamPlayer::set_scheduled_time(double p_usec) {
+	for (Ref<AudioStreamPlayback> playback : stream_playbacks) {
+		if (playback.is_valid()) {
+			playback->set_scheduled_time(p_usec);
+		}
+	}
+}
+
+double AudioStreamPlayer::get_scheduled_time() const {
+	double last_scheduled_time = 0;
+
+	for (Ref<AudioStreamPlayback> playback : stream_playbacks) {
+		if (playback.is_valid()) {
+			last_scheduled_time = playback->get_scheduled_time();
+		}
+	}
+
+	return last_scheduled_time;
+}
+
+void AudioStreamPlayer::play_scheduled(double p_abs_mix_time) {
+	set_scheduled_time(p_abs_mix_time);
+	play();
 }

@@ -55,6 +55,9 @@ protected:
 	GDVIRTUAL1(_seek, double)
 	GDVIRTUAL3R(int, _mix, GDExtensionPtr<AudioFrame>, float, int)
 	GDVIRTUAL0(_tag_used_streams)
+protected:
+	double scheduled_time = 0.0;
+
 public:
 	virtual void start(double p_from_pos = 0.0);
 	virtual void stop();
@@ -68,6 +71,8 @@ public:
 	virtual void tag_used_streams();
 
 	virtual int mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames);
+	virtual void set_scheduled_time(double p_time);
+	virtual double get_scheduled_time() const;
 };
 
 class AudioStreamPlaybackResampled : public AudioStreamPlayback {

@@ -287,7 +287,16 @@ int AudioStreamPlaybackWAV::mix(AudioFrame *p_buffer, float p_rate_scale, int p_
 			loop_format = AudioStreamWAV::LOOP_FORWARD;
 		}
 	}
+	double scheduled_time = get_scheduled_time();
+	double buffer_start_time = AudioServer::get_singleton()->get_last_mix_time();
+	int64_t silence_frames_into_this_buffer = (scheduled_time - buffer_start_time) * AudioServer::get_singleton()->get_mix_rate();
+	silence_frames_into_this_buffer = CLAMP(silence_frames_into_this_buffer, 0, todo);
 
+	todo -= silence_frames_into_this_buffer;
+	dst_buff += silence_frames_into_this_buffer;
+	for (int i = 0; i < silence_frames_into_this_buffer; i++) {
+		p_buffer[i] = AudioFrame(0.0, 0.0);
+	}
 	while (todo > 0) {
 		int64_t limit = 0;
 		int32_t target = 0, aux = 0;

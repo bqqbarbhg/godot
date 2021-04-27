@@ -66,6 +66,7 @@ double AudioStreamPlayback::get_playback_position() const {
 	}
 	ERR_FAIL_V_MSG(0, "AudioStreamPlayback::get_playback_position unimplemented!");
 }
+
 void AudioStreamPlayback::seek(double p_time) {
 	GDVIRTUAL_CALL(_seek, p_time);
 }
@@ -822,4 +823,13 @@ int AudioStreamPlaybackRandomizer::mix(AudioFrame *p_buffer, float p_rate_scale,
 AudioStreamPlaybackRandomizer::~AudioStreamPlaybackRandomizer() {
 	randomizer->playbacks.erase(this);
 }
+
+double AudioStreamPlayback::get_scheduled_time() const {
+	return scheduled_time;
+}
+
+void AudioStreamPlayback::set_scheduled_time(double p_time) {
+	scheduled_time = p_time;
+}
+
 /////////////////////////////////////////////
