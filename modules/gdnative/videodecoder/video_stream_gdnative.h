@@ -129,8 +129,17 @@ class VideoStreamPlaybackGDNative : public VideoStreamPlayback {
 	int pcm_write_idx;
 	int samples_decoded;
 
+	bool is_master;
+	char udp_ip[64];
+	int udp_port;
+
 	void cleanup();
 	void update_texture();
+
+	static void startup(void);
+	static void send_udp(const char *ip, int port, char *mesg);
+	static void set_blocking(int fd, int blocking);
+	static int receive_udp(int port, float *time);
 
 protected:
 	String file_name;
@@ -164,6 +173,9 @@ public:
 	virtual float get_playback_position() const;
 	virtual void seek(float p_time);
 
+	virtual bool set_sync_time(float p_time);
+	virtual float get_sync_time() const;
+
 	virtual void set_audio_track(int p_idx);
 
 	//virtual int mix(int16_t* p_buffer,int p_frames)=0;
@@ -174,6 +186,8 @@ public:
 	virtual void set_mix_callback(AudioMixCallback p_callback, void *p_userdata);
 	virtual int get_channels() const;
 	virtual int get_mix_rate() const;
+
+	virtual void set_netsync(bool p_master, const String &p_ip, int p_port);
 };
 
 class VideoStreamGDNative : public VideoStream {
@@ -182,6 +196,11 @@ class VideoStreamGDNative : public VideoStream {
 	String file;
 	int audio_track;
 
+	bool is_master;
+	String udp_ip;
+	// udp_port <= 0 will disable the UDP sync
+	int udp_port;
+
 protected:
 	static void
 	_bind_methods();
@@ -189,11 +208,12 @@ protected:
 public:
 	void set_file(const String &p_file);
 	String get_file();
+	void set_netsync(bool p_master, const String &p_ip, int p_port);
 
 	virtual void set_audio_track(int p_track);
 	virtual Ref<VideoStreamPlayback> instance_playback();
 
-	VideoStreamGDNative() {}
+	VideoStreamGDNative(): is_master(true), udp_port(0) {}
 };
 
 class ResourceFormatLoaderVideoStreamGDNative : public ResourceFormatLoader {
