@@ -89,6 +89,8 @@ public:
 	void set_stream(const Ref<VideoStream> &p_stream);
 	Ref<VideoStream> get_stream() const;
 
+	Ref<VideoStreamPlayback> get_playback() const;
+
 	void play();
 	void stop();
 	bool is_playing() const;
@@ -117,6 +119,8 @@ public:
 
 	void set_bus(const StringName &p_bus);
 	StringName get_bus() const;
+
+	float get_length() const;
 
 	VideoPlayer();
 	~VideoPlayer();
