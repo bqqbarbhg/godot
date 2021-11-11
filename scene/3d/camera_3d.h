@@ -43,7 +43,8 @@ public:
 	enum ProjectionType {
 		PROJECTION_PERSPECTIVE,
 		PROJECTION_ORTHOGONAL,
-		PROJECTION_FRUSTUM
+		PROJECTION_FRUSTUM,
+		PROJECTION_OBLIQUE
 	};
 
 	enum KeepAspect {
@@ -65,6 +66,9 @@ private:
 	ProjectionType mode = PROJECTION_PERSPECTIVE;
 
 	real_t fov = 0.0;
+	Vector3 oblique_normal = Vector3(0, 0, -1);
+	Vector3 oblique_position;
+	real_t oblique_offset = 0.0;
 	real_t size = 1.0;
 	Vector2 frustum_offset;
 	real_t near = 0.0;
@@ -111,6 +115,7 @@ public:
 	};
 
 	void set_perspective(real_t p_fovy_degrees, real_t p_z_near, real_t p_z_far);
+    void set_oblique(real_t p_fovy_degrees, const Dictionary &p_oblique_data, real_t p_z_near, real_t p_z_far);
 	void set_orthogonal(real_t p_size, real_t p_z_near, real_t p_z_far);
 	void set_frustum(real_t p_size, Vector2 p_offset, real_t p_z_near, real_t p_z_far);
 	void set_projection(Camera3D::ProjectionType p_mode);
@@ -123,6 +128,9 @@ public:
 	RID get_camera() const;
 
 	real_t get_fov() const;
+	Vector3 get_oblique_normal() const;
+	Vector3 get_oblique_position() const;
+	real_t get_oblique_offset() const;
 	real_t get_size() const;
 	real_t get_far() const;
 	real_t get_near() const;
@@ -131,6 +139,10 @@ public:
 	ProjectionType get_projection() const;
 
 	void set_fov(real_t p_fov);
+	void set_oblique_normal(Vector3 p_oblique_normal);
+	void set_oblique_position(Vector3 p_oblique_position);
+	void set_oblique_offset(real_t p_oblique_offset);
+	void set_oblique_plane_from_transform(Transform3D p_oblique_plane_transform);
 	void set_size(real_t p_size);
 	void set_far(real_t p_far);
 	void set_near(real_t p_near);
