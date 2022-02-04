@@ -208,8 +208,12 @@ struct _NO_DISCARD_ Rect2 {
 
 	bool is_equal_approx(const Rect2 &p_rect) const;
 
-	bool operator==(const Rect2 &p_rect) const { return position == p_rect.position && size == p_rect.size; }
-	bool operator!=(const Rect2 &p_rect) const { return position != p_rect.position || size != p_rect.size; }
+	bool operator==(const Rect2 &p_rect) const {
+		return position == p_rect.position && size == p_rect.size;
+	}
+	bool operator!=(const Rect2 &p_rect) const {
+		return position != p_rect.position || size != p_rect.size;
+	}
 
 	inline Rect2 grow(real_t p_amount) const {
 		Rect2 g = *this;
