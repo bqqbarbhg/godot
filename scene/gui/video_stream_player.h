@@ -94,6 +94,7 @@ public:
 	void play();
 	void stop();
 	bool is_playing() const;
+	void set_playing(bool p_playing);
 
 	void set_paused(bool p_paused);
 	bool is_paused() const;
