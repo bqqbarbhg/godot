@@ -59,6 +59,7 @@ protected:
 	};
 
 	Mutex mutex;
+	Semaphore semaphore_basis_universal;
 	struct MakeInfo {
 		int flags = 0;
 		String normal_path_for_roughness;

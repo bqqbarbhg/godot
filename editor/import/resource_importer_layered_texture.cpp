@@ -278,6 +278,9 @@ void ResourceImporterLayeredTexture::_save_tex(Vector<Ref<Image>> p_images, cons
 	}
 
 	for (int i = 0; i < mipmap_images.size(); i++) {
+		if (ResourceImporterTexture::COMPRESS_BASIS_UNIVERSAL == p_compress_mode) {
+			break;
+		}
 		ResourceImporterTexture::save_to_ctex_format(f, mipmap_images[i], ResourceImporterTexture::CompressMode(p_compress_mode), used_channels, p_vram_compression, p_lossy);
 	}
 }

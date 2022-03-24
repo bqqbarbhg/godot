@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+
+Import("env")
+Import("env_modules")
+
+env_opencl = env_modules.Clone()
+
+# Thirdparty source files
+
+thirdparty_obj = []
+
+# TODO: fire 2022-08-17 unbundle
+thirdparty_dir = "#thirdparty/opencl/loader/"
+# Sync list with upstream CMakeLists.txt
+opencl_sources = [
+    "icd.c",
+    "icd_dispatch.c",
+    "icd_dispatch_generated.c",
+]
+opencl_sources = [thirdparty_dir + file for file in opencl_sources]
+
+platform_dir = ""
+platform_sources = []
+if env["platform"] == "windows":
+    platform_dir = "#thirdparty/opencl/loader/windows/"
+    platform_sources += [
+        "icd_windows.c",
+        "icd_windows_dxgk.c",
+        "icd_windows_envvars.c",
+        "icd_windows_hkr.c",
+        "icd_windows_apppackage.cpp",
+    ]
+else:
+    platform_dir = "#thirdparty/opencl/loader/linux/"
+    platform_sources += [
+        "icd_linux.c",
+        "icd_linux_envvars.c",
+    ]
+
+opencl_sources += [platform_dir + file for file in platform_sources]
+
+env_thirdparty = env.Clone()
+env_thirdparty.Append(
+    CPPDEFINES=["HAVE_SECURE_GETENV", "OPENCL_ICD_LOADER_DISABLE_OPENCLON12"]
+)
+if env["platform"] == "windows":
+    env_thirdparty.Prepend(CPPPATH=["#thirdparty/opencl/inc/"])
+else:
+    env_thirdparty.Append(CPPFLAGS=["-isystem", Dir("#thirdparty/opencl/inc/").path])
+
+env_thirdparty.add_source_files(thirdparty_obj, opencl_sources)
+env_thirdparty.Prepend(CPPPATH=["#thirdparty/opencl/loader/"])
+env_thirdparty.Prepend(CPPPATH=["."])
+
+env.modules_sources += thirdparty_obj
+
+# Godot source files
+
+module_obj = []
+
+env.add_source_files(module_obj, "*.cpp")
+env.modules_sources += module_obj
+
+# Needed to force rebuilding the module files when the thirdparty library is updated.
+env.Depends(module_obj, thirdparty_obj)

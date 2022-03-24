@@ -271,6 +271,7 @@ def configure_msvc(env, manual_msvc_config):
         "Avrt",
         "dwmapi",
         "dwrite",
+        "cfgmgr32",
     ]
 
     if env["vulkan"]:
@@ -443,6 +444,7 @@ def configure_mingw(env):
             "uuid",
             "dwmapi",
             "dwrite",
+            "cfgmgr32",
         ]
     )
 
