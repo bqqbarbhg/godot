@@ -52,100 +52,98 @@ enum BasisDecompressFormat {
 #ifdef TOOLS_ENABLED
 static Vector<uint8_t> basis_universal_packer(const Ref<Image> &p_image, Image::UsedChannels p_channels) {
 	Vector<uint8_t> budata;
+	basisu::basis_compressor_params params;
+	Ref<Image> image = p_image->duplicate();
+	if (image->get_format() != Image::FORMAT_RGBA8) {
+		image->convert(Image::FORMAT_RGBA8);
+	}
+	Ref<Image> image_single = image->duplicate();
 	{
-		basisu::basis_compressor_params params;
-		Ref<Image> image = p_image->duplicate();
-		if (image->get_format() != Image::FORMAT_RGBA8) {
-			image->convert(Image::FORMAT_RGBA8);
+		if (image_single->has_mipmaps()) {
+			image_single->clear_mipmaps();
 		}
-		Ref<Image> image_single = image->duplicate();
-		{
-			if (image_single->has_mipmaps()) {
-				image_single->clear_mipmaps();
-			}
-			basisu::image buimg(image_single->get_width(), image_single->get_height());
-			Vector<uint8_t> vec = image_single->get_data();
-			const uint8_t *r = vec.ptr();
-			memcpy(buimg.get_ptr(), r, vec.size());
-			params.m_source_images.push_back(buimg);
-		}
-		basisu::vector<basisu::image> source_images;
-		for (int32_t mipmap_i = 1; mipmap_i < image->get_mipmap_count(); mipmap_i++) {
-			Ref<Image> mip = image->get_image_from_mipmap(mipmap_i);
-			basisu::image buimg(mip->get_width(), mip->get_height());
-			Vector<uint8_t> vec = mip->get_data();
-			const uint8_t *r = vec.ptr();
-			memcpy(buimg.get_ptr(), r, vec.size());
-			source_images.push_back(buimg);
-		}
-		params.m_source_mipmap_images.push_back(source_images);
+		basisu::image buimg(image_single->get_width(), image_single->get_height());
+		Vector<uint8_t> vec = image_single->get_data();
+		const uint8_t *r = vec.ptr();
+		memcpy(buimg.get_ptr(), r, vec.size());
+		params.m_source_images.push_back(buimg);
+	}
+	basisu::vector<basisu::image> source_images;
+	for (int32_t mipmap_i = 1; mipmap_i < image->get_mipmap_count(); mipmap_i++) {
+		Ref<Image> mip = image->get_image_from_mipmap(mipmap_i);
+		basisu::image buimg(mip->get_width(), mip->get_height());
+		Vector<uint8_t> vec = mip->get_data();
+		const uint8_t *r = vec.ptr();
+		memcpy(buimg.get_ptr(), r, vec.size());
+		source_images.push_back(buimg);
+	}
+	params.m_source_mipmap_images.push_back(source_images);
 
-		params.m_uastc = true;
-		params.m_quality_level = basisu::BASISU_QUALITY_MIN;
+	params.m_use_opencl = true;
 
-		params.m_pack_uastc_flags &= ~basisu::cPackUASTCLevelMask;
+	params.m_uastc = true;
+	params.m_quality_level = basisu::BASISU_QUALITY_MIN;
 
-		static const uint32_t s_level_flags[basisu::TOTAL_PACK_UASTC_LEVELS] = { basisu::cPackUASTCLevelFastest, basisu::cPackUASTCLevelFaster, basisu::cPackUASTCLevelDefault, basisu::cPackUASTCLevelSlower, basisu::cPackUASTCLevelVerySlow };
-		params.m_pack_uastc_flags |= s_level_flags[0];
-		params.m_rdo_uastc = 0.0f;
-		params.m_rdo_uastc_quality_scalar = 0.0f;
-		params.m_rdo_uastc_dict_size = 1024;
+	params.m_pack_uastc_flags &= ~basisu::cPackUASTCLevelMask;
 
-		params.m_mip_fast = true;
-		params.m_multithreading = true;
+	static const uint32_t s_level_flags[basisu::TOTAL_PACK_UASTC_LEVELS] = { basisu::cPackUASTCLevelFastest, basisu::cPackUASTCLevelFaster, basisu::cPackUASTCLevelDefault, basisu::cPackUASTCLevelSlower, basisu::cPackUASTCLevelVerySlow };
+	params.m_pack_uastc_flags |= s_level_flags[0];
+	params.m_rdo_uastc = 0.0f;
+	params.m_rdo_uastc_quality_scalar = 0.0f;
+	params.m_rdo_uastc_dict_size = 1024;
+	params.m_rdo_uastc_multithreading = true;
 
-		basisu::job_pool jpool(OS::get_singleton()->get_processor_count());
-		params.m_pJob_pool = &jpool;
+	params.m_mip_fast = true;
+	params.m_multithreading = true;
 
-		BasisDecompressFormat decompress_format = BASIS_DECOMPRESS_RG;
-		params.m_check_for_alpha = false;
+	basisu::job_pool jpool(OS::get_singleton()->get_processor_count());
+	params.m_pJob_pool = &jpool;
 
-		switch (p_channels) {
-			case Image::USED_CHANNELS_L: {
-				decompress_format = BASIS_DECOMPRESS_RGB;
-			} break;
-			case Image::USED_CHANNELS_LA: {
-				params.m_force_alpha = true;
-				decompress_format = BASIS_DECOMPRESS_RGBA;
-			} break;
-			case Image::USED_CHANNELS_R: {
-				decompress_format = BASIS_DECOMPRESS_RGB;
-			} break;
-			case Image::USED_CHANNELS_RG: {
+	BasisDecompressFormat decompress_format = BASIS_DECOMPRESS_RG;
+	params.m_check_for_alpha = false;
+
+	switch (p_channels) {
+		case Image::USED_CHANNELS_L: {
+			decompress_format = BASIS_DECOMPRESS_RGB;
+		} break;
+		case Image::USED_CHANNELS_LA: {
+			params.m_force_alpha = true;
+			decompress_format = BASIS_DECOMPRESS_RGBA;
+		} break;
+		case Image::USED_CHANNELS_R: {
+			decompress_format = BASIS_DECOMPRESS_RGB;
+		} break;
+		case Image::USED_CHANNELS_RG: {
 #ifdef USE_RG_AS_RGBA
-				image->convert_rg_to_ra_rgba8();
-				decompress_format = BASIS_DECOMPRESS_RG_AS_RA;
+			image->convert_rg_to_ra_rgba8();
+			decompress_format = BASIS_DECOMPRESS_RG_AS_RA;
 #else
-				params.m_seperate_rg_to_color_alpha = true;
-				decompress_format = BASIS_DECOMPRESS_RG;
+			params.m_seperate_rg_to_color_alpha = true;
+			decompress_format = BASIS_DECOMPRESS_RG;
 #endif
-			} break;
-			case Image::USED_CHANNELS_RGB: {
-				decompress_format = BASIS_DECOMPRESS_RGB;
-			} break;
-			case Image::USED_CHANNELS_RGBA: {
-				params.m_force_alpha = true;
-				decompress_format = BASIS_DECOMPRESS_RGBA;
-			} break;
-		}
-
-		basisu::basis_compressor c;
-		c.init(params);
-
-		int buerr = c.process();
-		ERR_FAIL_COND_V(buerr != basisu::basis_compressor::cECSuccess, budata);
-
-		const basisu::uint8_vec &buvec = c.get_output_basis_file();
-		budata.resize(buvec.size() + 4);
-
-		{
-			uint8_t *w = budata.ptrw();
-			uint32_t *decf = (uint32_t *)w;
-			*decf = decompress_format;
-			memcpy(w + 4, &buvec[0], buvec.size());
-		}
+		} break;
+		case Image::USED_CHANNELS_RGB: {
+			decompress_format = BASIS_DECOMPRESS_RGB;
+		} break;
+		case Image::USED_CHANNELS_RGBA: {
+			params.m_force_alpha = true;
+			decompress_format = BASIS_DECOMPRESS_RGBA;
+		} break;
 	}
 
+	basisu::basis_compressor c;
+	c.init(params);
+
+	int buerr = c.process();
+	ERR_FAIL_COND_V(buerr != basisu::basis_compressor::cECSuccess, budata);
+
+	const basisu::uint8_vec &buvec = c.get_output_basis_file();
+	budata.resize(buvec.size() + 4);
+
+	uint8_t *w = budata.ptrw();
+	uint32_t *decf = (uint32_t *)w;
+	*decf = decompress_format;
+	memcpy(w + 4, &buvec[0], buvec.size());
 	return budata;
 }
 #endif // TOOLS_ENABLED
@@ -284,7 +282,7 @@ void initialize_basis_universal_module(ModuleInitializationLevel p_level) {
 #ifdef TOOLS_ENABLED
 	using namespace basisu;
 	using namespace basist;
-	basisu_encoder_init();
+	basisu_encoder_init(true);
 	Image::basis_universal_packer = basis_universal_packer;
 #endif
 	Image::basis_universal_unpacker = basis_universal_unpacker;

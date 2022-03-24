@@ -44,10 +44,17 @@ if env["target"] == "debug":
     env_basisu.Append(CPPDEFINES=[("BASISU_DEVEL_MESSAGES", 1), ("BASISD_ENABLE_DEBUG_FLAGS", 1)])
 
 env_thirdparty = env_basisu.Clone()
+if not env_thirdparty.msvc:
+    env_thirdparty.Append(CPPFLAGS=["-isystem", Dir("#thirdparty/opencl/inc/").path])
+else:
+    env_thirdparty.Prepend(CPPPATH=["#thirdparty/opencl/inc/"])
 env_thirdparty.disable_warnings()
 if env["tools"]:
+    env_thirdparty.Append(CPPDEFINES=["BASISU_SUPPORT_OPENCL"])
     env_thirdparty.Append(CPPDEFINES=["BASISU_NO_IMG_LOADERS"])
+    env_thirdparty.Append(CPPDEFINES=[("BASISU_OPENCL_ASSERT_ON_ANY_ERRORS", 0)])
     env_thirdparty.add_source_files(thirdparty_obj, encoder_sources)
+
 env_thirdparty.add_source_files(thirdparty_obj, transcoder_sources)
 env.modules_sources += thirdparty_obj
 

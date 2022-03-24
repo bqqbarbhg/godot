@@ -387,6 +387,11 @@ Comment: Intel Open Image Denoise
 Copyright: 2009-2019, Intel Corporation
 License: Apache-2.0
 
+Files: ./thirdparty/opencl/
+Comment: OpenCL
+Copyright: 2020-2022, The Khronos Group Inc.
+License: Apache-2.0
+
 Files: ./thirdparty/openxr/
 Comment: OpenXR Loader
 Copyright: 2020-2022, The Khronos Group Inc.

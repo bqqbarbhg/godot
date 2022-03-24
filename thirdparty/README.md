@@ -525,6 +525,20 @@ Patch files are provided in `oidn/patches/`.
 - scripts/resource_to_cpp.py (used in modules/denoise/resource_to_cpp.py)
 
 
+## opencl
+
+- Upstream: https://github.com/KhronosGroup/OpenCL-Headers
+- Version: v2022.05.18 (def8be9d35fda35492b72f54a94515f7df8d1e9f, 2022)
+- License: Apache 2.0
+
+
+## opencl icd loader
+
+- Upstream: https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
+- Version: git (7072cf2ae9d9acb6be8f4fc956f1cdbf0675695b, 2022)
+- License: Apache 2.0
+
+
 ## openxr
 
 - Upstream: https://github.com/KhronosGroup/OpenXR-SDK
