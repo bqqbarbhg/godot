@@ -39,6 +39,12 @@ thirdparty_sources = [
 thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
 
 env_extension = env.Clone()
+env_extension.Append(CPPDEFINES=["RISCV_EXT_COMPRESSED"])
+env_extension.Append(CPPDEFINES=["RISCV_EXT_ATOMICS"])
+env_extension.Append(CPPDEFINES=["RISCV_EXT_F"])
+env_extension.Append(CPPDEFINES=["RISCV_INSTR_CACHE"])
+# Disabled because of conflcit with compressed instructions.
+# env_extension.Append(CPPDEFINES=["RISCV_FAST_SIMULATOR"])
 env_extension.Prepend(CPPPATH=[thirdparty_dir + "lib"])
 env_extension.disable_warnings()
 env_extension.add_source_files(thirdparty_obj, thirdparty_sources)

@@ -36,6 +36,11 @@
 #include "core/object/method_bind.h"
 #include "core/os/os.h"
 
+#include <inttypes.h>
+#include <libriscv/machine.hpp>
+#include <libriscv/rsp_server.hpp>
+#include <vector>
+
 String NativeExtension::get_extension_list_config_file() {
 	return ProjectSettings::get_singleton()->get_project_data_path().plus_file("extension_list.cfg");
 }
@@ -277,17 +282,50 @@ Error NativeExtension::open_library(const String &p_path, const String &p_entry_
 	}
 	binary.resize(file->get_length());
 	file->get_buffer(binary.data(), binary.size());
-	void *entry_funcptr = nullptr;
 	// avoid endless loops, code that takes too long and excessive memory usage
 	static const size_t MAX_INSTRUCTIONS = 80 * 1000000;
 	static const size_t MAX_MEMORY = 1024 * 1024 * 32;
 	riscv::MachineOptions<riscv::RISCV64> options;
 	options.memory_max = MAX_MEMORY;
-	options.allow_write_exec_segment = true;
 	machine = new riscv::Machine<riscv::RISCV64>{ binary, options };
-	unsigned long long address = machine->address_of(p_entry_symbol.utf8().get_data());
-	ERR_FAIL_COND_V_MSG(UNLIKELY(address == 0), FAILED, vformat("Could not find: '%s'\n", p_entry_symbol));
-	machine->vmcall<MAX_INSTRUCTIONS>(p_entry_symbol.utf8().get_data(), &gdnative_interface, this, &initialization);
+	std::vector<std::string> env = {
+		"LC_CTYPE=C", "LC_ALL=C", "USER=groot"
+	};
+	String executable = path.get_file();
+	std::vector<std::string> args = {
+		executable.utf8().get_data()
+	};
+	machine->setup_linux(args, env);
+	// Linux system to open files and access internet
+	machine->setup_linux_syscalls();
+
+	machine->fds().permit_filesystem = true;
+	machine->fds().permit_sockets = true;
+	// Only allow opening certain file paths. The void* argument is
+	// the user-provided pointer set in the RISC-V machine.
+	machine->fds().filter_open = [](void *user, const std::string &path) {
+		(void)user;
+		if (path == "/etc/hostname") {
+			return FAILED;
+		}
+		if (path == "/dev/urandom") {
+			return FAILED;
+		}
+		return FAILED;
+	};
+	// multi-threading
+	machine->setup_posix_threads();
+	String main = "main";
+	size_t address = machine->address_of(main.utf8().get_data());
+	ERR_FAIL_COND_V_MSG(UNLIKELY(address == 0), FAILED, vformat("Could not find: '%s'\n", main.utf8().get_data()));
+	try {
+		machine->vmcall<MAX_INSTRUCTIONS>(address);
+		address = machine->address_of(p_entry_symbol.utf8().get_data());
+		ERR_FAIL_COND_V_MSG(UNLIKELY(address == 0), FAILED, vformat("Could not find: '%s'\n", p_entry_symbol));
+		machine->vmcall<MAX_INSTRUCTIONS>(address, &gdnative_interface, this, &initialization);
+	} catch (const std::exception &e) {
+		ERR_FAIL_COND_V_MSG(true, FAILED, e.what());
+	}
 	level_initialized = -1;
 	return OK;
 }
