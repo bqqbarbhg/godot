@@ -36,12 +36,13 @@ thirdparty_sources = [
 	# "lib/libriscv/tr_emit.cpp",
 	# "lib/libriscv/tr_translate.cpp"
 ]
+
 thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
 
 env_extension = env.Clone()
 env_extension.Append(CPPDEFINES=["RISCV_EXT_COMPRESSED"])
 env_extension.Append(CPPDEFINES=["RISCV_EXT_ATOMICS"])
-env_extension.Append(CPPDEFINES=["RISCV_EXT_F"])
+env_extension.Append(CPPDEFINES=["RISCV_EXT_FLOATS"])
 env_extension.Append(CPPDEFINES=["RISCV_INSTR_CACHE"])
 # Disabled because of conflcit with compressed instructions.
 # env_extension.Append(CPPDEFINES=["RISCV_FAST_SIMULATOR"])

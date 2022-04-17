@@ -30,10 +30,13 @@
 
 #include "native_extension.h"
 #include "core/config/project_settings.h"
+#include "core/error/error_list.h"
+#include "core/error/error_macros.h"
 #include "core/io/config_file.h"
 #include "core/io/file_access.h"
 #include "core/object/class_db.h"
 #include "core/object/method_bind.h"
+#include "core/os/memory.h"
 #include "core/os/os.h"
 
 #include <inttypes.h>
@@ -265,6 +268,159 @@ void NativeExtension::_unregister_extension_class(const GDNativeExtensionClassLi
 	self->extension_classes.erase(class_name);
 }
 
+#include <inttypes.h>
+#include <libriscv/machine.hpp>
+#include <libriscv/rsp_server.hpp>
+static inline std::vector<uint8_t> load_file(const std::string &);
+
+static constexpr uint64_t MAX_MEMORY = 1024 * 1024 * 200;
+
+template <int W>
+static void run_sighandler(riscv::Machine<W> &);
+
+template <int W>
+static void run_program(
+		const std::vector<uint8_t> &binary,
+		const std::vector<std::string> &args) {
+	riscv::Machine<W> machine{ binary, { .memory_max = MAX_MEMORY, .verbose_loader = (getenv("VERBOSE") != nullptr) } };
+
+	std::vector<std::string> env = {
+		"LC_CTYPE=C", "LC_ALL=C", "USER=groot"
+	};
+	machine.setup_linux(args, env);
+	// Linux system to open files and access internet
+	machine.setup_linux_syscalls();
+	machine.fds().permit_filesystem = true;
+	machine.fds().permit_sockets = true;
+	// Only allow opening certain file paths. The void* argument is
+	// the user-provided pointer set in the RISC-V machine.
+	machine.fds().filter_open = [](void *user, const std::string &path) {
+		(void)user;
+		if (path == "/etc/hostname")
+			return true;
+		if (path == "/dev/urandom")
+			return true;
+		return false;
+	};
+	// multi-threading
+	machine.setup_posix_threads();
+
+	if constexpr (riscv::debugging_enabled) {
+		// Print all instructions by default
+		const bool vi = true;
+		// With VERBOSE=1 we also print register values after
+		// every instruction.
+		const bool vr = (getenv("VERBOSE") != nullptr);
+		// If you want to start debugging from the beginning,
+		// set FROM_START=1.
+		const bool debug_from_start = getenv("FROM_START") != nullptr;
+
+		auto main_address = machine.address_of("main");
+		if (debug_from_start || main_address == 0x0) {
+			machine.verbose_instructions = vi;
+			machine.verbose_registers = vr;
+			// Without main() this is a custom or stripped program,
+			// so we break immediately.
+			machine.print_and_pause();
+		} else {
+			// Automatic breakpoint at main() to help debug certain programs
+			machine.cpu.breakpoint(machine.address_of("main"),
+					[vi, vr](auto &cpu) {
+						// Remove the breakpoint to speed up debugging
+						cpu.erase_breakpoint(cpu.pc());
+						cpu.machine().verbose_instructions = vi;
+						cpu.machine().verbose_registers = vr;
+						printf("\n*\n* Entered main() @ 0x%" PRIX64 "\n*\n", uint64_t(cpu.pc()));
+						cpu.machine().print_and_pause();
+					});
+		}
+	}
+
+	try {
+		// If you run the emulator with DEBUG=1, you can connect
+		// with gdb-multiarch using target remote localhost:2159.
+		if (getenv("DEBUG")) {
+			printf("GDB server is listening on localhost:2159\n");
+			riscv::RSP<W> server{ machine, 2159 };
+			auto client = server.accept();
+			if (client != nullptr) {
+				printf("GDB is connected\n");
+				//client->set_verbose(true);
+				while (client->process_one())
+					;
+			}
+			if (!machine.stopped()) {
+				// Run remainder of program
+				machine.simulate();
+			}
+		} else {
+			// Normal RISC-V simulation
+			machine.simulate();
+		}
+	} catch (riscv::MachineException &me) {
+		printf("%s\n", machine.cpu.current_instruction_to_string().c_str());
+		printf(">>> Machine exception %d: %s (data: 0x%" PRIX64 ")\n",
+				me.type(), me.what(), me.data());
+		machine.memory.print_backtrace(
+				[](std::string_view line) {
+					printf("-> %.*s\n", (int)line.size(), line.begin());
+				});
+		if (me.type() == riscv::UNIMPLEMENTED_INSTRUCTION || me.type() == riscv::MISALIGNED_INSTRUCTION) {
+			printf(">>> Is an instruction extension disabled?\n");
+			printf(">>> A-extension: %d  C-extension: %d  F-extension: %d\n",
+					riscv::atomics_enabled, riscv::compressed_enabled, riscv::floating_point_enabled);
+		}
+#ifdef RISCV_DEBUG
+		machine.print_and_pause();
+#else
+		run_sighandler(machine);
+#endif
+	} catch (std::exception &e) {
+		printf(">>> Exception: %s\n", e.what());
+		machine.memory.print_backtrace(
+				[](std::string_view line) {
+					printf("-> %.*s\n", (int)line.size(), line.begin());
+				});
+#ifdef RISCV_DEBUG
+		machine.print_and_pause();
+#else
+		run_sighandler(machine);
+#endif
+	}
+	const auto retval = machine.return_value();
+	// You can silence this output by setting SILENT=1, like so:
+	// SILENT=1 ./rvlinux myprogram
+	if (getenv("SILENT") == nullptr) {
+		printf(">>> Program exited, exit code = %" PRId64 " (0x%" PRIX64 ")\n",
+				int64_t(retval), uint64_t(retval));
+		printf("Instructions executed: %" PRIu64 "\n",
+				machine.instruction_counter());
+		printf("Pages in use: %zu (%zu kB memory)\n",
+				machine.memory.pages_active(), machine.memory.pages_active() * 4);
+	}
+}
+
+template <int W>
+void run_sighandler(riscv::Machine<W> &machine) {
+	constexpr int SIG_SEGV = 11;
+	auto &action = machine.sigaction(SIG_SEGV);
+	auto handler = action.handler;
+	if (handler == 0x0 || handler == (riscv::address_type<W>)-1)
+		return;
+	action.handler = 0x0; // Avoid re-triggering(?)
+
+	machine.stack_push(machine.cpu.reg(riscv::REG_RA));
+	machine.cpu.reg(riscv::REG_RA) = machine.cpu.pc();
+	machine.cpu.reg(riscv::REG_ARG0) = 11; /* SIGSEGV */
+	try {
+		machine.cpu.jump(handler);
+		machine.simulate(60'000);
+	} catch (...) {
+	}
+
+	action.handler = handler;
+}
+
 Error NativeExtension::open_library(const String &p_path, const String &p_entry_symbol) {
 	// TODO: Windows only
 	String path = p_path.replace("/", "\\");
@@ -280,60 +436,68 @@ Error NativeExtension::open_library(const String &p_path, const String &p_entry_
 	if (err != OK) {
 		return err;
 	}
+	std::vector<uint8_t> binary;
 	binary.resize(file->get_length());
 	file->get_buffer(binary.data(), binary.size());
-	// avoid endless loops, code that takes too long and excessive memory usage
-	static const size_t MAX_INSTRUCTIONS = 80 * 1000000;
-	static const size_t MAX_MEMORY = 1024 * 1024 * 32;
-	riscv::MachineOptions<riscv::RISCV64> options;
-	options.memory_max = MAX_MEMORY;
-	machine = new riscv::Machine<riscv::RISCV64>{ binary, options };
-	std::vector<std::string> env = {
-		"LC_CTYPE=C", "LC_ALL=C", "USER=groot"
-	};
-	String executable = path.get_file();
-	std::vector<std::string> args = {
-		executable.utf8().get_data()
-	};
-	machine->setup_linux(args, env);
-	// Linux system to open files and access internet
-	machine->setup_linux_syscalls();
-
-	machine->fds().permit_filesystem = true;
-	machine->fds().permit_sockets = true;
-	// Only allow opening certain file paths. The void* argument is
-	// the user-provided pointer set in the RISC-V machine.
-	machine->fds().filter_open = [](void *user, const std::string &path) {
-		(void)user;
-		if (path == "/etc/hostname") {
-			return FAILED;
-		}
-		if (path == "/dev/urandom") {
-			return FAILED;
-		}
-		return FAILED;
-	};
-	// multi-threading
-	machine->setup_posix_threads();
-	String main = "main";
-	size_t address = machine->address_of(main.utf8().get_data());
-	ERR_FAIL_COND_V_MSG(UNLIKELY(address == 0), FAILED, vformat("Could not find: '%s'\n", main.utf8().get_data()));
+	String file_path = p_path.get_file();
+	std::vector<std::string> args = {file_path.utf8().get_data()};
+	ERR_FAIL_COND_V(binary.size() < 64, FAILED);
 	try {
-		machine->vmcall<MAX_INSTRUCTIONS>(address);
-		address = machine->address_of(p_entry_symbol.utf8().get_data());
-		ERR_FAIL_COND_V_MSG(UNLIKELY(address == 0), FAILED, vformat("Could not find: '%s'\n", p_entry_symbol));
-		machine->vmcall<MAX_INSTRUCTIONS>(address, &gdnative_interface, this, &initialization);
-	} catch (const std::exception &e) {
-		ERR_FAIL_COND_V_MSG(true, FAILED, e.what());
+		run_program<riscv::RISCV64> (binary, args);
+	} catch (const std::exception& e) {
+		printf("Exception: %s\n", e.what());
 	}
-	level_initialized = -1;
+	// // avoid endless loops, code that takes too long and excessive memory usage
+	// static const size_t MAX_INSTRUCTIONS = 80 * 1000000;
+	// static const size_t MAX_MEMORY = 1024 * 1024 * 32;
+	// riscv::MachineOptions<riscv::RISCV64> options;
+	// options.memory_max = MAX_MEMORY;
+
+	// riscv::Machine<riscv::RISCV64> machine = riscv::Machine<riscv::RISCV64>{ binary, options };
+	// std::vector<std::string> env = {
+	// 	"LC_CTYPE=C", "LC_ALL=C", "USER=groot"
+	// };
+	// String executable = path.get_file();
+	// std::vector<std::string> args = {
+	// 	executable.utf8().get_data()
+	// };
+	// machine.setup_linux(args, env);
+	// // Linux system to open files and access internet
+	// machine.setup_linux_syscalls();
+
+	// machine.fds().permit_filesystem = true;
+	// machine.fds().permit_sockets = true;
+	// // Only allow opening certain file paths. The void* argument is
+	// // the user-provided pointer set in the RISC-V machine.
+	// machine.fds().filter_open = [](void *user, const std::string &path) {
+	// 	(void)user;
+	// 	if (path == "/etc/hostname") {
+	// 		return FAILED;
+	// 	}
+	// 	if (path == "/dev/urandom") {
+	// 		return FAILED;
+	// 	}
+	// 	return FAILED;
+	// };
+	// // multi-threading
+	// machine.setup_posix_threads();
+	// String main = "main";
+	// size_t address = machine.address_of(main.utf8().get_data());
+	// ERR_FAIL_COND_V_MSG(UNLIKELY(address == 0), FAILED, vformat("Could not find: '%s'\n", main.utf8().get_data()));
+	// try {
+	// 	machine.vmcall<MAX_INSTRUCTIONS>(address);
+	// 	// address = machine.address_of(p_entry_symbol.utf8().get_data());
+	// 	// ERR_FAIL_COND_V_MSG(UNLIKELY(address == 0), FAILED, vformat("Could not find: '%s'\n", p_entry_symbol));
+	// 	// machine.vmcall<MAX_INSTRUCTIONS>(address, &gdnative_interface, this, &initialization);
+	// } catch (const std::exception &e) {
+	// 	ERR_FAIL_COND_V_MSG(true, FAILED, e.what());
+	// }
+	// level_initialized = -1;
 	return OK;
 }
 
 void NativeExtension::close_library() {
 	ERR_FAIL_COND(library == nullptr);
-	memdelete(machine);
-
 	library = nullptr;
 }
 
