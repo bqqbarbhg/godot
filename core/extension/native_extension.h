@@ -43,21 +43,21 @@ class NativeExtension : public Resource {
 	void *library = nullptr; // pointer if valid,
 
 
-	// template <int W>
-	// struct MachineData {
-	// 	MachineData(std::vector<uint8_t> b, const std::string &fn, const std::string &syms) :
-	// 			binary{ std::move(b) }, machine{ binary }, filename{ fn }, sympath{ syms } {}
+	template <int W>
+	struct MachineData {
+		MachineData(std::vector<uint8_t> b, const std::string &fn, const std::string &syms) :
+				binary{ std::move(b) }, machine{ binary }, filename{ fn }, sympath{ syms } {}
 
-	// 	MachineData(std::vector<uint8_t> b, const std::string &fn, bool, std::string_view syms) :
-	// 			binary{ std::move(b) }, machine{ binary }, filename{ fn }, sympath{}, symbols(syms) {}
+		MachineData(std::vector<uint8_t> b, const std::string &fn, bool, std::string_view syms) :
+				binary{ std::move(b) }, machine{ binary }, filename{ fn }, sympath{}, symbols(syms) {}
 
-	// 	const std::vector<uint8_t> binary;
-	// 	const riscv::Machine<W> machine;
-	// 	const std::string filename;
-	// 	const std::string sympath;
-	// 	const std::string_view symbols;
-	// };
-	// std::vector<uint8_t> binary;
+		const std::vector<uint8_t> binary;
+		const riscv::Machine<W> machine;
+		const std::string filename;
+		const std::string sympath;
+		const std::string_view symbols;
+	};
+	std::vector<uint8_t> binary;
 
 	struct Extension {
 		ObjectNativeExtension native_extension;

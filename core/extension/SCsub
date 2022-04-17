@@ -28,7 +28,7 @@ thirdparty_sources = [
 	"lib/libriscv/rv128i.cpp",
 	"lib/libriscv/serialize.cpp",
 	"lib/libriscv/util/crc32c.cpp",
-	"lib/libriscv/win32/system_calls.cpp", # win32
+	"lib/libriscv/win32/system_calls.cpp",
     "lib/libriscv/decoder_cache.cpp",
     # TODO: Binary translation
     # "lib/libriscv/tr_api.cpp",
@@ -44,6 +44,7 @@ env_extension.Append(CPPDEFINES=["RISCV_EXT_COMPRESSED"])
 env_extension.Append(CPPDEFINES=["RISCV_EXT_ATOMICS"])
 env_extension.Append(CPPDEFINES=["RISCV_EXT_FLOATS"])
 env_extension.Append(CPPDEFINES=["RISCV_INSTR_CACHE"])
+env_extension.Append(CPPDEFINES=["WIN32"])
 # Disabled because of conflcit with compressed instructions.
 # env_extension.Append(CPPDEFINES=["RISCV_FAST_SIMULATOR"])
 env_extension.Prepend(CPPPATH=[thirdparty_dir + "lib"])
