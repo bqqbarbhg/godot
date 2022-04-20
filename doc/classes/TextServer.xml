@@ -80,6 +80,7 @@
 			<description>
 				Draws single glyph into a canvas item at the position, using [code]font_rid[/code] at the size [code]size[/code].
 				[b]Note:[/b] Glyph index is specific to the font, use glyphs indices returned by [method shaped_text_get_glyphs] or [method font_get_glyph_index].
+				[b]Note:[/b] If there are pending glyphs to render, calling this function might trigger the texture cache update.
 			</description>
 		</method>
 		<method name="font_draw_glyph_outline" qualifiers="const">
@@ -94,6 +95,7 @@
 			<description>
 				Draws single glyph outline of size [code]outline_size[/code] into a canvas item at the position, using [code]font_rid[/code] at the size [code]size[/code].
 				[b]Note:[/b] Glyph index is specific to the font, use glyphs indices returned by [method shaped_text_get_glyphs] or [method font_get_glyph_index].
+				[b]Note:[/b] If there are pending glyphs to render, calling this function might trigger the texture cache update.
 			</description>
 		</method>
 		<method name="font_get_ascent" qualifiers="const">
@@ -197,6 +199,26 @@
 			<argument index="2" name="glyph" type="int" />
 			<description>
 				Returns index of the cache texture containing the glyph.
+			</description>
+		</method>
+		<method name="font_get_glyph_texture_rid" qualifiers="const">
+			<return type="RID" />
+			<argument index="0" name="font_rid" type="RID" />
+			<argument index="1" name="size" type="Vector2i" />
+			<argument index="2" name="glyph" type="int" />
+			<description>
+				Returns resource id of the cache texture containing the glyph.
+				[b]Note:[/b] If there are pending glyphs to render, calling this function might trigger the texture cache update.
+			</description>
+		</method>
+		<method name="font_get_glyph_texture_size" qualifiers="const">
+			<return type="Vector2" />
+			<argument index="0" name="font_rid" type="RID" />
+			<argument index="1" name="size" type="Vector2i" />
+			<argument index="2" name="glyph" type="int" />
+			<description>
+				Returns size of the cache texture containing the glyph.
+				[b]Note:[/b] If there are pending glyphs to render, calling this function might trigger the texture cache update.
 			</description>
 		</method>
 		<method name="font_get_glyph_uv_rect" qualifiers="const">

@@ -304,6 +304,9 @@ void TextServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("font_get_glyph_texture_idx", "font_rid", "size", "glyph"), &TextServer::font_get_glyph_texture_idx);
 	ClassDB::bind_method(D_METHOD("font_set_glyph_texture_idx", "font_rid", "size", "glyph", "texture_idx"), &TextServer::font_set_glyph_texture_idx);
 
+	ClassDB::bind_method(D_METHOD("font_get_glyph_texture_rid", "font_rid", "size", "glyph"), &TextServer::font_get_glyph_texture_rid);
+	ClassDB::bind_method(D_METHOD("font_get_glyph_texture_size", "font_rid", "size", "glyph"), &TextServer::font_get_glyph_texture_size);
+
 	ClassDB::bind_method(D_METHOD("font_get_glyph_contours", "font", "size", "index"), &TextServer::font_get_glyph_contours);
 
 	ClassDB::bind_method(D_METHOD("font_get_kerning_list", "font_rid", "size"), &TextServer::font_get_kerning_list);

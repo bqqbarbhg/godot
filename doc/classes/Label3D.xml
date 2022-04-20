@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Label3D" inherits="GeometryInstance3D" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+		Displays plain text in a 3D world.
+	</brief_description>
+	<description>
+		Label3D displays plain text in a 3D world. It gives you control over the horizontal and vertical alignment.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="clear_opentype_features">
+			<return type="void" />
+			<description>
+				Removes all OpenType features.
+			</description>
+		</method>
+		<method name="generate_triangle_mesh" qualifiers="const">
+			<return type="TriangleMesh" />
+			<description>
+				Returns a [TriangleMesh] with the label's vertices following its current configuration (such as its [member pixel_size]).
+			</description>
+		</method>
+		<method name="get_draw_flag" qualifiers="const">
+			<return type="bool" />
+			<argument index="0" name="flag" type="int" enum="Label3D.DrawFlags" />
+			<description>
+				Returns the value of the specified flag.
+			</description>
+		</method>
+		<method name="get_opentype_feature" qualifiers="const">
+			<return type="int" />
+			<argument index="0" name="tag" type="String" />
+			<description>
+				Returns OpenType feature [code]tag[/code].
+			</description>
+		</method>
+		<method name="set_draw_flag">
+			<return type="void" />
+			<argument index="0" name="flag" type="int" enum="Label3D.DrawFlags" />
+			<argument index="1" name="enabled" type="bool" />
+			<description>
+				If [code]true[/code], the specified flag will be enabled. See [enum Label3D.DrawFlags] for a list of flags.
+			</description>
+		</method>
+		<method name="set_opentype_feature">
+			<return type="void" />
+			<argument index="0" name="tag" type="String" />
+			<argument index="1" name="value" type="int" />
+			<description>
+				Returns OpenType feature [code]tag[/code]. More info: [url=https://docs.microsoft.com/en-us/typography/opentype/spec/featuretags]OpenType feature tags[/url].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="billboard" type="int" setter="set_billboard_mode" getter="get_billboard_mode" enum="BaseMaterial3D.BillboardMode" default="0">
+			The billboard mode to use for the label. See [enum BaseMaterial3D.BillboardMode] for possible values.
+		</member>
+		<member name="double_sided" type="bool" setter="set_draw_flag" getter="get_draw_flag" default="true">
+			If [code]true[/code], text can be seen from the back as well, if [code]false[/code], it is invisible when looking at it from behind.
+		</member>
+		<member name="font" type="Font" setter="set_font" getter="get_font">
+			[Font] used for the [Label3D]'s text.
+		</member>
+		<member name="font_size" type="int" setter="set_font_size" getter="get_font_size" default="16">
+			Font size of the [Label3D]'s text.
+		</member>
+		<member name="horizontal_alignment" type="int" setter="set_horizontal_alignment" getter="get_horizontal_alignment" enum="HorizontalAlignment" default="1">
+			Controls the text's horizontal alignment. Supports left, center, right. Set it to one of the [enum HorizontalAlignment] constants.
+		</member>
+		<member name="language" type="String" setter="set_language" getter="get_language" default="&quot;&quot;">
+			Language code used for line-breaking and text shaping algorithms, if left empty current locale is used instead.
+		</member>
+		<member name="line_spacing" type="float" setter="set_line_spacing" getter="get_line_spacing" default="0.0">
+			Vertical space between lines in multiline [Label3D].
+		</member>
+		<member name="modulate" type="Color" setter="set_modulate" getter="get_modulate" default="Color(1, 1, 1, 1)">
+			Text [Color] of the [Label3D].
+		</member>
+		<member name="outline_modulate" type="Color" setter="set_outline_modulate" getter="get_outline_modulate" default="Color(1, 1, 1, 1)">
+			The tint of [Font]'s outline.
+		</member>
+		<member name="outline_size" type="int" setter="set_outline_size" getter="get_outline_size" default="0">
+			Text outline size.
+		</member>
+		<member name="pixel_size" type="float" setter="set_pixel_size" getter="get_pixel_size" default="0.01">
+			The size of one pixel's width on the label to scale it in 3D.
+		</member>
+		<member name="shaded" type="bool" setter="set_draw_flag" getter="get_draw_flag" default="false">
+			If [code]true[/code], the [Light3D] in the [Environment] has effects on the label.
+		</member>
+		<member name="text" type="String" setter="set_text" getter="get_text" default="&quot;&quot;">
+			The text to display on screen.
+		</member>
+		<member name="text_direction" type="int" setter="set_text_direction" getter="get_text_direction" enum="TextServer.Direction" default="0">
+			Base text writing direction.
+		</member>
+		<member name="uppercase" type="bool" setter="set_uppercase" getter="is_uppercase" default="false">
+			If [code]true[/code], all the text displays as UPPERCASE.
+		</member>
+		<member name="vertical_alignment" type="int" setter="set_vertical_alignment" getter="get_vertical_alignment" enum="VerticalAlignment" default="1">
+			Controls the text's vertical alignment. Supports top, center, bottom. Set it to one of the [enum VerticalAlignment] constants.
+		</member>
+	</members>
+	<constants>
+		<constant name="FLAG_SHADED" value="0" enum="DrawFlags">
+			If set, lights in the environment affect the label.
+		</constant>
+		<constant name="FLAG_DOUBLE_SIDED" value="1" enum="DrawFlags">
+			If set, text can be seen from the back as well. If not, the texture is invisible when looking at it from behind.
+		</constant>
+		<constant name="FLAG_MAX" value="2" enum="DrawFlags">
+			Represents the size of the [enum DrawFlags] enum.
+		</constant>
+	</constants>
+</class>
