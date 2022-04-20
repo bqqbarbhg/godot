@@ -472,12 +472,20 @@ double AnimationNodeStateMachinePlayback::process(AnimationNodeStateMachine *p_s
 			}
 
 			if (p_state_machine->transitions[i].from == current && p_state_machine->transitions[i].transition->expression.is_valid()) {
-				Node *base = p_state_machine->get_animation_tree();
-				ERR_CONTINUE(base == nullptr);
+				AnimationTree *tree_base = p_state_machine->get_animation_tree();
+				ERR_CONTINUE(tree_base == nullptr);
 				Ref<Expression> exp = p_state_machine->transitions[i].transition->expression;
-				base = base->get_node_or_null(p_state_machine->transitions[i].transition->advance_expression_base_node);
-				if (base) {
-					bool ret = exp->execute(Array(), base, false, Engine::get_singleton()->is_editor_hint()); // Avoid user from crashing the system with an expression by only allowing const calls when editor runs
+
+				NodePath advance_expression_base_node_path;
+				if (!p_state_machine->transitions[i].transition->advance_expression_base_node.is_empty()) {
+					advance_expression_base_node_path = p_state_machine->transitions[i].transition->advance_expression_base_node;
+				} else {
+					advance_expression_base_node_path = tree_base->get_advance_expression_base_node();
+				}
+
+				Node *expression_base = tree_base->get_node_or_null(advance_expression_base_node_path);
+				if (expression_base) {
+					bool ret = exp->execute(Array(), expression_base, false, Engine::get_singleton()->is_editor_hint()); // Avoid user from crashing the system with an expression by only allowing const calls when editor runs
 					if (!exp->has_execute_failed()) {
 						auto_advance = ret;
 					}

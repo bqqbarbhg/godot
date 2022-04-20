@@ -53,7 +53,7 @@ private:
 	bool disabled = false;
 	int priority = 1;
 	String advance_expression;
-	NodePath advance_expression_base_node = NodePath(String(".."));
+	NodePath advance_expression_base_node = NodePath();
 
 	friend class AnimationNodeStateMachinePlayback;
 	Ref<Expression> expression;
