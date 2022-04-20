@@ -151,6 +151,9 @@ void TextServerExtension::_bind_methods() {
 	GDVIRTUAL_BIND(font_get_glyph_texture_idx, "font_rid", "size", "glyph");
 	GDVIRTUAL_BIND(font_set_glyph_texture_idx, "font_rid", "size", "glyph", "texture_idx");
 
+	GDVIRTUAL_BIND(font_get_glyph_texture_rid, "font_rid", "size", "glyph");
+	GDVIRTUAL_BIND(font_get_glyph_texture_size, "font_rid", "size", "glyph");
+
 	GDVIRTUAL_BIND(font_get_glyph_contours, "font_rid", "size", "index");
 
 	GDVIRTUAL_BIND(font_get_kerning_list, "font_rid", "size");
@@ -785,6 +788,22 @@ int64_t TextServerExtension::font_get_glyph_texture_idx(const RID &p_font_rid, c
 
 void TextServerExtension::font_set_glyph_texture_idx(const RID &p_font_rid, const Vector2i &p_size, int64_t p_glyph, int64_t p_texture_idx) {
 	GDVIRTUAL_CALL(font_set_glyph_texture_idx, p_font_rid, p_size, p_glyph, p_texture_idx);
+}
+
+RID TextServerExtension::font_get_glyph_texture_rid(const RID &p_font_rid, const Vector2i &p_size, int64_t p_glyph) const {
+	RID ret;
+	if (GDVIRTUAL_CALL(font_get_glyph_texture_rid, p_font_rid, p_size, p_glyph, ret)) {
+		return ret;
+	}
+	return RID();
+}
+
+Size2 TextServerExtension::font_get_glyph_texture_size(const RID &p_font_rid, const Vector2i &p_size, int64_t p_glyph) const {
+	Size2 ret;
+	if (GDVIRTUAL_CALL(font_get_glyph_texture_size, p_font_rid, p_size, p_glyph, ret)) {
+		return ret;
+	}
+	return Size2();
 }
 
 Dictionary TextServerExtension::font_get_glyph_contours(const RID &p_font_rid, int64_t p_size, int64_t p_index) const {
