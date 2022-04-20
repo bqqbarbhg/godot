@@ -83,8 +83,10 @@ StringName AnimationNodeStateMachineTransition::get_advance_condition_name() con
 }
 
 void AnimationNodeStateMachineTransition::set_advance_expression(const String &p_expression) {
-	advance_expression = p_expression.strip_edges();
-	if (advance_expression.strip_edges() == String()) {
+	advance_expression = p_expression;
+
+	String advance_expression_stripped = advance_expression.strip_edges();
+	if (advance_expression_stripped == String()) {
 		expression.unref();
 		return;
 	}
@@ -93,7 +95,7 @@ void AnimationNodeStateMachineTransition::set_advance_expression(const String &p
 		expression.instantiate();
 	}
 
-	expression->parse(advance_expression);
+	expression->parse(advance_expression_stripped);
 }
 
 String AnimationNodeStateMachineTransition::get_advance_expression() const {
