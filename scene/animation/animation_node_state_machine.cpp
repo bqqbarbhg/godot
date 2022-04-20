@@ -627,16 +627,20 @@ bool AnimationNodeStateMachinePlayback::_check_advance_condition(const Ref<Anima
 	}
 
 	if (transition->expression.is_valid()) {
-		Node *base = state_machine->get_animation_tree();
+		AnimationTree *tree_base = state_machine->get_animation_tree();
 		Ref<Expression> exp = transition->expression;
-		if (base) {
-			base = base->get_node_or_null(transition->advance_expression_base_node);
+		NodePath advance_expression_base_node_path;
+		if (!transition->advance_expression_base_node.is_empty()) {
+			advance_expression_base_node_path = transition->advance_expression_base_node;
+		} else if (tree_base) {
+			advance_expression_base_node_path = tree_base->get_advance_expression_base_node();
 		} else {
 			WARN_PRINT("State machine animation tree was null while evaluating advance condition!");
 		}
-		if (base) {
+		Node *expression_base = tree_base->get_node_or_null(advance_expression_base_node_path);
+		if (expression_base) {
 			// Avoid user from crashing the system with an expression by only allowing const calls when editor runs
-			bool ret = exp->execute(Array(), base, false, Engine::get_singleton()->is_editor_hint());
+			bool ret = exp->execute(Array(), expression_base, false, Engine::get_singleton()->is_editor_hint());
 			if (!exp->has_execute_failed()) {
 				if (ret) {
 					return true;

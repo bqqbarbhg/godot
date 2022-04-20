@@ -270,6 +270,7 @@ private:
 	Set<TrackCache *> playing_caches;
 
 	Ref<AnimationNode> root;
+	NodePath advance_expression_base_node = NodePath(String("."));
 
 	AnimationProcessCallback process_callback = ANIMATION_PROCESS_IDLE;
 	bool active = false;
@@ -331,6 +332,9 @@ public:
 
 	void set_animation_player(const NodePath &p_player);
 	NodePath get_animation_player() const;
+
+	void set_advance_expression_base_node(const NodePath &p_advance_expression_base_node);
+	NodePath get_advance_expression_base_node() const;
 
 	TypedArray<String> get_configuration_warnings() const override;
 
