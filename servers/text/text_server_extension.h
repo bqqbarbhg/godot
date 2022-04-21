@@ -245,6 +245,12 @@ public:
 	GDVIRTUAL3RC(int64_t, font_get_glyph_texture_idx, RID, const Vector2i &, int64_t);
 	GDVIRTUAL4(font_set_glyph_texture_idx, RID, const Vector2i &, int64_t, int64_t);
 
+	virtual RID font_get_glyph_texture_rid(const RID &p_font_rid, const Vector2i &p_size, int64_t p_glyph) const override;
+	GDVIRTUAL3RC(RID, font_get_glyph_texture_rid, RID, const Vector2i &, int64_t);
+
+	virtual Size2 font_get_glyph_texture_size(const RID &p_font_rid, const Vector2i &p_size, int64_t p_glyph) const override;
+	GDVIRTUAL3RC(Size2, font_get_glyph_texture_size, RID, const Vector2i &, int64_t);
+
 	virtual Dictionary font_get_glyph_contours(const RID &p_font, int64_t p_size, int64_t p_index) const override;
 	GDVIRTUAL3RC(Dictionary, font_get_glyph_contours, RID, int64_t, int64_t);
 
