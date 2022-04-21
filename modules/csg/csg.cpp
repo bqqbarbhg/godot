@@ -309,8 +309,8 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 	MeshMerge mesh_merge;
 	mesh_merge.vertex_snap = p_vertex_snap;
 
-	// Create new brush and fill with new faces.
 	r_merged_brush.faces.clear();
+	r_merged_brush.materials.clear();
 	manifold::Manifold first_mesh;
 	constexpr int32_t brush_count = 2;
 	const CSGBrush *p_brush[brush_count] = { &p_brush_a, &p_brush_b };
