@@ -375,15 +375,15 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 	}
 	switch (p_operation) {
 		case OPERATION_UNION: {
-			manifold_mesh[0] = manifold_mesh[0].Boolean(manifold_mesh[1], manifold::Manifold::OpType::ADD).GetMesh();
+			manifold_mesh[0] = manifold_mesh[0].Boolean(manifold_mesh[1], manifold::Manifold::OpType::ADD);
 		} break;
 
 		case OPERATION_INTERSECTION: {
-			manifold_mesh[0] = manifold_mesh[0].Boolean(manifold_mesh[1], manifold::Manifold::OpType::INTERSECT).GetMesh();
+			manifold_mesh[0] = manifold_mesh[0].Boolean(manifold_mesh[1], manifold::Manifold::OpType::INTERSECT);
 		} break;
 
 		case OPERATION_SUBTRACTION: {
-			manifold_mesh[0] = manifold_mesh[0].Boolean(manifold_mesh[1], manifold::Manifold::OpType::SUBTRACT).GetMesh();
+			manifold_mesh[0] = manifold_mesh[0].Boolean(manifold_mesh[1], manifold::Manifold::OpType::SUBTRACT);
 		} break;
 	}
 	manifold::Mesh mesh = manifold_mesh[0].GetMesh();
