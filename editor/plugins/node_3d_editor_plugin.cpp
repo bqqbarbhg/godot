@@ -3827,32 +3827,34 @@ bool Node3DEditorViewport::_apply_preview_material(ObjectID p_target, const Poin
 		Ref<Mesh> mesh = mesh_instance->get_mesh();
 		int surface_count = mesh->get_surface_count();
 
-		Vector3 ray = _get_ray(p_point);
-		Vector3 pos = _get_ray_pos(p_point);
+		Vector3 world_ray = _get_ray(p_point);
+		Vector3 world_pos = _get_ray_pos(p_point);
 
 		int closest_surface = -1;
 		float closest_dist = 1e20;
 
+		Transform3D gt = mesh_instance->get_global_transform();
+
+		Transform3D ai = gt.affine_inverse();
+		Vector3 xform_ray = ai.basis.xform(world_ray).normalized();
+		Vector3 xform_pos = ai.xform(world_pos);
+
 		for (int surface = 0; surface < surface_count; surface++) {
-			Vector<Face3> faces = mesh->get_surface_faces(surface);
-			for (int i = 0; i < faces.size(); i++) {
-				Vector3 v1 = mesh_instance->to_global(faces[i].vertex[0]);
-				Vector3 v2 = mesh_instance->to_global(faces[i].vertex[1]);
-				Vector3 v3 = mesh_instance->to_global(faces[i].vertex[2]);
+			Ref<TriangleMesh> surface_mesh = mesh->generate_surface_triangle_mesh(surface);
 
-				Face3 face = Face3(v1, v2, v3);
-				Vector3 point;
-				if (face.intersects_ray(pos, ray, &point)) {
-					const real_t dist = pos.distance_to(point);
+			Vector3 rpos, rnorm;
+			if (surface_mesh->intersect_ray(xform_pos, xform_ray, rpos, rnorm)) {
+				Vector3 hitpos = gt.xform(rpos);
 
-					if (dist < 0) {
-						continue;
-					}
+				const real_t dist = world_pos.distance_to(hitpos);
 
-					if (dist < closest_dist) {
-						closest_surface = surface;
-						break;
-					}
+				if (dist < 0) {
+					continue;
+				}
+
+				if (dist < closest_dist) {
+					closest_surface = surface;
+					closest_dist = dist;
 				}
 			}
 		}
