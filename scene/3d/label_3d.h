@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  label.h                                                              */
+/*  label_3d.h                                                           */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,15 +28,32 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef LABEL_H
-#define LABEL_H
+#ifndef LABEL_3D_H
+#define LABEL_3D_H
 
-#include "scene/gui/control.h"
+#include "scene/3d/visual_instance_3d.h"
+#include "scene/resources/font.h"
 
-class Label : public Control {
-	GDCLASS(Label, Control);
+#include "servers/text_server.h"
+
+class Label3D : public GeometryInstance3D {
+	GDCLASS(Label3D, GeometryInstance3D);
 
 public:
+	enum DrawFlags {
+		FLAG_SHADED,
+		FLAG_DOUBLE_SIDED,
+		FLAG_DISABLE_DEPTH_TEST,
+		FLAG_FIXED_SIZE,
+		FLAG_MAX
+	};
+
+	enum AlphaCutMode {
+		ALPHA_CUT_DISABLED,
+		ALPHA_CUT_DISCARD,
+		ALPHA_CUT_OPAQUE_PREPASS
+	};
+
 	enum AutowrapMode {
 		AUTOWRAP_OFF,
 		AUTOWRAP_ARBITRARY,
@@ -44,56 +61,59 @@ public:
 		AUTOWRAP_WORD_SMART
 	};
 
-	enum OverrunBehavior {
-		OVERRUN_NO_TRIMMING,
-		OVERRUN_TRIM_CHAR,
-		OVERRUN_TRIM_WORD,
-		OVERRUN_TRIM_ELLIPSIS,
-		OVERRUN_TRIM_WORD_ELLIPSIS,
-	};
-
-	enum VisibleCharactersBehavior {
-		VC_CHARS_BEFORE_SHAPING,
-		VC_CHARS_AFTER_SHAPING,
-		VC_GLYPHS_AUTO,
-		VC_GLYPHS_LTR,
-		VC_GLYPHS_RTL,
-	};
-
 private:
-	HorizontalAlignment horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT;
-	VerticalAlignment vertical_alignment = VERTICAL_ALIGNMENT_TOP;
+	real_t pixel_size = 0.01;
+	bool flags[FLAG_MAX] = {};
+	AlphaCutMode alpha_cut = ALPHA_CUT_DISABLED;
+	float alpha_scissor_threshold = 0.98;
+
+	AABB aabb;
+
+	mutable Ref<TriangleMesh> triangle_mesh;
+	RID mesh;
+	Map<uint64_t, RID> materials;
+
+	HorizontalAlignment horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER;
+	VerticalAlignment vertical_alignment = VERTICAL_ALIGNMENT_CENTER;
 	String text;
 	String xl_text;
-	AutowrapMode autowrap_mode = AUTOWRAP_OFF;
-	bool clip = false;
-	OverrunBehavior overrun_behavior = OVERRUN_NO_TRIMMING;
-	Size2 minsize;
 	bool uppercase = false;
 
-	bool lines_dirty = true;
-	bool dirty = true;
-	bool font_dirty = true;
-	RID text_rid;
-	Vector<RID> lines_rid;
+	AutowrapMode autowrap_mode = AUTOWRAP_OFF;
+	float width = -1.0;
+
+	int font_size = 16;
+	Ref<Font> font_override;
+	Color modulate = Color(1, 1, 1, 1);
+
+	int outline_size = 0;
+	Color outline_modulate = Color(0, 0, 0, 1);
+
+	float line_spacing = 0.f;
 
 	Dictionary opentype_features;
 	String language;
-	TextDirection text_direction = TEXT_DIRECTION_AUTO;
+	TextServer::Direction text_direction = TextServer::DIRECTION_AUTO;
 	TextServer::StructuredTextParser st_parser = TextServer::STRUCTURED_TEXT_DEFAULT;
 	Array st_args;
 
-	float percent_visible = 1.0;
+	RID text_rid;
+	Vector<RID> lines_rid;
 
-	VisibleCharactersBehavior visible_chars_behavior = VC_CHARS_BEFORE_SHAPING;
-	int visible_chars = -1;
-	int lines_skipped = 0;
-	int max_lines_visible = -1;
+	RID base_material;
+	StandardMaterial3D::BillboardMode billboard_mode = StandardMaterial3D::BILLBOARD_DISABLED;
 
-	void _update_visible();
-	void _shape();
+	bool pending_update = false;
+
+	bool dirty_lines = true;
+	bool dirty_font = true;
+	bool dirty_text = true;
+
+	void _generate_glyph_surfaces(const Glyph &p_glyph, Vector2 &r_offset, const Color &p_modulate, int p_priority = 0, int p_outline_size = 0);
 
 protected:
+	GDVIRTUAL2RC(Array, _structured_text_parser, Array, String)
+
 	void _notification(int p_what);
 
 	static void _bind_methods();
@@ -101,10 +121,15 @@ protected:
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
 	void _get_property_list(List<PropertyInfo> *p_list) const;
+	void _validate_property(PropertyInfo &property) const override;
+
+	void _im_update();
+	void _font_changed();
+	void _queue_update();
+
+	void _shape();
 
 public:
-	virtual Size2 get_minimum_size() const override;
-
 	void set_horizontal_alignment(HorizontalAlignment p_alignment);
 	HorizontalAlignment get_horizontal_alignment() const;
 
@@ -114,8 +139,8 @@ public:
 	void set_text(const String &p_string);
 	String get_text() const;
 
-	void set_text_direction(TextDirection p_text_direction);
-	TextDirection get_text_direction() const;
+	void set_text_direction(TextServer::Direction p_text_direction);
+	TextServer::Direction get_text_direction() const;
 
 	void set_opentype_feature(const String &p_name, int p_value);
 	int get_opentype_feature(const String &p_name) const;
@@ -130,44 +155,58 @@ public:
 	void set_structured_text_bidi_override_options(Array p_args);
 	Array get_structured_text_bidi_override_options() const;
 
-	void set_autowrap_mode(AutowrapMode p_mode);
-	AutowrapMode get_autowrap_mode() const;
-
 	void set_uppercase(bool p_uppercase);
 	bool is_uppercase() const;
 
-	VisibleCharactersBehavior get_visible_characters_behavior() const;
-	void set_visible_characters_behavior(VisibleCharactersBehavior p_behavior);
+	void set_font(const Ref<Font> &p_font);
+	Ref<Font> get_font() const;
+	Ref<Font> _get_font_or_default() const;
 
-	void set_visible_characters(int p_amount);
-	int get_visible_characters() const;
-	int get_total_character_count() const;
+	void set_font_size(int p_size);
+	int get_font_size() const;
 
-	void set_clip_text(bool p_clip);
-	bool is_clipping_text() const;
+	void set_outline_size(int p_size);
+	int get_outline_size() const;
 
-	void set_text_overrun_behavior(OverrunBehavior p_behavior);
-	OverrunBehavior get_text_overrun_behavior() const;
+	void set_line_spacing(float p_size);
+	float get_line_spacing() const;
 
-	void set_percent_visible(float p_percent);
-	float get_percent_visible() const;
+	void set_modulate(const Color &p_color);
+	Color get_modulate() const;
 
-	void set_lines_skipped(int p_lines);
-	int get_lines_skipped() const;
+	void set_outline_modulate(const Color &p_color);
+	Color get_outline_modulate() const;
 
-	void set_max_lines_visible(int p_lines);
-	int get_max_lines_visible() const;
+	void set_autowrap_mode(AutowrapMode p_mode);
+	AutowrapMode get_autowrap_mode() const;
 
-	int get_line_height(int p_line = -1) const;
-	int get_line_count() const;
-	int get_visible_line_count() const;
+	void set_width(float p_width);
+	float get_width() const;
 
-	Label(const String &p_text = String());
-	~Label();
+	void set_pixel_size(real_t p_amount);
+	real_t get_pixel_size() const;
+
+	void set_draw_flag(DrawFlags p_flag, bool p_enable);
+	bool get_draw_flag(DrawFlags p_flag) const;
+
+	void set_alpha_cut_mode(AlphaCutMode p_mode);
+	AlphaCutMode get_alpha_cut_mode() const;
+
+	void set_alpha_scissor_threshold(float p_threshold);
+	float get_alpha_scissor_threshold() const;
+
+	void set_billboard_mode(StandardMaterial3D::BillboardMode p_mode);
+	StandardMaterial3D::BillboardMode get_billboard_mode() const;
+
+	virtual AABB get_aabb() const override;
+	Ref<TriangleMesh> generate_triangle_mesh() const;
+
+	Label3D();
+	~Label3D();
 };
 
-VARIANT_ENUM_CAST(Label::AutowrapMode);
-VARIANT_ENUM_CAST(Label::OverrunBehavior);
-VARIANT_ENUM_CAST(Label::VisibleCharactersBehavior);
+VARIANT_ENUM_CAST(Label3D::AutowrapMode);
+VARIANT_ENUM_CAST(Label3D::DrawFlags);
+VARIANT_ENUM_CAST(Label3D::AlphaCutMode);
 
-#endif
+#endif // LABEL_3D_H

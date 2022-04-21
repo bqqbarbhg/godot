@@ -193,6 +193,24 @@
 				Returns index of the cache texture containing the glyph.
 			</description>
 		</method>
+		<method name="font_get_glyph_texture_rid" qualifiers="virtual const">
+			<return type="RID" />
+			<argument index="0" name="font_rid" type="RID" />
+			<argument index="1" name="size" type="Vector2i" />
+			<argument index="2" name="glyph" type="int" />
+			<description>
+				Returns resource id of the cache texture containing the glyph.
+			</description>
+		</method>
+		<method name="font_get_glyph_texture_size" qualifiers="virtual const">
+			<return type="Vector2" />
+			<argument index="0" name="font_rid" type="RID" />
+			<argument index="1" name="size" type="Vector2i" />
+			<argument index="2" name="glyph" type="int" />
+			<description>
+				Returns size of the cache texture containing the glyph.
+			</description>
+		</method>
 		<method name="font_get_glyph_uv_rect" qualifiers="virtual const">
 			<return type="Rect2" />
 			<argument index="0" name="font_rid" type="RID" />
