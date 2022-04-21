@@ -387,7 +387,7 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 	manifold::Mesh mesh = manifold_mesh[0].GetMesh();
 	manifold::MeshRelation mesh_relation = manifold_mesh[0].GetMeshRelation();
 	r_merged_brush.faces.resize(mesh.triVerts.size());
-	for (int triangle_i = 0; triangle_i < mesh.triVerts.size(); triangle_i++) {
+	for (size_t triangle_i = 0; triangle_i < mesh.triVerts.size(); triangle_i++) {
 		CSGBrush::Face face;
 		int32_t order[3] = { 0, 2, 1 };
 		// manifold::BaryRef bary_ref = mesh_relation.triBary[triangle_i];
