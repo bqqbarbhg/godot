@@ -31,6 +31,7 @@
 #include "csg.h"
 
 #include "core/error/error_macros.h"
+#include "core/math/color.h"
 #include "core/math/geometry_2d.h"
 #include "core/math/math_funcs.h"
 #include "core/math/plane.h"
@@ -309,26 +310,11 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 	MeshMerge mesh_merge;
 	mesh_merge.vertex_snap = p_vertex_snap;
 
-	r_merged_brush.faces.clear();
-	r_merged_brush.materials.clear();
 	manifold::Manifold first_mesh;
 	constexpr int32_t brush_count = 2;
 	const CSGBrush *p_brush[brush_count] = { &p_brush_a, &p_brush_b };
 
 	manifold::Manifold manifold_mesh[brush_count];
-
-	enum {
-		MANIFOLD_PROPERTY_INVERT = 0,
-		MANIFOLD_PROPERTY_SMOOTH_GROUP,
-		MANIFOLD_PROPERTY_UV_X_0,
-		MANIFOLD_PROPERTY_UV_X_1,
-		MANIFOLD_PROPERTY_UV_X_2,
-		MANIFOLD_PROPERTY_UV_Y_0,
-		MANIFOLD_PROPERTY_UV_Y_1,
-		MANIFOLD_PROPERTY_UV_Y_2,
-		MANIFOLD_PROPERTY_MATERIAL,
-		MANIFOLD_MAX
-	};
 	Map<int64_t, std::vector<float>> mesh_id_properties;
 	Map<int64_t, Map<int32_t, Ref<Material>>> mesh_materials;
 	for (int32_t i = 0; i < brush_count; i++) {
@@ -344,34 +330,19 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 		Ref<MeshDataTool> mdt;
 		mdt.instantiate();
 		mdt->create_from_surface(st->commit(), 0);
-		std::vector<glm::ivec3> triProperties(mdt->get_face_count(), glm::vec3(-1, -1, -1));
-		std::vector<float> propertyTolerance(mdt->get_face_count() * MANIFOLD_MAX, p_vertex_snap * manifold::kTolerance);
-		std::vector<float> properties(mdt->get_face_count() * propertyTolerance.size(), 0.0f);
 		manifold::Mesh mesh;
 		mesh.triVerts.resize(mdt->get_face_count());
 		mesh.vertPos.resize(mdt->get_vertex_count());
 		Map<int32_t, Ref<Material>> materials;
+		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
+			Vector3 pos = mdt->get_vertex(vertex_i);
+			mesh.vertPos[vertex_i] = glm::vec3(pos.x, pos.y, pos.z);
+		}
 		for (int face_i = 0; face_i < mdt->get_face_count(); face_i++) {
-			if (p_brush_a.faces[face_i].material != -1) {
-				materials[face_i] = p_brush[i]->materials[p_brush_a.faces[i].material];
-			}
-			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP] = p_brush[i]->faces[face_i].smooth;
-			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT] = p_brush[i]->faces[face_i].invert;
-			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_MATERIAL] = p_brush[i]->faces[face_i].material;
-			for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
-				int32_t face_vertex_index = mdt->get_face_vertex(face_i, vertex_i);
-				Vector3 pos = mdt->get_vertex(face_vertex_index);
-				mesh.vertPos[face_vertex_index] = glm::vec3(pos.x, pos.y, pos.z);
-				properties[face_i * MANIFOLD_MAX + (MANIFOLD_PROPERTY_UV_X_0 * 3)] = p_brush[i]->faces[face_i].uvs[vertex_i].x;
-				properties[face_i * MANIFOLD_MAX + (MANIFOLD_PROPERTY_UV_Y_0 * 3)] = p_brush[i]->faces[face_i].uvs[vertex_i].y;
-			}
 			Vector3 triangle_indexes = Vector3(mdt->get_face_vertex(face_i, 0), mdt->get_face_vertex(face_i, 2), mdt->get_face_vertex(face_i, 1));
 			mesh.triVerts[face_i] = glm::vec3(triangle_indexes.x, triangle_indexes.y, triangle_indexes.z);
-			triProperties[face_i] = mesh.triVerts[face_i];
 		}
-		manifold_mesh[i] = manifold::Manifold(mesh, triProperties, properties, propertyTolerance);
-		mesh_materials[manifold_mesh[i].GetMeshIDs()[0]] = materials;
-		mesh_id_properties[manifold_mesh[i].GetMeshIDs()[0]] = properties;
+		manifold_mesh[i] = manifold::Manifold(mesh);
 	}
 	switch (p_operation) {
 		case OPERATION_UNION: {
@@ -393,31 +364,6 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 	r_merged_brush.materials.clear();
 	for (size_t triangle_i = 0; triangle_i < mesh.triVerts.size(); triangle_i++) {
 		CSGBrush::Face face;
-		manifold::BaryRef bary_ref = mesh_relation.triBary[triangle_i];
-		int32_t face_index = bary_ref.tri;
-		for (int it : mesh_ids) {
-			if (!mesh_id_properties.has(it)) {
-				continue;
-			}
-			if (!mesh_materials.has(it)) {
-				continue;
-			}
-			face.smooth = mesh_id_properties[it][face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP];
-			face.invert = mesh_id_properties[it][face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT];
-			int mat_index = mesh_id_properties[it][face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_MATERIAL];
-			Ref<Material> material = mesh_materials[it][mat_index];
-			if (!r_merged_brush.materials.has(material)) {
-				int32_t new_index = r_merged_brush.materials.size();
-				r_merged_brush.materials.push_back(material);
-				face.material = new_index;
-			} else {
-				face.material = r_merged_brush.materials.find(material);
-			}
-			for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
-				face.uvs[vertex_i].x = mesh_id_properties[it][face_index * MANIFOLD_MAX + (MANIFOLD_PROPERTY_UV_X_0 * 3) + vertex_i];
-				face.uvs[vertex_i].y = mesh_id_properties[it][face_index * MANIFOLD_MAX + (MANIFOLD_PROPERTY_UV_Y_0 * 3) + vertex_i];
-			}
-		}
 		int32_t order[3] = { 0, 2, 1 };
 		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
 			int32_t vertex = order[vertex_i];
