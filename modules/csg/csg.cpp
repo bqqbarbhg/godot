@@ -331,13 +331,13 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 	};
 	Map<int64_t, std::vector<float>> mesh_id_properties;
 	Map<int64_t, Map<int32_t, Ref<Material>>> mesh_materials;
-	for (int32_t brush_i = 0; brush_i < brush_count; brush_i++) {
+	for (int32_t i = 0; i < brush_count; i++) {
 		Ref<SurfaceTool> st;
 		st.instantiate();
 		st->begin(Mesh::PRIMITIVE_TRIANGLES);
-		for (int face_i = 0; face_i < p_brush[brush_i]->faces.size(); face_i++) {
+		for (int face_i = 0; face_i < p_brush[i]->faces.size(); face_i++) {
 			for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
-				st->add_vertex(p_brush[brush_i]->faces[face_i].vertices[vertex_i]);
+				st->add_vertex(p_brush[i]->faces[face_i].vertices[vertex_i]);
 			}
 		}
 		st->index();
@@ -352,26 +352,26 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 		mesh.vertPos.resize(mdt->get_vertex_count());
 		Map<int32_t, Ref<Material>> materials;
 		for (int face_i = 0; face_i < mdt->get_face_count(); face_i++) {
-			if (p_brush_a.faces[brush_i].material != -1) {
-				materials[face_i] = p_brush[brush_i]->materials[p_brush_a.faces[brush_i].material];
+			if (p_brush_a.faces[face_i].material != -1) {
+				materials[face_i] = p_brush[i]->materials[p_brush_a.faces[i].material];
 			}
-			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP] = p_brush[brush_i]->faces[face_i].smooth;
-			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT] = p_brush[brush_i]->faces[face_i].invert;
-			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_MATERIAL] = p_brush[brush_i]->faces[face_i].material;
+			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP] = p_brush[i]->faces[face_i].smooth;
+			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT] = p_brush[i]->faces[face_i].invert;
+			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_MATERIAL] = p_brush[i]->faces[face_i].material;
 			for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
 				int32_t face_vertex_index = mdt->get_face_vertex(face_i, vertex_i);
 				Vector3 pos = mdt->get_vertex(face_vertex_index);
 				mesh.vertPos[face_vertex_index] = glm::vec3(pos.x, pos.y, pos.z);
-				properties[face_i * MANIFOLD_MAX + (MANIFOLD_PROPERTY_UV_X_0 * 3) + vertex_i] = p_brush[brush_i]->faces[face_i].uvs[vertex_i].x;
-				properties[face_i * MANIFOLD_MAX + (MANIFOLD_PROPERTY_UV_Y_0 * 3) + vertex_i] = p_brush[brush_i]->faces[face_i].uvs[vertex_i].y;
+				properties[face_i * MANIFOLD_MAX + (MANIFOLD_PROPERTY_UV_X_0 * 3)] = p_brush[i]->faces[face_i].uvs[vertex_i].x;
+				properties[face_i * MANIFOLD_MAX + (MANIFOLD_PROPERTY_UV_Y_0 * 3)] = p_brush[i]->faces[face_i].uvs[vertex_i].y;
 			}
 			Vector3 triangle_indexes = Vector3(mdt->get_face_vertex(face_i, 0), mdt->get_face_vertex(face_i, 2), mdt->get_face_vertex(face_i, 1));
 			mesh.triVerts[face_i] = glm::vec3(triangle_indexes.x, triangle_indexes.y, triangle_indexes.z);
 			triProperties[face_i] = mesh.triVerts[face_i];
 		}
-		manifold_mesh[brush_i] = manifold::Manifold(mesh, triProperties, properties, propertyTolerance);
-		mesh_materials[manifold_mesh[brush_i].GetMeshIDs()[0]] = materials;
-		mesh_id_properties[manifold_mesh[brush_i].GetMeshIDs()[0]] = properties;
+		manifold_mesh[i] = manifold::Manifold(mesh, triProperties, properties, propertyTolerance);
+		mesh_materials[manifold_mesh[i].GetMeshIDs()[0]] = materials;
+		mesh_id_properties[manifold_mesh[i].GetMeshIDs()[0]] = properties;
 	}
 	switch (p_operation) {
 		case OPERATION_UNION: {
