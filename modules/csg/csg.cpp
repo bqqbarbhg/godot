@@ -344,7 +344,11 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 				mesh.triVerts[face_i][order[vertex_i]] = mdt->get_face_vertex(face_i, vertex_i);
 			}
 		}
-		manifold_mesh[i] = manifold::Manifold(mesh);
+		try {
+			manifold_mesh[i] = manifold::Manifold(mesh);
+		} catch (const std::exception &e) {
+			ERR_PRINT(e.what());
+		}
 	}
 	switch (p_operation) {
 		case OPERATION_UNION: {
