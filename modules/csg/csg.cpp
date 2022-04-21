@@ -360,7 +360,6 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 				// properties[face_vertex_index * MANIFOLD_MAX + (MANIFOLD_PROPERTY_UV_Y_0 * 3)] = p_brush[i]->faces[face_i].uvs[vertex_i].y;
 			}
 			Vector3 triangle_indexes = Vector3(mdt->get_face_vertex(face_i, 0), mdt->get_face_vertex(face_i, 2), mdt->get_face_vertex(face_i, 1));
-			print_line(vformat("indexes %s", triangle_indexes));
 			mesh.triVerts[face_i] = glm::vec3(triangle_indexes.x, triangle_indexes.y, triangle_indexes.z);
 			// triProperties[face_i] = mesh.triVerts[face_i];
 		}
