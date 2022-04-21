@@ -383,6 +383,7 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 			manifold_mesh[0] = manifold_mesh[0].Boolean(manifold_mesh[1], manifold::Manifold::OpType::SUBTRACT).GetMesh();
 		} break;
 	}
+	manifold_mesh[0].Refine(1);
 	manifold::Mesh mesh = manifold_mesh[0].GetMesh();
 	manifold::MeshRelation mesh_relation = manifold_mesh[0].GetMeshRelation();
 	r_merged_brush.faces.resize(mesh.triVerts.size());
