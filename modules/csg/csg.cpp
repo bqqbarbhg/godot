@@ -364,7 +364,7 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 			// triProperties[face_i] = mesh.triVerts[face_i];
 		}
 		// manifold_mesh[i] = manifold::Manifold(mesh, triProperties, properties, propertyTolerance);
-		 manifold_mesh[i] = manifold::Manifold(mesh);
+		 manifold_mesh[i] = manifold::Manifold(mesh, p_vertex_snap);
 		// std::vector<int> mesh_ids = manifold_mesh[i].GetMeshIDs();
 		// for (int32_t id : mesh_ids) {
 		// 	mesh_id_properties[id] = properties;
