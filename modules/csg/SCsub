@@ -6,6 +6,59 @@ Import("env_modules")
 # Godot's own source files
 env_csg = env_modules.Clone()
 
+# Thirdparty source files
+
+thirdparty_obj = []
+
+thirdparty_dir = "#thirdparty/manifold/"
+thirdparty_sources = [
+    "polygon/src/polygon.cpp",
+    "manifold/src/constructors.cu.gen.cpp",
+    "manifold/src/edge_op.cu.gen.cpp",
+    "manifold/src/face_op.cu.gen.cpp",
+    "manifold/src/impl.cu.gen.cpp",
+    "manifold/src/boolean_result.cu.gen.cpp",
+    "manifold/src/boolean3.cu.gen.cpp",
+    "manifold/src/manifold.cu.gen.cpp",
+    "manifold/src/properties.cu.gen.cpp",
+    "manifold/src/smoothing.cu.gen.cpp",
+    "manifold/src/sort.cu.gen.cpp",
+    "collider/src/collider.cu.gen.cpp",
+    "polygon/src/polygon.cpp",
+    "third_party/graphlite/src/connected_components.cpp",
+]
+
+import shutil
+import os
+import glob
+
+cu_files = [str(f) for f in Glob("#thirdparty/manifold/manifold/src/*.cu")] + [
+    str(f) for f in Glob("#thirdparty/manifold/collider/src/*.cu")
+]
+
+for file_name in cu_files:
+    if os.path.isfile(file_name):
+        shutil.copy(file_name, file_name + ".gen.cpp")
+
+env_csg.Append(CPPDEFINES=["THRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CPP"])
+
+thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
+env_csg.Prepend(
+    CPPPATH=[
+        thirdparty_dir + "manifold/include",
+        thirdparty_dir + "polygon/include",
+        thirdparty_dir + "utilities/include",
+        thirdparty_dir + "collider/include",
+        thirdparty_dir + "third_party",
+        thirdparty_dir + "third_party/graphlite/include",
+    ]
+)
+
+env_thirdparty = env_csg.Clone()
+env_thirdparty.disable_warnings()
+env_thirdparty.add_source_files(thirdparty_obj, thirdparty_sources)
+env.modules_sources += thirdparty_obj
+
 # Godot's own source files
 env_csg.add_source_files(env.modules_sources, "*.cpp")
 if env["tools"]:
