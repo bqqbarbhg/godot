@@ -334,13 +334,15 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 		mesh.triVerts.resize(mdt->get_face_count());
 		mesh.vertPos.resize(mdt->get_vertex_count());
 		Map<int32_t, Ref<Material>> materials;
-		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
+		for (int32_t vertex_i = 0; vertex_i < mdt->get_vertex_count(); vertex_i++) {
 			Vector3 pos = mdt->get_vertex(vertex_i);
 			mesh.vertPos[vertex_i] = glm::vec3(pos.x, pos.y, pos.z);
 		}
 		for (int face_i = 0; face_i < mdt->get_face_count(); face_i++) {
-			Vector3 triangle_indexes = Vector3(mdt->get_face_vertex(face_i, 0), mdt->get_face_vertex(face_i, 2), mdt->get_face_vertex(face_i, 1));
-			mesh.triVerts[face_i] = glm::vec3(triangle_indexes.x, triangle_indexes.y, triangle_indexes.z);
+			int32_t order[3] = { 0, 2, 1 };
+			for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
+				mesh.triVerts[face_i][order[vertex_i]] = mdt->get_face_vertex(face_i, vertex_i);
+			}
 		}
 		manifold_mesh[i] = manifold::Manifold(mesh);
 	}
@@ -364,10 +366,11 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 	r_merged_brush.materials.clear();
 	for (size_t triangle_i = 0; triangle_i < mesh.triVerts.size(); triangle_i++) {
 		CSGBrush::Face face;
+		// TODO HARD CODED
+		face.smooth = true;
 		int32_t order[3] = { 0, 2, 1 };
 		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
-			int32_t vertex = order[vertex_i];
-			int32_t index = mesh.triVerts[triangle_i][vertex];
+			int32_t index = mesh.triVerts[triangle_i][order[vertex_i]];
 			glm::vec<3, float, glm::packed_highp> position = mesh.vertPos[index];
 			face.vertices[vertex_i] = Vector3(position.x, position.y, position.z);
 		}
