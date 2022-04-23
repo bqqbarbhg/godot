@@ -1822,11 +1822,6 @@ void Node3DEditorViewport::_sinput(const Ref<InputEvent> &p_event) {
 			default: {
 			}
 		}
-
-		// Clear preview material when dropped outside applicable object
-		if (spatial_editor->get_preview_material().is_valid() && !is_drag_successful()) {
-			_remove_preview_material();
-		}
 	}
 
 	Ref<InputEventMagnifyGesture> magnify_gesture = p_event;
@@ -2693,6 +2688,13 @@ void Node3DEditorViewport::_notification(int p_what) {
 			fps_label->add_theme_style_override("normal", gui_base->get_theme_stylebox(SNAME("Information3dViewport"), SNAME("EditorStyles")));
 			cinema_label->add_theme_style_override("normal", gui_base->get_theme_stylebox(SNAME("Information3dViewport"), SNAME("EditorStyles")));
 			locked_label->add_theme_style_override("normal", gui_base->get_theme_stylebox(SNAME("Information3dViewport"), SNAME("EditorStyles")));
+		} break;
+
+		case NOTIFICATION_DRAG_END: {
+			// Clear preview material when dropped outside applicable object.
+			if (spatial_editor->get_preview_material().is_valid() && !is_drag_successful()) {
+				_remove_preview_material();
+			}
 		} break;
 	}
 }
@@ -3893,7 +3895,7 @@ void Node3DEditorViewport::_reset_preview_material() const {
 
 	MeshInstance3D *mesh_instance = Object::cast_to<MeshInstance3D>(last_target_inst);
 	GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(last_target_inst);
-	if (spatial_editor->get_preview_material_surface() != -1 && mesh_instance) {
+	if (mesh_instance && spatial_editor->get_preview_material_surface() != -1) {
 		mesh_instance->set_surface_override_material(spatial_editor->get_preview_material_surface(), spatial_editor->get_preview_reset_material());
 		spatial_editor->set_preview_material_surface(-1);
 	} else if (geometry_instance) {
@@ -4013,12 +4015,12 @@ void Node3DEditorViewport::_perform_drop_data() {
 		GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(ObjectDB::get_instance(spatial_editor->get_preview_material_target()));
 		MeshInstance3D *mesh_instance = Object::cast_to<MeshInstance3D>(ObjectDB::get_instance(spatial_editor->get_preview_material_target()));
 		if (mesh_instance && spatial_editor->get_preview_material_surface() != -1) {
-			editor_data->get_undo_redo().create_action(vformat(TTR("Set surface %d override material"), spatial_editor->get_preview_material_surface()));
+			editor_data->get_undo_redo().create_action(vformat(TTR("Set Surface %d Override Material"), spatial_editor->get_preview_material_surface()));
 			editor_data->get_undo_redo().add_do_method(geometry_instance, "set_surface_override_material", spatial_editor->get_preview_material_surface(), spatial_editor->get_preview_material());
 			editor_data->get_undo_redo().add_undo_method(geometry_instance, "set_surface_override_material", spatial_editor->get_preview_material_surface(), spatial_editor->get_preview_reset_material());
 			editor_data->get_undo_redo().commit_action();
 		} else if (geometry_instance) {
-			editor_data->get_undo_redo().create_action(TTR("Set material override"));
+			editor_data->get_undo_redo().create_action(TTR("Set Material Override"));
 			editor_data->get_undo_redo().add_do_method(geometry_instance, "set_material_override", spatial_editor->get_preview_material());
 			editor_data->get_undo_redo().add_undo_method(geometry_instance, "set_material_override", spatial_editor->get_preview_reset_material());
 			editor_data->get_undo_redo().commit_action();
@@ -7838,9 +7840,6 @@ Node3DEditor::Node3DEditor() {
 	// Drag and drop support;
 	preview_node = memnew(Node3D);
 	preview_bounds = AABB();
-	preview_material = Ref<Material>();
-	preview_reset_material = Ref<Material>();
-	preview_material_target = ObjectID();
 
 	ED_SHORTCUT("spatial_editor/bottom_view", TTR("Bottom View"), KeyModifierMask::ALT + Key::KP_7);
 	ED_SHORTCUT("spatial_editor/top_view", TTR("Top View"), Key::KP_7);
