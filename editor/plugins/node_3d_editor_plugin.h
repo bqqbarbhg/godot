@@ -601,7 +601,7 @@ private:
 	Ref<Material> preview_material;
 	Ref<Material> preview_reset_material;
 	ObjectID preview_material_target;
-	int preview_material_surface;
+	int preview_material_surface = -1;
 
 	struct Gizmo {
 		bool visible = false;
