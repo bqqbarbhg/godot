@@ -34,7 +34,7 @@ class LocklessTaskQueue {
   // Constructor. Preallocates nodes on the task queue list.
   //
   // @param max_tasks Maximum number of tasks on the task queue.
-  explicit LocklessTaskQueue(size_t max_tasks);
+  explicit LocklessTaskQueue(std::size_t max_tasks);
 
   ~LocklessTaskQueue();
 
@@ -102,7 +102,7 @@ class LocklessTaskQueue {
   // Initializes task queue structures and preallocates task queue nodes.
   //
   // @param num_nodes Number of nodes to be initialized on free list.
-  void Init(size_t num_nodes);
+  void Init(std::size_t num_nodes);
 
   // Index to head node of free list.
   std::atomic<TagAndIndex> free_list_head_idx_;
