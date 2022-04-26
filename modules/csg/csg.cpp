@@ -346,7 +346,7 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 		mdt.instantiate();
 		mdt->create_from_surface(st->commit(), 0);
 		std::vector<glm::ivec3> triProperties(mdt->get_face_count(), glm::vec3(-1, -1, -1));
-		std::vector<float> propertyTolerance(mdt->get_face_count() * MANIFOLD_MAX, p_vertex_snap * manifold::kTolerance);
+		std::vector<float> propertyTolerance(mdt->get_face_count() * MANIFOLD_MAX, MAX(p_vertex_snap, manifold::kTolerance));
 		std::vector<float> properties(mdt->get_face_count() * propertyTolerance.size(), -1.0f);
 		manifold::Mesh mesh;
 		mesh.triVerts.resize(mdt->get_face_count());
