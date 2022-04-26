@@ -193,6 +193,7 @@ static void pack_manifold(const CSGBrush *const p_mesh_merge, manifold::Manifold
 		}
 	}
 	st->index();
+	st->generate_normals();
 	Ref<MeshDataTool> mdt;
 	mdt.instantiate();
 	mdt->create_from_surface(st->commit(), 0);
@@ -321,21 +322,29 @@ CSGBrush *CSGShape3D::_get_brush() {
 				manifold_nn.SetAsOriginal();
 				pack_manifold(n, manifold_n, mesh_id_properties, mesh_materials, mesh_face_count, snap);
 				pack_manifold(nn2, manifold_nn2, mesh_id_properties, mesh_materials, mesh_face_count, snap);
-				if (manifold_nn2.IsEmpty() && manifold_nn2.IsEmpty()) {
+				if (manifold_n.IsEmpty() && manifold_nn2.IsEmpty()) {
 					manifold_n = manifold::Manifold();
+					manifold_n.SetAsOriginal();
 					manifold_nn2 = manifold::Manifold();
+					manifold_nn2.SetAsOriginal();
 				} else if (manifold_n.IsEmpty() && !manifold_nn2.IsEmpty()) {
 					manifold_n = manifold::Manifold();
+					manifold_n.SetAsOriginal();
 				} else if (!manifold_n.IsEmpty() && manifold_nn2.IsEmpty()) {
 					manifold_nn2 = manifold::Manifold();
+					manifold_nn2.SetAsOriginal();
 				}
-				if (!manifold_nn2.IsManifold() && !manifold_nn2.IsManifold()) {
+				if (!manifold_n.IsManifold() && !manifold_nn2.IsManifold()) {
 					manifold_n = manifold::Manifold();
+					manifold_n.SetAsOriginal();
 					manifold_nn2 = manifold::Manifold();
+					manifold_nn2.SetAsOriginal();
 				} else if (manifold_n.IsManifold() && !manifold_nn2.IsManifold()) {
 					manifold_nn2 = manifold::Manifold();
+					manifold_nn2.SetAsOriginal();
 				} else if (!manifold_n.IsManifold() && manifold_nn2.IsManifold()) {
 					manifold_n = manifold::Manifold();
+					manifold_n.SetAsOriginal();
 				}
 				switch (child->get_operation()) {
 					case CSGShape3D::OPERATION_UNION:
@@ -351,6 +360,7 @@ CSGBrush *CSGShape3D::_get_brush() {
 				if (!manifold_nn.IsManifold() || manifold_nn.IsEmpty()) {
 					ERR_PRINT("The csg mesh is not manifold.");
 					manifold_nn = manifold::Manifold();
+					manifold_nn.SetAsOriginal();
 				}
 				unpack_manifold(manifold_nn, mesh_id_properties, mesh_materials, mesh_face_count, nn);
 				memdelete(n);
