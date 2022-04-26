@@ -389,6 +389,8 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 		mesh_materials[manifold_mesh[brush_i].GetMeshIDs()[0]] = materials;
 		mesh_id_properties[manifold_mesh[brush_i].GetMeshIDs()[0]] = properties;
 		mesh_face_count[manifold_mesh[brush_i].GetMeshIDs()[0]] = mdt->get_face_count();
+		manifold_mesh[brush_i] = manifold_mesh[brush_i].Refine(2);
+		manifold_mesh[brush_i] = manifold_mesh[brush_i].Refine(-2);
 	}
 	if (manifold_mesh[0].IsEmpty()) {
 		return;
