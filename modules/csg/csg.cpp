@@ -346,7 +346,7 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 		mdt.instantiate();
 		mdt->create_from_surface(st->commit(), 0);
 		std::vector<glm::ivec3> triProperties(mdt->get_face_count(), glm::vec3(-1, -1, -1));
-		std::vector<float> propertyTolerance(mdt->get_face_count() * MANIFOLD_MAX, p_vertex_snap * manifold::kTolerance);
+		std::vector<float> propertyTolerance(mdt->get_face_count() * MANIFOLD_MAX, p_vertex_snap);
 		std::vector<float> properties(mdt->get_face_count() * propertyTolerance.size(), -1.0f);
 		manifold::Mesh mesh;
 		mesh.triVerts.resize(mdt->get_face_count());
@@ -438,13 +438,13 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 			face.invert = properties[face_index * mesh_faces + MANIFOLD_PROPERTY_INVERT * MANIFOLD_MAX];
 			int mat_index = properties[face_index * mesh_faces + MANIFOLD_PROPERTY_MATERIAL * MANIFOLD_MAX];
 			Ref<Material> material = mesh_materials[it][mat_index];
-			if (!r_merged_brush.materials.has(material)) {
-				int32_t new_index = r_merged_brush.materials.size();
+			int elem = r_merged_brush.materials.find(material);
+			if (elem == -1 && material.is_valid()) {
+				int32_t material_index = r_merged_brush.materials.size();
 				r_merged_brush.materials.push_back(material);
-				face.material = new_index;
-			} else {
-				face.material = r_merged_brush.materials.find(material);
+				elem = material_index;
 			}
+			face.material = elem;
 			for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
 				face.uvs[vertex_i].x = mesh_id_properties[it][face_index * mesh_faces + MANIFOLD_PROPERTY_UV_X_0 * MANIFOLD_MAX + vertex_i];
 				face.uvs[vertex_i].y = mesh_id_properties[it][face_index * mesh_faces + MANIFOLD_PROPERTY_UV_Y_0 * MANIFOLD_MAX + vertex_i];

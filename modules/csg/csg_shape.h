@@ -60,7 +60,7 @@ private:
 
 	bool dirty = false;
 	bool last_visible = false;
-	float snap = 0.1;
+	float snap = 1e-5;
 
 	bool use_collision = false;
 	uint32_t collision_layer = 1;
