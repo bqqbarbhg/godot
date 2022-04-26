@@ -181,25 +181,28 @@ static void pack_manifold(const CSGBrush *const p_mesh_merge, manifold::Manifold
 	st.instantiate();
 	st->begin(Mesh::PRIMITIVE_TRIANGLES);
 	for (int face_i = 0; face_i < p_mesh_merge->faces.size(); face_i++) {
+		const CSGBrush::Face &face = p_mesh_merge->faces[face_i];
 		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
-			st->set_smooth_group(p_mesh_merge->faces[face_i].smooth);
-			int32_t mat_id = p_mesh_merge->faces[face_i].material;
+			st->set_smooth_group(face.smooth);
+			int32_t mat_id = face.material;
 			if (mat_id == -1 || mat_id >= p_mesh_merge->materials.size()) {
 				st->set_material(Ref<Material>());
 			} else {
 				st->set_material(p_mesh_merge->materials[mat_id]);
 			}
-			st->add_vertex(p_mesh_merge->faces[face_i].vertices[vertex_i]);
+			st->set_uv(face.uvs[vertex_i]);
+			st->add_vertex(face.vertices[vertex_i]);
 		}
 	}
 	st->index();
 	st->generate_normals();
+	st->generate_tangents();
 	Ref<MeshDataTool> mdt;
 	mdt.instantiate();
 	mdt->create_from_surface(st->commit(), 0);
 	std::vector<glm::ivec3> triProperties(mdt->get_face_count(), glm::vec3(-1, -1, -1));
 	std::vector<float> propertyTolerance(mdt->get_face_count() * MANIFOLD_MAX, p_snap);
-	std::vector<float> properties(mdt->get_face_count() * propertyTolerance.size(), -1.0f);
+	std::vector<float> properties(mdt->get_face_count() * propertyTolerance.size(), NAN);
 	manifold::Mesh mesh;
 	mesh.triVerts.resize(mdt->get_face_count());
 	mesh.vertPos.resize(mdt->get_vertex_count());
@@ -316,11 +319,10 @@ CSGBrush *CSGShape3D::_get_brush() {
 				Map<int64_t, Map<int32_t, Ref<Material>>> mesh_materials;
 				Map<int64_t, int> mesh_face_count;
 				manifold::Manifold manifold_n;
+				manifold_n.SetAsOriginal();
+				pack_manifold(n, manifold_n, mesh_id_properties, mesh_materials, mesh_face_count, snap);
 				manifold::Manifold manifold_nn2 = manifold_n;
 				manifold_nn2.SetAsOriginal();
-				manifold::Manifold manifold_nn = manifold_nn2;
-				manifold_nn.SetAsOriginal();
-				pack_manifold(n, manifold_n, mesh_id_properties, mesh_materials, mesh_face_count, snap);
 				pack_manifold(nn2, manifold_nn2, mesh_id_properties, mesh_materials, mesh_face_count, snap);
 				if (manifold_n.IsEmpty() && manifold_nn2.IsEmpty()) {
 					manifold_n = manifold::Manifold();
@@ -346,6 +348,8 @@ CSGBrush *CSGShape3D::_get_brush() {
 					manifold_n = manifold::Manifold();
 					manifold_n.SetAsOriginal();
 				}
+				manifold::Manifold manifold_nn = manifold_nn2;
+				manifold_nn.SetAsOriginal();
 				switch (child->get_operation()) {
 					case CSGShape3D::OPERATION_UNION:
 						manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::ADD);
