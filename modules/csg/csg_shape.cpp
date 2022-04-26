@@ -285,8 +285,6 @@ CSGBrush *CSGShape3D::_get_brush() {
 						manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::SUBTRACT);
 						break;
 				}
-				manifold_nn.Refine(2);
-				manifold_nn.Refine(-2);
 				unpack_manifold(manifold_nn, nn);
 				memdelete(n);
 				memdelete(nn2);
