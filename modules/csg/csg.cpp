@@ -322,12 +322,12 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 	enum {
 		MANIFOLD_PROPERTY_INVERT = 0,
 		MANIFOLD_PROPERTY_SMOOTH_GROUP,
-		MANIFOLD_PROPERTY_UV_X_0,
-		MANIFOLD_PROPERTY_UV_X_1,
-		MANIFOLD_PROPERTY_UV_X_2,
-		MANIFOLD_PROPERTY_UV_Y_0,
-		MANIFOLD_PROPERTY_UV_Y_1,
-		MANIFOLD_PROPERTY_UV_Y_2,
+		// MANIFOLD_PROPERTY_UV_X_0,
+		// MANIFOLD_PROPERTY_UV_X_1,
+		// MANIFOLD_PROPERTY_UV_X_2,
+		// MANIFOLD_PROPERTY_UV_Y_0,
+		// MANIFOLD_PROPERTY_UV_Y_1,
+		// MANIFOLD_PROPERTY_UV_Y_2,
 		MANIFOLD_PROPERTY_MATERIAL,
 		MANIFOLD_MAX
 	};
@@ -370,8 +370,8 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 				int32_t face_vertex_index = mdt->get_face_vertex(face_i, vertex_i);
 				Vector3 pos = mdt->get_vertex(face_vertex_index);
 				mesh.vertPos[face_vertex_index] = glm::vec3(pos.x, pos.y, pos.z);
-				properties[face_i * mdt->get_face_count() + MANIFOLD_PROPERTY_UV_X_0 * MANIFOLD_MAX + vertex_i] = p_brush[brush_i]->faces[face_i].uvs[vertex_i].x;
-				properties[face_i * mdt->get_face_count() + MANIFOLD_PROPERTY_UV_Y_0 * MANIFOLD_MAX + vertex_i] = p_brush[brush_i]->faces[face_i].uvs[vertex_i].y;
+				// properties[face_i * mdt->get_face_count() + MANIFOLD_PROPERTY_UV_X_0 * MANIFOLD_MAX + vertex_i] = p_brush[brush_i]->faces[face_i].uvs[vertex_i].x;
+				// properties[face_i * mdt->get_face_count() + MANIFOLD_PROPERTY_UV_Y_0 * MANIFOLD_MAX + vertex_i] = p_brush[brush_i]->faces[face_i].uvs[vertex_i].y;
 			}
 		}
 		if (mesh.vertPos.empty()) {
@@ -446,8 +446,8 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 			}
 			face.material = elem;
 			for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
-				face.uvs[vertex_i].x = mesh_id_properties[it][face_index * mesh_faces + MANIFOLD_PROPERTY_UV_X_0 * MANIFOLD_MAX + vertex_i];
-				face.uvs[vertex_i].y = mesh_id_properties[it][face_index * mesh_faces + MANIFOLD_PROPERTY_UV_Y_0 * MANIFOLD_MAX + vertex_i];
+				// face.uvs[vertex_i].x = mesh_id_properties[it][face_index * mesh_faces + MANIFOLD_PROPERTY_UV_X_0 * MANIFOLD_MAX + vertex_i];
+				// face.uvs[vertex_i].y = mesh_id_properties[it][face_index * mesh_faces + MANIFOLD_PROPERTY_UV_Y_0 * MANIFOLD_MAX + vertex_i];
 			}
 		}
 		r_merged_brush.faces.write[triangle_i] = face;
