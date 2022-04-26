@@ -315,7 +315,10 @@ CSGBrush *CSGShape3D::_get_brush() {
 				Map<int64_t, Map<int32_t, Ref<Material>>> mesh_materials;
 				Map<int64_t, int> mesh_face_count;
 				manifold::Manifold manifold_n;
-				manifold::Manifold manifold_nn2;
+				manifold::Manifold manifold_nn2 = manifold_n;
+				manifold_nn2.SetAsOriginal();
+				manifold::Manifold manifold_nn = manifold_nn2;
+				manifold_nn.SetAsOriginal();
 				pack_manifold(n, manifold_n, mesh_id_properties, mesh_materials, mesh_face_count, snap);
 				pack_manifold(nn2, manifold_nn2, mesh_id_properties, mesh_materials, mesh_face_count, snap);
 				if (manifold_nn2.IsEmpty() && manifold_nn2.IsEmpty()) {
@@ -334,7 +337,6 @@ CSGBrush *CSGShape3D::_get_brush() {
 				} else if (!manifold_n.IsManifold() && manifold_nn2.IsManifold()) {
 					manifold_n = manifold::Manifold();
 				}
-				manifold::Manifold manifold_nn;
 				switch (child->get_operation()) {
 					case CSGShape3D::OPERATION_UNION:
 						manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::ADD);
