@@ -338,12 +338,10 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 		st->begin(Mesh::PRIMITIVE_TRIANGLES);
 		for (int face_i = 0; face_i < p_brush[brush_i]->faces.size(); face_i++) {
 			for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
-				st->set_smooth_group(p_brush[brush_i]->faces[face_i].smooth);
 				st->add_vertex(p_brush[brush_i]->faces[face_i].vertices[vertex_i]);
 			}
 		}
 		st->index();
-		st->generate_normals();
 		Ref<MeshDataTool> mdt;
 		mdt.instantiate();
 		mdt->create_from_surface(st->commit(), 0);
@@ -353,13 +351,10 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 		manifold::Mesh mesh;
 		mesh.triVerts.resize(mdt->get_face_count());
 		mesh.vertPos.resize(mdt->get_vertex_count());
-		mesh.vertNormal.resize(mdt->get_vertex_count());
 		Map<int32_t, Ref<Material>> materials;
 		for (int32_t vertex_i = 0; vertex_i < mdt->get_vertex_count(); vertex_i++) {
 			Vector3 pos = mdt->get_vertex(vertex_i);
 			mesh.vertPos[vertex_i] = glm::vec3(pos.x, pos.y, pos.z);
-			Vector3 normal = mdt->get_vertex_normal(vertex_i);
-			mesh.vertNormal[vertex_i] = glm::vec3(normal.x, normal.y, normal.z);
 		}
 		for (int face_i = 0; face_i < mdt->get_face_count(); face_i++) {
 			int32_t order[3] = { 0, 2, 1 };
