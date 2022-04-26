@@ -181,22 +181,18 @@ static void pack_manifold(const CSGBrush *const p_mesh_merge, manifold::Manifold
 	st.instantiate();
 	st->begin(Mesh::PRIMITIVE_TRIANGLES);
 	for (int face_i = 0; face_i < p_mesh_merge->faces.size(); face_i++) {
-		const CSGBrush::Face &face = p_mesh_merge->faces[face_i];
 		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
-			st->set_smooth_group(face.smooth);
-			int32_t mat_id = face.material;
+			st->set_smooth_group(p_mesh_merge->faces[face_i].smooth);
+			int32_t mat_id = p_mesh_merge->faces[face_i].material;
 			if (mat_id == -1 || mat_id >= p_mesh_merge->materials.size()) {
 				st->set_material(Ref<Material>());
 			} else {
 				st->set_material(p_mesh_merge->materials[mat_id]);
 			}
-			st->set_uv(face.uvs[vertex_i]);
-			st->add_vertex(face.vertices[vertex_i]);
+			st->add_vertex(p_mesh_merge->faces[face_i].vertices[vertex_i]);
 		}
 	}
 	st->index();
-	st->generate_normals();
-	st->generate_tangents();
 	Ref<MeshDataTool> mdt;
 	mdt.instantiate();
 	mdt->create_from_surface(st->commit(), 0);
