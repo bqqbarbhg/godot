@@ -374,12 +374,6 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 				properties[face_i * mdt->get_face_count() + MANIFOLD_PROPERTY_UV_Y_0 * MANIFOLD_MAX + vertex_i] = p_brush[brush_i]->faces[face_i].uvs[vertex_i].y;
 			}
 		}
-		if (mesh.vertPos.empty()) {
-			continue;
-		}
-		if (mesh.triVerts.empty()) {
-			continue;
-		}
 		try {
 			manifold_mesh[brush_i] = manifold::Manifold(mesh, triProperties, properties, propertyTolerance);
 		} catch (const std::exception &e) {
@@ -389,12 +383,6 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 		mesh_materials[manifold_mesh[brush_i].GetMeshIDs()[0]] = materials;
 		mesh_id_properties[manifold_mesh[brush_i].GetMeshIDs()[0]] = properties;
 		mesh_face_count[manifold_mesh[brush_i].GetMeshIDs()[0]] = mdt->get_face_count();
-	}
-	if (manifold_mesh[0].IsEmpty()) {
-		return;
-	}
-	if (manifold_mesh[1].IsEmpty()) {
-		return;
 	}
 	switch (p_operation) {
 		case OPERATION_UNION: {
@@ -415,7 +403,7 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 	std::vector<int> mesh_ids = manifold_mesh[0].MeshID2Original();
 	r_merged_brush.materials.clear();
 	for (size_t triangle_i = 0; triangle_i < mesh.triVerts.size(); triangle_i++) {
-		CSGBrush::Face face;
+		CSGBrush::Face &face = r_merged_brush.faces.write[triangle_i];
 		int32_t order[3] = { 0, 2, 1 };
 		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
 			int32_t index = mesh.triVerts[triangle_i][order[vertex_i]];
@@ -432,7 +420,7 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 			if (!mesh_materials.has(it)) {
 				continue;
 			}
-			std::vector<float> properties = mesh_id_properties[it];
+			std::vector<float> &properties = mesh_id_properties[it];
 			int32_t mesh_faces = mesh_face_count[it];
 			face.smooth = properties[face_index * mesh_faces + MANIFOLD_PROPERTY_SMOOTH_GROUP * MANIFOLD_MAX];
 			face.invert = properties[face_index * mesh_faces + MANIFOLD_PROPERTY_INVERT * MANIFOLD_MAX];
@@ -446,11 +434,11 @@ void CSGBrushOperation::merge_brushes(Operation p_operation, const CSGBrush &p_b
 				face.material = r_merged_brush.materials.find(material);
 			}
 			for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
-				face.uvs[vertex_i].x = mesh_id_properties[it][face_index * mesh_faces + MANIFOLD_PROPERTY_UV_X_0 * MANIFOLD_MAX + vertex_i];
-				face.uvs[vertex_i].y = mesh_id_properties[it][face_index * mesh_faces + MANIFOLD_PROPERTY_UV_Y_0 * MANIFOLD_MAX + vertex_i];
+				Vector2 uv = Vector2(mesh_id_properties[it][face_index * mesh_faces + MANIFOLD_PROPERTY_UV_X_0 * MANIFOLD_MAX + vertex_i], 
+					mesh_id_properties[it][face_index * mesh_faces + MANIFOLD_PROPERTY_UV_Y_0 * MANIFOLD_MAX + vertex_i]);
+				face.uvs[vertex_i] = uv;
 			}
 		}
-		r_merged_brush.faces.write[triangle_i] = face;
 	}
 	r_merged_brush._regen_face_aabbs();
 }
