@@ -210,13 +210,16 @@ static void unpack_manifold(const manifold::Manifold &p_manifold, CSGBrush *r_me
 	constexpr int32_t order[3] = { 0, 2, 1 };
 	for (size_t triangle_i = 0; triangle_i < mesh.triVerts.size(); triangle_i++) {
 		CSGBrush::Face &face = r_mesh_merge->faces.write[triangle_i];
+		face.smooth = true;
 		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
 			int32_t index = mesh.triVerts[triangle_i][order[vertex_i]];
 			glm::vec3 position = mesh.vertPos[index];
 			face.vertices[vertex_i] = Vector3(position.x, position.y, position.z);
 		}
 	}
+	r_mesh_merge->_regen_face_aabbs();
 }
+
 CSGBrush *CSGShape3D::_get_brush() {
 	if (dirty) {
 		if (brush) {
@@ -253,16 +256,23 @@ CSGBrush *CSGShape3D::_get_brush() {
 				manifold::Manifold manifold_n;
 				pack_manifold(n, manifold_n, snap);
 				manifold::Manifold manifold_nn2;
-				if (!manifold_n.IsManifold() || manifold_n.IsEmpty()) {
-					pack_manifold(nn2, manifold_nn2, snap);
-					manifold_n = manifold_nn2;
-				} else {
-					pack_manifold(nn2, manifold_nn2, snap);
+				pack_manifold(nn2, manifold_nn2, snap);
+				if (manifold_nn2.IsEmpty() && manifold_nn2.IsEmpty()) {
+					manifold_n = manifold::Manifold();
+					manifold_nn2 = manifold::Manifold();
+				} else if (manifold_n.IsEmpty() && !manifold_nn2.IsEmpty()) {
+					manifold_n = manifold::Manifold();
+				} else if (!manifold_n.IsEmpty() && manifold_nn2.IsEmpty()) {
+					manifold_nn2 = manifold::Manifold();
 				}
-				if (!manifold_nn2.IsManifold() || manifold_nn2.IsEmpty()) {
-					continue;
+				if (!manifold_nn2.IsManifold() && !manifold_nn2.IsManifold()) {
+					manifold_n = manifold::Manifold();
+					manifold_nn2 = manifold::Manifold();
+				} else if (manifold_n.IsManifold() && !manifold_nn2.IsManifold()) {
+					manifold_nn2 = manifold::Manifold();
+				} else if (!manifold_n.IsManifold() && manifold_nn2.IsManifold()) {
+					manifold_n = manifold::Manifold();
 				}
-				manifold_nn2.Refine(2);
 				manifold::Manifold manifold_nn;
 				switch (child->get_operation()) {
 					case CSGShape3D::OPERATION_UNION:
@@ -275,6 +285,7 @@ CSGBrush *CSGShape3D::_get_brush() {
 						manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::SUBTRACT);
 						break;
 				}
+				manifold_nn.Refine(2);
 				manifold_nn.Refine(-2);
 				unpack_manifold(manifold_nn, nn);
 				memdelete(n);
