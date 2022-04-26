@@ -210,13 +210,13 @@ static void pack_manifold(const CSGBrush *const p_mesh_merge, manifold::Manifold
 		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
 			int32_t index = mdt->get_face_vertex(face_i, vertex_i);
 			mesh.triVerts[face_i][order[vertex_i]] = index;
-			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP] = p_mesh_merge->faces[face_i].smooth;
-			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT] = p_mesh_merge->faces[face_i].invert;
-			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_PLACEHOLDER_MATERIAL] = p_mesh_merge->faces[face_i].material;
 			materials[face_i] = mdt->get_material();
 			Vector3 pos = mdt->get_vertex(index);
 			mesh.vertPos[index] = glm::vec3(pos.x, pos.y, pos.z);
 			triProperties[face_i][order[vertex_i]] = mdt->get_face_vertex(face_i, vertex_i);
+			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP] = p_mesh_merge->faces[face_i].smooth;
+			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT] = p_mesh_merge->faces[face_i].invert;
+			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_PLACEHOLDER_MATERIAL] = p_mesh_merge->faces[face_i].material;
 			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0 + vertex_i] = p_mesh_merge->faces[face_i].uvs[vertex_i].x;
 			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i] = p_mesh_merge->faces[face_i].uvs[vertex_i].y;
 		}
@@ -260,11 +260,18 @@ static void unpack_manifold(const manifold::Manifold &p_manifold,
 				continue;
 			}
 			const std::vector<float> &properties = mesh_id_properties[it];
-			face.smooth = properties[face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP];
-			face.invert = properties[face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT];
+			if (face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP < properties.size()) {
+				face.smooth = properties[face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP];
+			}
+			if (face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT < properties.size()) {
+				face.invert = properties[face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT];
+			}
 			for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
-				face.uvs[vertex_i].x = mesh_id_properties[it][face_index + MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0 + vertex_i];
-				face.uvs[vertex_i].y = mesh_id_properties[it][face_index + MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i];
+				if (face_index + MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i >= properties.size()) {
+					continue;
+				}
+				face.uvs[vertex_i].x = properties[face_index + MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0 + vertex_i];
+				face.uvs[vertex_i].y = properties[face_index + MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i];
 			}
 			if (!mesh_materials[it].has(face_index)) {
 				continue;
