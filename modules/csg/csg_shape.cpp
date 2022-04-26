@@ -198,8 +198,8 @@ static void pack_manifold(const CSGBrush *const p_mesh_merge, manifold::Manifold
 	mdt.instantiate();
 	mdt->create_from_surface(st->commit(), 0);
 	std::vector<glm::ivec3> triProperties(mdt->get_face_count(), glm::vec3(-1, -1, -1));
-	std::vector<float> propertyTolerance(mdt->get_face_count() * MANIFOLD_MAX, p_snap);
-	std::vector<float> properties(mdt->get_face_count() * propertyTolerance.size(), NAN);
+	std::vector<float> propertyTolerance(MANIFOLD_MAX, p_snap);
+	std::vector<float> properties(mdt->get_face_count() * MANIFOLD_MAX, NAN);
 	manifold::Mesh mesh;
 	mesh.triVerts.resize(mdt->get_face_count());
 	mesh.vertPos.resize(mdt->get_vertex_count());
@@ -207,18 +207,18 @@ static void pack_manifold(const CSGBrush *const p_mesh_merge, manifold::Manifold
 	Map<int32_t, Ref<Material>> materials;
 	constexpr int32_t order[3] = { 0, 2, 1 };
 	for (int face_i = 0; face_i < mdt->get_face_count(); face_i++) {
-		properties[face_i * mdt->get_face_count() + MANIFOLD_PROPERTY_SMOOTH_GROUP * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP] = p_mesh_merge->faces[face_i].smooth;
-		properties[face_i * mdt->get_face_count() + MANIFOLD_PROPERTY_INVERT * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT] = p_mesh_merge->faces[face_i].invert;
-		properties[face_i * mdt->get_face_count() + MANIFOLD_PROPERTY_PLACEHOLDER_MATERIAL * MANIFOLD_MAX + MANIFOLD_PROPERTY_PLACEHOLDER_MATERIAL] = p_mesh_merge->faces[face_i].material;
 		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
 			int32_t index = mdt->get_face_vertex(face_i, vertex_i);
 			mesh.triVerts[face_i][order[vertex_i]] = index;
+			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP] = p_mesh_merge->faces[face_i].smooth;
+			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT] = p_mesh_merge->faces[face_i].invert;
+			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_PLACEHOLDER_MATERIAL] = p_mesh_merge->faces[face_i].material;
 			materials[face_i] = mdt->get_material();
 			Vector3 pos = mdt->get_vertex(index);
 			mesh.vertPos[index] = glm::vec3(pos.x, pos.y, pos.z);
 			triProperties[face_i][order[vertex_i]] = mdt->get_face_vertex(face_i, vertex_i);
-			properties[face_i * mdt->get_face_count() + MANIFOLD_PROPERTY_UV_X_0 * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0 + vertex_i] = p_mesh_merge->faces[face_i].uvs[vertex_i].x;
-			properties[face_i * mdt->get_face_count() + MANIFOLD_PROPERTY_UV_Y_0 * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i] = p_mesh_merge->faces[face_i].uvs[vertex_i].y;
+			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0 + vertex_i] = p_mesh_merge->faces[face_i].uvs[vertex_i].x;
+			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i] = p_mesh_merge->faces[face_i].uvs[vertex_i].y;
 		}
 	}
 	try {
@@ -260,12 +260,11 @@ static void unpack_manifold(const manifold::Manifold &p_manifold,
 				continue;
 			}
 			const std::vector<float> &properties = mesh_id_properties[it];
-			int32_t mesh_faces = mesh_face_count[it];
-			face.smooth = properties[face_index * mesh_faces + MANIFOLD_PROPERTY_SMOOTH_GROUP * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP];
-			face.invert = properties[face_index * mesh_faces + MANIFOLD_PROPERTY_INVERT * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT];
+			face.smooth = properties[face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP];
+			face.invert = properties[face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT];
 			for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
-				face.uvs[vertex_i].x = mesh_id_properties[it][face_index * mesh_faces + MANIFOLD_PROPERTY_UV_X_0 * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0 + vertex_i];
-				face.uvs[vertex_i].y = mesh_id_properties[it][face_index * mesh_faces + MANIFOLD_PROPERTY_UV_Y_0 * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i];
+				face.uvs[vertex_i].x = mesh_id_properties[it][face_index + MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0 + vertex_i];
+				face.uvs[vertex_i].y = mesh_id_properties[it][face_index + MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i];
 			}
 			if (!mesh_materials[it].has(face_index)) {
 				continue;
