@@ -1,0 +1,2 @@
+add_subdirectory(google_test)
+add_subdirectory(graphlite)
