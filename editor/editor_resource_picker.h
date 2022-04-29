@@ -61,7 +61,7 @@ class EditorResourcePicker : public HBoxContainer {
 	enum MenuOption {
 		OBJ_MENU_LOAD,
 		OBJ_MENU_QUICKLOAD,
-		OBJ_MENU_EDIT,
+		OBJ_MENU_EDIT_OR_INSPECT,
 		OBJ_MENU_CLEAR,
 		OBJ_MENU_MAKE_UNIQUE,
 		OBJ_MENU_SAVE,
