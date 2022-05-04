@@ -99,6 +99,33 @@ bool NavigationPolygonEditor::_has_resource() const {
 	return node && node->get_navigation_polygon().is_valid();
 }
 
+bool NavigationPolygonEditor::_resource_is_foreign() const {
+	if (node) {
+		Ref<NavigationPolygon> navigation_polygon = node->get_navigation_polygon();
+		if (navigation_polygon.is_valid()) {
+			String path = navigation_polygon->get_path();
+			int srpos = path.find("::");
+			if (srpos != -1) {
+				String base = path.substr(0, srpos);
+				if (!base.is_resource_file()) {
+					if (!get_tree()->get_edited_scene_root() || get_tree()->get_edited_scene_root()->get_scene_file_path() != base) {
+						return true;
+					}
+				} else {
+					if (FileAccess::exists(base + ".import")) {
+						return true;
+					}
+				}
+			} else {
+				if (FileAccess::exists(navigation_polygon->get_path() + ".import")) {
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
 void NavigationPolygonEditor::_create_resource() {
 	if (!node) {
 		return;
