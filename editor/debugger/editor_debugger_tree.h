@@ -48,7 +48,8 @@ private:
 	ObjectID inspected_object_id;
 	int debugger_id = 0;
 	bool updating_scene_tree = false;
-	Set<ObjectID> unfold_cache;
+	Set<ObjectID> unfiltered_unfold_cache;
+	Set<ObjectID> filter_unfold_cache;
 	PopupMenu *item_menu = nullptr;
 	EditorFileDialog *file_dialog = nullptr;
 	String last_filter;

@@ -92,11 +92,19 @@ void EditorDebuggerTree::_scene_tree_folded(Object *p_obj) {
 		return;
 	}
 
-	ObjectID id = ObjectID(uint64_t(item->get_metadata(0)));
-	if (unfold_cache.has(id)) {
-		unfold_cache.erase(id);
+	const String filter = SceneTreeDock::get_singleton()->get_filter();
+	Set<ObjectID> *current_cache = nullptr;
+	if (filter.is_empty()) {
+		current_cache = &unfiltered_unfold_cache;
 	} else {
-		unfold_cache.insert(id);
+		current_cache = &filter_unfold_cache;
+	}
+
+	ObjectID id = ObjectID(uint64_t(item->get_metadata(0)));
+	if (current_cache->has(id)) {
+		current_cache->erase(id);
+	} else {
+		current_cache->insert(id);
 	}
 }
 
@@ -136,6 +144,16 @@ void EditorDebuggerTree::update_scene_tree(const SceneDebuggerTree *p_tree, int 
 	bool filter_changed = filter != last_filter;
 	TreeItem *scroll_item = nullptr;
 
+	Set<ObjectID> *current_cache = nullptr;
+	if (filter.is_empty()) {
+		current_cache = &unfiltered_unfold_cache;
+	} else {
+		current_cache = &filter_unfold_cache;
+		if (filter_changed) {
+			current_cache->clear();
+		}
+	}
+
 	// Nodes are in a flatten list, depth first. Use a stack of parents, avoid recursion.
 	List<Pair<TreeItem *, int>> parents;
 	for (int i = 0; i < p_tree->nodes.size(); i++) {
@@ -160,7 +178,7 @@ void EditorDebuggerTree::update_scene_tree(const SceneDebuggerTree *p_tree, int 
 
 		// Set current item as collapsed if necessary (root is never collapsed)
 		if (parent) {
-			if (!unfold_cache.has(node.id)) {
+			if (!current_cache->has(node.id)) {
 				item->set_collapsed(true);
 			}
 		}
@@ -188,11 +206,45 @@ void EditorDebuggerTree::update_scene_tree(const SceneDebuggerTree *p_tree, int 
 			parents.push_front(Pair<TreeItem *, int>(item, node.child_count));
 		} else {
 			// Apply filters.
+			bool has_filtered_child_item = false;
+
 			while (parent) {
-				const bool had_siblings = item->get_prev() || item->get_next();
+				const bool had_siblings = (item->get_prev() || item->get_next());
 				if (filter.is_subsequence_ofn(item->get_text(0))) {
-					break; // Filter matches, must survive.
+					has_filtered_child_item = true; // Filter matches, parents must survive, but can be disabled.
+					if (filter_changed) {
+						ObjectID id = ObjectID(uint64_t(item->get_metadata(0)));
+						if (id == inspected_object_id) {
+							item->select(0);
+							if (filter_changed) {
+								scroll_item = item;
+							}
+						}
+					}
+					item = parent;
+					parent = item->get_parent();
+
+					continue;
+				} else if (has_filtered_child_item) {
+					item->set_selectable(0, false);
+					item->set_custom_color(0, get_theme_color(SNAME("disabled_font_color"), SNAME("Editor")));
+					if (filter_changed) {
+						ObjectID id = ObjectID(uint64_t(item->get_metadata(0)));
+						current_cache->insert(id);
+						item->set_collapsed(false);
+						item->deselect(0);
+						if (inspected_object_id == item->get_metadata(0)) {
+							inspected_object_id = ObjectID();
+						}
+						if (scroll_item == item) {
+							scroll_item = nullptr;
+						}
+					}
+					item = parent;
+					parent = item->get_parent();
+					continue;
 				}
+
 				parent->remove_child(item);
 				memdelete(item);
 				if (scroll_item == item) {
