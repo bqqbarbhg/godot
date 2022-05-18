@@ -278,6 +278,13 @@ void RenderForwardClustered::_allocate_normal_roughness_texture(RenderBufferData
 	tf.width = rb->width;
 	tf.height = rb->height;
 	tf.usage_bits = RD::TEXTURE_USAGE_SAMPLING_BIT | RD::TEXTURE_USAGE_STORAGE_BIT;
+	if (rb->view_count > 1) {
+		tf.texture_type = RD::TEXTURE_TYPE_2D_ARRAY;
+	}
+	else {
+		tf.texture_type = RD::TEXTURE_TYPE_2D;
+	}
+	tf.array_layers = rb->view_count; // create a layer for every view
 
 	if (rb->msaa != RS::VIEWPORT_MSAA_DISABLED) {
 		tf.usage_bits |= RD::TEXTURE_USAGE_CAN_COPY_TO_BIT | RD::TEXTURE_USAGE_STORAGE_BIT;
@@ -291,7 +298,7 @@ void RenderForwardClustered::_allocate_normal_roughness_texture(RenderBufferData
 		Vector<RID> fb;
 		fb.push_back(rb->depth);
 		fb.push_back(rb->normal_roughness_buffer);
-		rb->depth_normal_roughness_fb = RD::get_singleton()->framebuffer_create(fb);
+		rb->depth_normal_roughness_fb = RD::get_singleton()->framebuffer_create(fb, RenderingDevice::INVALID_ID, rb->view_count);
 	} else {
 		tf.usage_bits = RD::TEXTURE_USAGE_COLOR_ATTACHMENT_BIT | RD::TEXTURE_USAGE_CAN_COPY_FROM_BIT | RD::TEXTURE_USAGE_SAMPLING_BIT | RD::TEXTURE_USAGE_STORAGE_BIT;
 		tf.samples = rb->texture_samples;
@@ -300,7 +307,7 @@ void RenderForwardClustered::_allocate_normal_roughness_texture(RenderBufferData
 		Vector<RID> fb;
 		fb.push_back(rb->depth_msaa);
 		fb.push_back(rb->normal_roughness_buffer_msaa);
-		rb->depth_normal_roughness_fb = RD::get_singleton()->framebuffer_create(fb);
+		rb->depth_normal_roughness_fb = RD::get_singleton()->framebuffer_create(fb, RenderingDevice::INVALID_ID, rb->view_count);
 	}
 }
 
@@ -464,19 +471,17 @@ void RenderForwardClustered::_render_list_template(RenderingDevice::DrawListID p
 				pipeline_version = SceneShaderForwardClustered::PIPELINE_VERSION_DEPTH_PASS_DP;
 			} break;
 			case PASS_MODE_DEPTH_NORMAL_ROUGHNESS: {
-				ERR_FAIL_COND_MSG(p_params->view_count > 1, "Multiview not supported for depth/roughness pass");
-				pipeline_version = SceneShaderForwardClustered::PIPELINE_VERSION_DEPTH_PASS_WITH_NORMAL_AND_ROUGHNESS;
+				pipeline_version = p_params->view_count > 1 ? SceneShaderForwardClustered::PIPELINE_VERSION_DEPTH_PASS_WITH_NORMAL_AND_ROUGHNESS_MULTIVIEW : SceneShaderForwardClustered::PIPELINE_VERSION_DEPTH_PASS_WITH_NORMAL_AND_ROUGHNESS;
 			} break;
 			case PASS_MODE_DEPTH_NORMAL_ROUGHNESS_VOXEL_GI: {
-				ERR_FAIL_COND_MSG(p_params->view_count > 1, "Multiview not supported for voxel GI pass");
-				pipeline_version = SceneShaderForwardClustered::PIPELINE_VERSION_DEPTH_PASS_WITH_NORMAL_AND_ROUGHNESS_AND_VOXEL_GI;
+				pipeline_version = p_params->view_count > 1 ? SceneShaderForwardClustered::PIPELINE_VERSION_DEPTH_PASS_WITH_NORMAL_AND_ROUGHNESS_AND_VOXEL_GI_MULTIVIEW : SceneShaderForwardClustered::PIPELINE_VERSION_DEPTH_PASS_WITH_NORMAL_AND_ROUGHNESS_AND_VOXEL_GI;
 			} break;
 			case PASS_MODE_DEPTH_MATERIAL: {
 				ERR_FAIL_COND_MSG(p_params->view_count > 1, "Multiview not supported for material pass");
 				pipeline_version = SceneShaderForwardClustered::PIPELINE_VERSION_DEPTH_PASS_WITH_MATERIAL;
 			} break;
 			case PASS_MODE_SDF: {
-				ERR_FAIL_COND_MSG(p_params->view_count > 1, "Multiview not supported for SDF pass");
+				ERR_FAIL_COND_MSG(p_params->view_count > 1, "Multiview not supported for shadow DP  pass");
 				pipeline_version = SceneShaderForwardClustered::PIPELINE_VERSION_DEPTH_PASS_WITH_SDF;
 			} break;
 		}
@@ -1285,9 +1290,7 @@ void RenderForwardClustered::_render_scene(RenderDataRD *p_render_data, const Co
 			using_voxelgi = true;
 		}
 
-		if (p_render_data->view_count > 1) {
-			depth_pass_mode = PASS_MODE_DEPTH;
-		} else if (!p_render_data->environment.is_valid() && using_voxelgi) {
+		if (!p_render_data->environment.is_valid() && using_voxelgi) {
 			depth_pass_mode = PASS_MODE_DEPTH_NORMAL_ROUGHNESS_VOXEL_GI;
 		} else if (p_render_data->environment.is_valid() && (environment_is_ssr_enabled(p_render_data->environment) || environment_is_sdfgi_enabled(p_render_data->environment) || using_voxelgi)) {
 			if (environment_is_sdfgi_enabled(p_render_data->environment)) {
