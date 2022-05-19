@@ -29,13 +29,13 @@
 /*************************************************************************/
 
 #ifdef TOOLS_ENABLED
-
 #include "editor_scene_importer_gltf.h"
 
-#include "../gltf_document.h"
-#include "../gltf_state.h"
+#include "modules/gltf/gltf_document.h"
+#include "modules/gltf/gltf_state.h"
 
-#include "scene/main/node.h"
+#include "scene/3d/node_3d.h"
+#include "scene/animation/animation_player.h"
 #include "scene/resources/animation.h"
 
 uint32_t EditorSceneFormatImporterGLTF::get_import_flags() const {
