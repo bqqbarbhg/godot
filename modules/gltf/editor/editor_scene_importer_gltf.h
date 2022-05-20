@@ -30,13 +30,18 @@
 
 #ifndef EDITOR_SCENE_IMPORTER_GLTF_H
 #define EDITOR_SCENE_IMPORTER_GLTF_H
-
 #ifdef TOOLS_ENABLED
 
+#include "modules/gltf/gltf_document_extension.h"
+
+#include "modules/gltf/gltf_state.h"
+
+#include "core/variant/typed_array.h"
 #include "editor/import/resource_importer_scene.h"
+#include "scene/main/node.h"
+#include "scene/resources/packed_scene.h"
 
 class Animation;
-class Node;
 
 class EditorSceneFormatImporterGLTF : public EditorSceneFormatImporter {
 	GDCLASS(EditorSceneFormatImporterGLTF, EditorSceneFormatImporter);
@@ -48,7 +53,5 @@ public:
 			const HashMap<StringName, Variant> &p_options, int p_bake_fps,
 			List<String> *r_missing_deps, Error *r_err = nullptr) override;
 };
-
 #endif // TOOLS_ENABLED
-
 #endif // EDITOR_SCENE_IMPORTER_GLTF_H
