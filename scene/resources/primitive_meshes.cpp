@@ -2339,18 +2339,18 @@ void TextMesh::_generate_glyph_mesh_data(uint32_t p_hash, const Glyph &p_gl) con
 	//Decompose and triangulate.
 	List<TPPLPoly> out_poly;
 	if (tpart.ConvexPartition_HM(&in_poly, &out_poly) == 0) {
-		ERR_FAIL_MSG("Convex decomposing failed!");
+		ERR_FAIL_MSG("Convex decomposing failed. Make sure the font doesn't contain self-intersecting lines, as these are not supported in TextMesh.");
 	}
 	List<TPPLPoly> out_tris;
 	for (List<TPPLPoly>::Element *I = out_poly.front(); I; I = I->next()) {
 		if (tpart.Triangulate_OPT(&(I->get()), &out_tris) == 0) {
-			ERR_FAIL_MSG("Triangulation failed!");
+			ERR_FAIL_MSG("Triangulation failed. Make sure the font doesn't contain self-intersecting lines, as these are not supported in TextMesh.");
 		}
 	}
 
 	for (List<TPPLPoly>::Element *I = out_tris.front(); I; I = I->next()) {
 		TPPLPoly &tp = I->get();
-		ERR_FAIL_COND(tp.GetNumPoints() != 3); // Trianges only.
+		ERR_FAIL_COND(tp.GetNumPoints() != 3); // Triangles only.
 
 		for (int i = 0; i < 3; i++) {
 			gl_data.triangles.push_back(Vector2(tp.GetPoint(i).x, tp.GetPoint(i).y));
@@ -2385,6 +2385,9 @@ void TextMesh::_create_mesh_array(Array &p_arr) const {
 
 		dirty_text = false;
 		dirty_font = false;
+		if (horizontal_alignment == HORIZONTAL_ALIGNMENT_FILL) {
+			TS->shaped_text_fit_to_width(text_rid, width, TextServer::JUSTIFICATION_WORD_BOUND | TextServer::JUSTIFICATION_KASHIDA);
+		}
 	} else if (dirty_font) {
 		int spans = TS->shaped_get_span_count(text_rid);
 		for (int i = 0; i < spans; i++) {
@@ -2392,11 +2395,9 @@ void TextMesh::_create_mesh_array(Array &p_arr) const {
 		}
 
 		dirty_font = false;
-	}
-	if (horizontal_alignment == HORIZONTAL_ALIGNMENT_FILL) {
-		TS->shaped_text_fit_to_width(text_rid, width, TextServer::JUSTIFICATION_WORD_BOUND | TextServer::JUSTIFICATION_KASHIDA);
-	} else {
-		TS->shaped_text_fit_to_width(text_rid, -1, TextServer::JUSTIFICATION_WORD_BOUND | TextServer::JUSTIFICATION_KASHIDA);
+		if (horizontal_alignment == HORIZONTAL_ALIGNMENT_FILL) {
+			TS->shaped_text_fit_to_width(text_rid, width, TextServer::JUSTIFICATION_WORD_BOUND | TextServer::JUSTIFICATION_KASHIDA);
+		}
 	}
 
 	Vector2 offset;
@@ -2793,6 +2794,9 @@ TextMesh::~TextMesh() {
 void TextMesh::set_horizontal_alignment(HorizontalAlignment p_alignment) {
 	ERR_FAIL_INDEX((int)p_alignment, 4);
 	if (horizontal_alignment != p_alignment) {
+		if (horizontal_alignment == HORIZONTAL_ALIGNMENT_FILL || p_alignment == HORIZONTAL_ALIGNMENT_FILL) {
+			dirty_text = true;
+		}
 		horizontal_alignment = p_alignment;
 		_request_update();
 	}
@@ -2900,6 +2904,9 @@ real_t TextMesh::get_depth() const {
 void TextMesh::set_width(real_t p_width) {
 	if (width != p_width) {
 		width = p_width;
+		if (horizontal_alignment == HORIZONTAL_ALIGNMENT_FILL) {
+			dirty_text = true;
+		}
 		_request_update();
 	}
 }
