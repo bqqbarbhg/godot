@@ -412,12 +412,20 @@ Quaternion Basis::get_rotation_quaternion() const {
 void Basis::rotate_to_align(Vector3 p_start_direction, Vector3 p_end_direction) {
 	// Takes two vectors and rotates the basis from the first vector to the second vector.
 	// Adopted from: https://gist.github.com/kevinmoran/b45980723e53edeb8a5a43c49f134724
+	p_start_direction.normalize();
+	p_end_direction.normalize();
+	real_t dot = p_start_direction.dot(p_end_direction);
+
+	// If the start and end are the same (or reasonably close) then don't do anything
+	if (dot > (1.0f - (real_t)CMP_EPSILON)) {
+		return;
+	}
+
 	const Vector3 axis = p_start_direction.cross(p_end_direction).normalized();
 	if (axis.length_squared() != 0) {
-		real_t dot = p_start_direction.dot(p_end_direction);
-		dot = CLAMP(dot, -1.0f, 1.0f);
 		const real_t angle_rads = Math::acos(dot);
-		set_axis_angle(axis, angle_rads);
+
+		rotate(axis, angle_rads);
 	}
 }
 
