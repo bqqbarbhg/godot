@@ -1,3 +1,0 @@
-[submodule "thirdparty/manifold"]
-	path = thirdparty/manifold
-	url = git@github.com:fire/manifold-1.git
