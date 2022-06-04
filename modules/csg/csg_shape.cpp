@@ -348,16 +348,21 @@ CSGBrush *CSGShape3D::_get_brush() {
 				} else if (!manifold_n.IsManifold() && manifold_nn2.IsManifold()) {
 					manifold_nn = manifold_n;
 				} else {
-					switch (child->get_operation()) {
-						case CSGShape3D::OPERATION_UNION:
-							manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::ADD);
-							break;
-						case CSGShape3D::OPERATION_INTERSECTION:
-							manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::INTERSECT);
-							break;
-						case CSGShape3D::OPERATION_SUBTRACTION:
-							manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::SUBTRACT);
-							break;
+					try {
+						switch (child->get_operation()) {
+							case CSGShape3D::OPERATION_UNION:
+								manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::ADD);
+								break;
+							case CSGShape3D::OPERATION_INTERSECTION:
+								manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::INTERSECT);
+								break;
+							case CSGShape3D::OPERATION_SUBTRACTION:
+								manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::SUBTRACT);
+								break;
+						}
+					} catch (const std::exception& e) {
+						print_line(vformat("_get_brush %s", e.what()));	
+						manifold_nn = Manifold();					
 					}
 				}
 				if (!manifold_nn.IsManifold() || manifold_nn.IsEmpty()) {
