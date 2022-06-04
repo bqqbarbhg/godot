@@ -84,9 +84,11 @@ class SceneTreeDock : public VBoxContainer {
 		TOOL_BUTTON_MAX,
 		TOOL_OPEN_DOCUMENTATION,
 		TOOL_AUTO_EXPAND,
+		TOOL_INSTANTIATE_WITH_EDITABLE_CHILDREN,
 		TOOL_SCENE_EDITABLE_CHILDREN,
 		TOOL_SCENE_USE_PLACEHOLDER,
 		TOOL_SCENE_MAKE_LOCAL,
+		TOOL_SCENE_MAKE_LOCAL_RECURSIVELY,
 		TOOL_SCENE_OPEN,
 		TOOL_SCENE_CLEAR_INHERITANCE,
 		TOOL_SCENE_CLEAR_INHERITANCE_CONFIRM,
@@ -195,6 +197,9 @@ class SceneTreeDock : public VBoxContainer {
 	};
 
 	void _node_replace_owner(Node *p_base, Node *p_node, Node *p_root, ReplaceOwnerMode p_mode = MODE_BIDI);
+	void _node_make_local_recursively(Vector<Node *> p_bases, Node *p_node, Node *p_root);
+	void _node_make_local_recursively_inner(Vector<Node *> p_bases, Node *p_node, Node *p_root);
+
 	void _load_request(const String &p_path);
 	void _script_open_request(const Ref<Script> &p_script);
 	void _push_item(Object *p_object);
@@ -213,6 +218,15 @@ class SceneTreeDock : public VBoxContainer {
 	void _delete_confirm(bool p_cut = false);
 
 	void _toggle_editable_children_from_selection();
+
+	void _update_all_gizmos(Node *p_node);
+
+	template <class RootType>
+	void _reparent_nodes_to_typed_root(RootType *p_root, List<Node *> &p_nodes, Node *p_owner);
+
+	void _reparent_nodes_to_root(Node *p_root, Array p_nodes, Node *p_owner);
+	void _reparent_nodes_to_paths_with_transform_and_name(Node *p_root, Array p_nodes, Array p_paths, Array p_transforms, Array p_names, Node *p_owner);
+
 	void _toggle_editable_children(Node *p_node);
 
 	void _toggle_placeholder_from_selection();

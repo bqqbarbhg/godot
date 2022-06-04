@@ -62,6 +62,7 @@ class EditorResourcePicker : public HBoxContainer {
 		OBJ_MENU_LOAD,
 		OBJ_MENU_QUICKLOAD,
 		OBJ_MENU_EDIT,
+		OBJ_MENU_INSPECT,
 		OBJ_MENU_CLEAR,
 		OBJ_MENU_MAKE_UNIQUE,
 		OBJ_MENU_SAVE,
@@ -74,6 +75,8 @@ class EditorResourcePicker : public HBoxContainer {
 	};
 
 	PopupMenu *edit_menu = nullptr;
+
+	Ref<Resource> _make_resource_unique_recursively(Ref<Resource> p_resource);
 
 	void _update_resource();
 	void _update_resource_preview(const String &p_path, const Ref<Texture2D> &p_preview, const Ref<Texture2D> &p_small_preview, ObjectID p_obj);

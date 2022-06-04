@@ -179,8 +179,10 @@ void Node3D::_notification(int p_what) {
 			}
 
 #ifdef TOOLS_ENABLED
-			if (Engine::get_singleton()->is_editor_hint() && get_tree()->is_node_being_edited(this)) {
-				get_tree()->call_group_flags(SceneTree::GROUP_CALL_DEFERRED, SceneStringNames::get_singleton()->_spatial_editor_group, SceneStringNames::get_singleton()->_request_gizmo, this);
+			bool is_editor = Engine::get_singleton()->is_editor_hint();
+			bool is_edited = get_tree()->is_node_being_edited(this);
+			if (is_editor && is_edited) {
+				get_tree()->call_group_flags(SceneTree::GROUP_CALL_DEFAULT, SceneStringNames::get_singleton()->_spatial_editor_group, SceneStringNames::get_singleton()->_request_gizmo, this);
 			}
 #endif
 		} break;
@@ -925,6 +927,13 @@ void Node3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("clear_gizmos"), &Node3D::clear_gizmos);
 	ClassDB::bind_method(D_METHOD("set_subgizmo_selection", "gizmo", "id", "transform"), &Node3D::set_subgizmo_selection);
 	ClassDB::bind_method(D_METHOD("clear_subgizmo_selection"), &Node3D::clear_subgizmo_selection);
+
+#ifdef TOOLS_ENABLED
+	ClassDB::bind_method(D_METHOD("get_global_gizmo_transform"), &Node3D::get_global_gizmo_transform);
+	ClassDB::bind_method(D_METHOD("get_local_gizmo_transform"), &Node3D::get_local_gizmo_transform);
+	ClassDB::bind_method(D_METHOD("set_transform_gizmo_visible", "visible"), &Node3D::set_transform_gizmo_visible);
+	ClassDB::bind_method(D_METHOD("is_transform_gizmo_visible"), &Node3D::is_transform_gizmo_visible);
+#endif
 
 	ClassDB::bind_method(D_METHOD("set_visible", "visible"), &Node3D::set_visible);
 	ClassDB::bind_method(D_METHOD("is_visible"), &Node3D::is_visible);

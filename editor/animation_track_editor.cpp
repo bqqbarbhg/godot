@@ -1943,10 +1943,11 @@ void AnimationTrackEdit::_notification(int p_what) {
 			if (animation.is_null()) {
 				return;
 			}
-			ERR_FAIL_INDEX(track, animation->get_track_count());
 
-			type_icon = _get_key_type_icon();
-			selected_icon = get_theme_icon(SNAME("KeySelected"), SNAME("EditorIcons"));
+			if (track >= 0 && track < animation->get_track_count()) {
+				type_icon = _get_key_type_icon();
+				selected_icon = get_theme_icon(SNAME("KeySelected"), SNAME("EditorIcons"));
+			}
 		} break;
 
 		case NOTIFICATION_DRAW: {
@@ -6188,11 +6189,14 @@ void AnimationTrackEditor::_pick_track_select_recursive(TreeItem *p_item, const 
 		return;
 	}
 
-	NodePath np = p_item->get_metadata(0);
-	Node *node = get_node(np);
+	// Skip root node since root is hidden and has no metadata.
+	if (p_item->get_tree()->get_root() != p_item) {
+		NodePath np = p_item->get_metadata(0);
+		Node *node = get_node(np);
 
-	if (!p_filter.is_empty() && ((String)node->get_name()).findn(p_filter) != -1) {
-		p_select_candidates.push_back(node);
+		if (!p_filter.is_empty() && ((String)node->get_name()).findn(p_filter) != -1) {
+			p_select_candidates.push_back(node);
+		}
 	}
 
 	TreeItem *c = p_item->get_first_child();

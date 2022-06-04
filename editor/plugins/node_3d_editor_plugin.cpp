@@ -53,6 +53,7 @@
 #include "scene/3d/world_environment.h"
 #include "scene/gui/center_container.h"
 #include "scene/gui/subviewport_container.h"
+#include "scene/resources/environment.h"
 #include "scene/resources/packed_scene.h"
 #include "scene/resources/surface_tool.h"
 
@@ -500,7 +501,7 @@ void Node3DEditorViewport::_select_clicked(bool p_allow_locked) {
 				editor_selection->add_node(selected);
 			}
 		} else {
-			if (!editor_selection->is_selected(selected)) {
+			if (editor_selection->get_full_selected_node_list().size() != 1 || !editor_selection->is_selected(selected)) {
 				editor_selection->clear();
 				editor_selection->add_node(selected);
 				EditorNode::get_singleton()->edit_node(selected);
@@ -513,7 +514,7 @@ void Node3DEditorViewport::_select_clicked(bool p_allow_locked) {
 	}
 }
 
-ObjectID Node3DEditorViewport::_select_ray(const Point2 &p_pos) {
+ObjectID Node3DEditorViewport::_select_ray(const Point2 &p_pos) const {
 	Vector3 ray = _get_ray(p_pos);
 	Vector3 pos = _get_ray_pos(p_pos);
 	Vector2 shrinked_pos = p_pos / subviewport_container->get_stretch_shrink();
@@ -566,10 +567,36 @@ ObjectID Node3DEditorViewport::_select_ray(const Point2 &p_pos) {
 				item = Object::cast_to<Node>(spat);
 				if (item != edited_scene) {
 					item = edited_scene->get_deepest_editable_node(item);
+					if (item->get_owner() != edited_scene) {
+						// Get the highest level owner for this node
+						Node *root_item_owner = item;
+						while (root_item_owner->get_owner() != edited_scene) {
+							root_item_owner = root_item_owner->get_owner();
+						}
+
+						// For the existing list of selections, check if we have the root owner
+						// of the selected item
+						bool selection_valid = false;
+						List<Node *> selected_node_list = editor_selection->get_selected_node_list();
+						for (int k = 0; k < selected_node_list.size(); k++) {
+							if (selected_node_list[k] == root_item_owner) {
+								selection_valid = true;
+								break;
+							}
+						}
+
+						// If the root owner of the the item was not selected, make that
+						// the selected item instead
+						if (!selection_valid) {
+							item = root_item_owner;
+						}
+					}
 				}
 
-				closest = item->get_instance_id();
-				closest_dist = dist;
+				if (item) {
+					closest = item->get_instance_id();
+					closest_dist = dist;
+				}
 			}
 		}
 	}
@@ -789,6 +816,18 @@ void Node3DEditorViewport::_select_region() {
 		Node *item = Object::cast_to<Node>(sp);
 		if (item != edited_scene) {
 			item = edited_scene->get_deepest_editable_node(item);
+		}
+
+		// Get the highest level node if part of an editable instance
+		while (item->get_owner() != edited_scene) {
+			item = item->get_owner();
+			if (!item) {
+				break;
+			}
+		}
+
+		if (!item) {
+			continue;
 		}
 
 		// Replace the node by the group if grouped
@@ -1258,7 +1297,9 @@ void Node3DEditorViewport::_surface_mouse_enter() {
 }
 
 void Node3DEditorViewport::_surface_mouse_exit() {
-	_remove_preview();
+	_remove_preview_node();
+	_reset_preview_material();
+	_remove_preview_material();
 }
 
 void Node3DEditorViewport::_surface_focus_enter() {
@@ -2686,6 +2727,13 @@ void Node3DEditorViewport::_notification(int p_what) {
 			cinema_label->add_theme_style_override("normal", gui_base->get_theme_stylebox(SNAME("Information3dViewport"), SNAME("EditorStyles")));
 			locked_label->add_theme_style_override("normal", gui_base->get_theme_stylebox(SNAME("Information3dViewport"), SNAME("EditorStyles")));
 		} break;
+
+		case NOTIFICATION_DRAG_END: {
+			// Clear preview material when dropped outside applicable object.
+			if (spatial_editor->get_preview_material().is_valid() && !is_drag_successful()) {
+				_remove_preview_material();
+			}
+		} break;
 	}
 }
 
@@ -3765,7 +3813,7 @@ Node *Node3DEditorViewport::_sanitize_preview_node(Node *p_node) const {
 	return p_node;
 }
 
-void Node3DEditorViewport::_create_preview(const Vector<String> &files) const {
+void Node3DEditorViewport::_create_preview_node(const Vector<String> &files) const {
 	for (int i = 0; i < files.size(); i++) {
 		String path = files[i];
 		Ref<Resource> res = ResourceLoader::load(path);
@@ -3792,7 +3840,7 @@ void Node3DEditorViewport::_create_preview(const Vector<String> &files) const {
 	*preview_bounds = _calculate_spatial_bounds(preview_node);
 }
 
-void Node3DEditorViewport::_remove_preview() {
+void Node3DEditorViewport::_remove_preview_node() {
 	if (preview_node->get_parent()) {
 		for (int i = preview_node->get_child_count() - 1; i >= 0; i--) {
 			Node *node = preview_node->get_child(i);
@@ -3801,6 +3849,106 @@ void Node3DEditorViewport::_remove_preview() {
 		}
 		EditorNode::get_singleton()->get_scene_root()->remove_child(preview_node);
 	}
+}
+
+bool Node3DEditorViewport::_apply_preview_material(ObjectID p_target, const Point2 &p_point) const {
+	_reset_preview_material();
+
+	if (p_target.is_null()) {
+		return false;
+	}
+
+	spatial_editor->set_preview_material_target(p_target);
+
+	Object *target_inst = ObjectDB::get_instance(p_target);
+
+	bool is_ctrl = Input::get_singleton()->is_key_pressed(Key::CTRL);
+
+	MeshInstance3D *mesh_instance = Object::cast_to<MeshInstance3D>(target_inst);
+	if (is_ctrl && mesh_instance) {
+		Ref<Mesh> mesh = mesh_instance->get_mesh();
+		int surface_count = mesh->get_surface_count();
+
+		Vector3 world_ray = _get_ray(p_point);
+		Vector3 world_pos = _get_ray_pos(p_point);
+
+		int closest_surface = -1;
+		float closest_dist = 1e20;
+
+		Transform3D gt = mesh_instance->get_global_transform();
+
+		Transform3D ai = gt.affine_inverse();
+		Vector3 xform_ray = ai.basis.xform(world_ray).normalized();
+		Vector3 xform_pos = ai.xform(world_pos);
+
+		for (int surface = 0; surface < surface_count; surface++) {
+			Ref<TriangleMesh> surface_mesh = mesh->generate_surface_triangle_mesh(surface);
+
+			Vector3 rpos, rnorm;
+			if (surface_mesh->intersect_ray(xform_pos, xform_ray, rpos, rnorm)) {
+				Vector3 hitpos = gt.xform(rpos);
+
+				const real_t dist = world_pos.distance_to(hitpos);
+
+				if (dist < 0) {
+					continue;
+				}
+
+				if (dist < closest_dist) {
+					closest_surface = surface;
+					closest_dist = dist;
+				}
+			}
+		}
+
+		if (closest_surface == -1) {
+			return false;
+		}
+
+		if (spatial_editor->get_preview_material() != mesh_instance->get_surface_override_material(closest_surface)) {
+			spatial_editor->set_preview_material_surface(closest_surface);
+			spatial_editor->set_preview_reset_material(mesh_instance->get_surface_override_material(closest_surface));
+			mesh_instance->set_surface_override_material(closest_surface, spatial_editor->get_preview_material());
+		}
+
+		return true;
+	}
+
+	GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(target_inst);
+	if (geometry_instance && spatial_editor->get_preview_material() != geometry_instance->get_material_override()) {
+		spatial_editor->set_preview_reset_material(geometry_instance->get_material_override());
+		geometry_instance->set_material_override(spatial_editor->get_preview_material());
+		return true;
+	}
+
+	return false;
+}
+
+void Node3DEditorViewport::_reset_preview_material() const {
+	ObjectID last_target = spatial_editor->get_preview_material_target();
+	if (last_target.is_null()) {
+		return;
+	}
+	Object *last_target_inst = ObjectDB::get_instance(last_target);
+
+	MeshInstance3D *mesh_instance = Object::cast_to<MeshInstance3D>(last_target_inst);
+	GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(last_target_inst);
+	if (mesh_instance && spatial_editor->get_preview_material_surface() != -1) {
+		mesh_instance->set_surface_override_material(spatial_editor->get_preview_material_surface(), spatial_editor->get_preview_reset_material());
+		spatial_editor->set_preview_material_surface(-1);
+	} else if (geometry_instance) {
+		geometry_instance->set_material_override(spatial_editor->get_preview_reset_material());
+	}
+}
+
+void Node3DEditorViewport::_remove_preview_material() {
+	preview_material_label->hide();
+	preview_material_label_desc->hide();
+
+	spatial_editor->set_preview_material(Ref<Material>());
+	spatial_editor->set_preview_reset_material(Ref<Material>());
+	spatial_editor->set_preview_material_target(ObjectID());
+	spatial_editor->set_preview_material_surface(-1);
 }
 
 bool Node3DEditorViewport::_cyclical_dependency_exists(const String &p_target_scene_path, Node *p_desired_node) {
@@ -3878,6 +4026,11 @@ bool Node3DEditorViewport::_create_instance(Node *parent, String &path, const Po
 	editor_data->get_undo_redo().add_do_reference(instantiated_scene);
 	editor_data->get_undo_redo().add_undo_method(parent, "remove_child", instantiated_scene);
 
+	if (EditorSettings::get_singleton()->get("docks/scene_tree/instantiate_with_editable_children")) {
+		undo_redo->add_do_method(EditorNode::get_singleton()->get_edited_scene(), "set_editable_instance", instantiated_scene, true);
+		undo_redo->add_do_method(instantiated_scene, "set_display_folded", true);
+	}
+
 	String new_name = parent->validate_child_name(instantiated_scene);
 	EditorDebuggerNode *ed = EditorDebuggerNode::get_singleton();
 	editor_data->get_undo_redo().add_do_method(ed, "live_debug_instance_node", EditorNode::get_singleton()->get_edited_scene()->get_path_to(parent), path, new_name);
@@ -3901,7 +4054,26 @@ bool Node3DEditorViewport::_create_instance(Node *parent, String &path, const Po
 }
 
 void Node3DEditorViewport::_perform_drop_data() {
-	_remove_preview();
+	if (spatial_editor->get_preview_material_target().is_valid()) {
+		GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(ObjectDB::get_instance(spatial_editor->get_preview_material_target()));
+		MeshInstance3D *mesh_instance = Object::cast_to<MeshInstance3D>(ObjectDB::get_instance(spatial_editor->get_preview_material_target()));
+		if (mesh_instance && spatial_editor->get_preview_material_surface() != -1) {
+			editor_data->get_undo_redo().create_action(vformat(TTR("Set Surface %d Override Material"), spatial_editor->get_preview_material_surface()));
+			editor_data->get_undo_redo().add_do_method(geometry_instance, "set_surface_override_material", spatial_editor->get_preview_material_surface(), spatial_editor->get_preview_material());
+			editor_data->get_undo_redo().add_undo_method(geometry_instance, "set_surface_override_material", spatial_editor->get_preview_material_surface(), spatial_editor->get_preview_reset_material());
+			editor_data->get_undo_redo().commit_action();
+		} else if (geometry_instance) {
+			editor_data->get_undo_redo().create_action(TTR("Set Material Override"));
+			editor_data->get_undo_redo().add_do_method(geometry_instance, "set_material_override", spatial_editor->get_preview_material());
+			editor_data->get_undo_redo().add_undo_method(geometry_instance, "set_material_override", spatial_editor->get_preview_reset_material());
+			editor_data->get_undo_redo().commit_action();
+		}
+
+		_remove_preview_material();
+		return;
+	}
+
+	_remove_preview_node();
 
 	Vector<String> error_files;
 
@@ -3939,7 +4111,7 @@ void Node3DEditorViewport::_perform_drop_data() {
 bool Node3DEditorViewport::can_drop_data_fw(const Point2 &p_point, const Variant &p_data, Control *p_from) const {
 	bool can_instantiate = false;
 
-	if (!preview_node->is_inside_tree()) {
+	if (!preview_node->is_inside_tree() && spatial_editor->get_preview_material().is_null()) {
 		Dictionary d = p_data;
 		if (d.has("type") && (String(d["type"]) == "files")) {
 			Vector<String> files = d["files"];
@@ -3948,40 +4120,78 @@ bool Node3DEditorViewport::can_drop_data_fw(const Point2 &p_point, const Variant
 			ResourceLoader::get_recognized_extensions_for_type("PackedScene", &scene_extensions);
 			List<String> mesh_extensions;
 			ResourceLoader::get_recognized_extensions_for_type("Mesh", &mesh_extensions);
+			List<String> material_extensions;
+			ResourceLoader::get_recognized_extensions_for_type("Material", &material_extensions);
+			List<String> texture_extensions;
+			ResourceLoader::get_recognized_extensions_for_type("Texture", &texture_extensions);
 
 			for (int i = 0; i < files.size(); i++) {
 				// Check if dragged files with mesh or scene extension can be created at least once.
-				if (mesh_extensions.find(files[i].get_extension()) || scene_extensions.find(files[i].get_extension())) {
+				if (mesh_extensions.find(files[i].get_extension()) ||
+						scene_extensions.find(files[i].get_extension()) ||
+						material_extensions.find(files[i].get_extension()) ||
+						texture_extensions.find(files[i].get_extension())) {
 					Ref<Resource> res = ResourceLoader::load(files[i]);
 					if (res.is_null()) {
 						continue;
 					}
 					Ref<PackedScene> scn = res;
+					Ref<Material> mat = res;
+					Ref<Texture2D> tex = res;
 					if (scn.is_valid()) {
 						Node *instantiated_scene = scn->instantiate(PackedScene::GEN_EDIT_STATE_INSTANCE);
 						if (!instantiated_scene) {
 							continue;
 						}
 						memdelete(instantiated_scene);
+					} else if (mat.is_valid()) {
+						Ref<BaseMaterial3D> base_mat = res;
+						Ref<ShaderMaterial> shader_mat = res;
+
+						if (base_mat.is_null() && !shader_mat.is_null()) {
+							break;
+						}
+
+						spatial_editor->set_preview_material(mat);
+						break;
+					} else if (tex.is_valid()) {
+						Ref<StandardMaterial3D> new_mat = memnew(StandardMaterial3D);
+						new_mat->set_texture(BaseMaterial3D::TEXTURE_ALBEDO, tex);
+
+						spatial_editor->set_preview_material(new_mat);
+						break;
+					} else {
+						continue;
 					}
 					can_instantiate = true;
 					break;
 				}
 			}
 			if (can_instantiate) {
-				_create_preview(files);
+				_create_preview_node(files);
 			}
 		}
 	} else {
-		can_instantiate = true;
+		if (preview_node->is_inside_tree()) {
+			can_instantiate = true;
+		}
 	}
 
 	if (can_instantiate) {
 		Transform3D global_transform = Transform3D(Basis(), _get_instance_position(p_point));
 		preview_node->set_global_transform(global_transform);
+		return true;
 	}
 
-	return can_instantiate;
+	if (spatial_editor->get_preview_material().is_valid()) {
+		preview_material_label->show();
+		preview_material_label_desc->show();
+
+		ObjectID new_preview_material_target = _select_ray(p_point);
+		return _apply_preview_material(new_preview_material_target, p_point);
+	}
+
+	return false;
 }
 
 void Node3DEditorViewport::drop_data_fw(const Point2 &p_point, const Variant &p_data, Control *p_from) {
@@ -4019,7 +4229,7 @@ void Node3DEditorViewport::drop_data_fw(const Point2 &p_point, const Variant &p_
 	} else {
 		accept->set_text(TTR("Cannot drag and drop into multiple selected nodes."));
 		accept->popup_centered();
-		_remove_preview();
+		_remove_preview_node();
 		return;
 	}
 
@@ -4553,7 +4763,9 @@ Node3DEditorViewport::Node3DEditorViewport(Node3DEditor *p_spatial_editor, int p
 	view_menu->get_popup()->add_check_shortcut(ED_SHORTCUT("spatial_editor/view_environment", TTR("View Environment")), VIEW_ENVIRONMENT);
 	view_menu->get_popup()->add_check_shortcut(ED_SHORTCUT("spatial_editor/view_gizmos", TTR("View Gizmos")), VIEW_GIZMOS);
 	view_menu->get_popup()->add_check_shortcut(ED_SHORTCUT("spatial_editor/view_information", TTR("View Information")), VIEW_INFORMATION);
+	view_menu->get_popup()->set_item_checked(view_menu->get_popup()->get_item_index(VIEW_INFORMATION), true);
 	view_menu->get_popup()->add_check_shortcut(ED_SHORTCUT("spatial_editor/view_fps", TTR("View Frame Time")), VIEW_FRAME_TIME);
+	view_menu->get_popup()->set_item_checked(view_menu->get_popup()->get_item_index(VIEW_FRAME_TIME), true);
 	view_menu->get_popup()->set_item_checked(view_menu->get_popup()->get_item_index(VIEW_ENVIRONMENT), true);
 	view_menu->get_popup()->add_separator();
 	view_menu->get_popup()->add_check_shortcut(ED_SHORTCUT("spatial_editor/view_half_resolution", TTR("Half Resolution")), VIEW_HALF_RESOLUTION);
@@ -4664,6 +4876,23 @@ Node3DEditorViewport::Node3DEditorViewport(Node3DEditor *p_spatial_editor, int p
 	zoom_limit_label->add_theme_color_override("font_color", Color(1, 1, 1, 1));
 	zoom_limit_label->hide();
 	surface->add_child(zoom_limit_label);
+
+	preview_material_label = memnew(Label);
+	preview_material_label->set_anchors_and_offsets_preset(LayoutPreset::PRESET_BOTTOM_LEFT);
+	preview_material_label->set_offset(Side::SIDE_TOP, -70 * EDSCALE);
+	preview_material_label->set_text(TTR("Overriding material..."));
+	preview_material_label->add_theme_color_override("font_color", Color(1, 1, 1, 1));
+	preview_material_label->hide();
+	surface->add_child(preview_material_label);
+
+	preview_material_label_desc = memnew(Label);
+	preview_material_label_desc->set_anchors_and_offsets_preset(LayoutPreset::PRESET_BOTTOM_LEFT);
+	preview_material_label_desc->set_offset(Side::SIDE_TOP, -50 * EDSCALE);
+	preview_material_label_desc->set_text(TTR("Drag and drop to override the material of any geometry node.\nHold Ctrl when dropping to override a specific surface."));
+	preview_material_label_desc->add_theme_color_override("font_color", Color(0.8, 0.8, 0.8, 1));
+	preview_material_label_desc->add_theme_constant_override("line_spacing", 0);
+	preview_material_label_desc->hide();
+	surface->add_child(preview_material_label_desc);
 
 	frame_time_gradient = memnew(Gradient);
 	// The color is set when the theme changes.
@@ -6807,7 +7036,7 @@ void Node3DEditor::snap_selected_nodes_to_floor() {
 			ray_params.to = to;
 			ray_params.exclude = excluded;
 
-			if (ss->intersect_ray(ray_params, result)) {
+			if (ss && ss->intersect_ray(ray_params, result)) {
 				snapped_to_floor = true;
 			}
 		}
@@ -7377,6 +7606,17 @@ void Node3DEditor::_preview_settings_changed() {
 		environment->set_ssao_enabled(environ_ao_button->is_pressed());
 		environment->set_glow_enabled(environ_glow_button->is_pressed());
 		environment->set_sdfgi_enabled(environ_gi_button->is_pressed());
+		if (environ_gi_button->is_pressed()) {
+			environment->set_sdfgi_cascades(1);
+			environment->set_sdfgi_y_scale(Environment::SDFGIYScale::SDFGI_Y_SCALE_50_PERCENT);
+			environment->set_sdfgi_max_distance(4000.0f);
+		} else {
+			environment->set_sdfgi_cascades(6);
+			environment->set_sdfgi_y_scale(Environment::SDFGIYScale::SDFGI_Y_SCALE_100_PERCENT);
+			environment->set_sdfgi_max_distance(4000.0f);
+		}
+		environment->set_sdfgi_use_occlusion(environ_gi_button->is_pressed());
+		environment->set_sdfgi_read_sky_light(environ_gi_button->is_pressed());
 		environment->set_tonemapper(environ_tonemap_button->is_pressed() ? Environment::TONE_MAPPER_FILMIC : Environment::TONE_MAPPER_LINEAR);
 	}
 }
@@ -7401,7 +7641,7 @@ void Node3DEditor::_load_default_preview_settings() {
 	environ_glow_button->set_pressed(true);
 	environ_tonemap_button->set_pressed(true);
 	environ_ao_button->set_pressed(false);
-	environ_gi_button->set_pressed(false);
+	environ_gi_button->set_pressed(true);
 	sun_max_distance->set_value(250);
 
 	sun_color->set_pick_color(Color(1, 1, 1));
@@ -8106,7 +8346,6 @@ void fragment() {
 		_preview_settings_changed();
 	}
 }
-
 Node3DEditor::~Node3DEditor() {
 	memdelete(preview_node);
 }
