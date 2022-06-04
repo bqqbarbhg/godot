@@ -362,7 +362,7 @@ CSGBrush *CSGShape3D::_get_brush() {
 						}
 					} catch (const std::exception& e) {
 						print_line(vformat("_get_brush %s", e.what()));	
-						manifold_nn = Manifold();					
+						manifold_nn = manifold::Manifold();					
 					}
 				}
 				if (!manifold_nn.IsManifold() || manifold_nn.IsEmpty()) {
