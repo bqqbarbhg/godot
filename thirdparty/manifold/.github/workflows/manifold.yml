@@ -1,0 +1,129 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request 
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        backend: [CPP, OMP, TBB, CUDA]
+    runs-on: ubuntu-20.04
+    container:
+      image: docker://nvidia/cuda:11.6.0-devel-ubuntu20.04
+    steps:
+    - name: Install dependencies
+      run: |
+        apt-get -y update
+        DEBIAN_FRONTEND=noninteractive apt install -y libomp-dev git libtbb-dev pkg-config
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - uses: jwlawson/actions-setup-cmake@v1.12
+    - name: Build ${{matrix.backend}}
+      run: |
+        # patch assimp
+        patch third_party/assimp/code/CMakeLists.txt < assimp.diff
+        mkdir build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Release -DTHRUST_BACKEND=${{matrix.backend}} .. && make
+    - name: Test ${{matrix.backend}}
+      if: matrix.backend != 'CUDA'
+      run: |
+        cd build/test
+        ./manifold_test
+
+  build_wasm:
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Install dependencies
+      run: |
+        sudo apt-get -y update
+        DEBIAN_FRONTEND=noninteractive sudo apt install -y python3 nodejs
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - name: Setup WASM
+      run: |
+        # setup emscripten
+        git clone https://github.com/emscripten-core/emsdk.git
+        cd emsdk
+        ./emsdk install latest
+        ./emsdk activate latest
+    - uses: jwlawson/actions-setup-cmake@v1.12
+    - name: Build WASM
+      run: |
+        source ./emsdk/emsdk_env.sh
+        # patch assimp
+        patch third_party/assimp/code/CMakeLists.txt < assimp.diff
+        mkdir build
+        cd build
+        emcmake cmake -DCMAKE_BUILD_TYPE=Release .. && emmake make
+    - name: Test WASM
+      run: |
+        cd build/test
+        node ./manifold_test.js
+
+  build_windows:
+    strategy:
+      matrix:
+        # backend: [CUDA, CPP]
+        backend: [CPP]
+      max-parallel: 1
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - uses: jwlawson/actions-setup-cmake@v1.12
+    - name: Patch assimp
+      shell: bash
+      run: patch third_party/assimp/code/CMakeLists.txt < assimp.diff
+    - uses: ilammy/msvc-dev-cmd@v1
+    - name: Install CUDA
+      if: matrix.backend == 'CUDA'
+      env:
+        cuda: "11.3.0"
+        visual_studio: "Visual Studio 16 2019"
+      shell: powershell
+      run: |
+        Invoke-RestMethod https://raw.githubusercontent.com/ptheywood/cuda-cmake-github-actions/21811d232fc775fa8d44dddf7f8c5ce2cf8d2b81/scripts/actions/install_cuda_windows.ps1 -OutFile install_cuda_windows.ps1
+        .\install_cuda_windows.ps1
+    - name: nvcc check
+      if: matrix.backend == 'CUDA'
+      shell: powershell
+      run: |
+        nvcc -V
+        ls $env:CUDA_PATH
+        ls $env:CUDA_PATH\bin
+        ls $env:CUDA_PATH\include
+    - name: Build ${{matrix.backend}}
+      shell: powershell
+      run: |
+        cmake . -DCMAKE_BUILD_TYPE=Release -B build -DTHRUST_BACKEND=${{matrix.backend}} -A x64
+        cd build
+        cmake --build . --target ALL_BUILD --config Release
+    - name: Test ${{matrix.backend}}
+      if: matrix.backend != 'CUDA'
+      shell: bash
+      run: |
+        cd build/test
+        ./Release/manifold_test.exe
+
+  build_nix:
+    strategy:
+      matrix:
+        variant: [cpp, omp, cuda, js, tbb]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2.4.0
+    - uses: cachix/install-nix-action@v15
+    - run: nix build -L '.?submodules=1#manifold-${{matrix.variant}}'
+
