@@ -1,3 +1,3 @@
-[submodule "manifold"]
+[submodule "thirdparty/manifold"]
 	path = thirdparty/manifold
-	url = https://github.com/fire/manifold-1
+	url = https://github.com/fire/manifold-1.git
