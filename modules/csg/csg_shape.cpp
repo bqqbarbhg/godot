@@ -250,39 +250,48 @@ static void unpack_manifold(const manifold::Manifold &p_manifold,
 			glm::vec3 position = mesh.vertPos[index];
 			face.vertices[vertex_i] = Vector3(position.x, position.y, position.z);
 		}
+		int32_t index_0 = mesh.triVerts[triangle_i][order[0]];
+		glm::vec3 glm_normal_0 = mesh.vertNormal[index_0];
+		Vector3 normal_0 = Vector3(glm_normal_0.x, glm_normal_0.y, glm_normal_0.z);
+		int32_t index_1 = mesh.triVerts[triangle_i][order[1]];
+		glm::vec3 glm_normal_1 = mesh.vertNormal[index_1];
+		Vector3 normal_1 = Vector3(glm_normal_1.x, glm_normal_1.y, glm_normal_1.z);
+		int32_t index_2 = mesh.triVerts[triangle_i][order[2]];
+		glm::vec3 glm_normal_2 = mesh.vertNormal[index_2];
+		Vector3 normal_2 = Vector3(glm_normal_2.x, glm_normal_2.y, glm_normal_2.z);
+		bool flat = normal_0.is_equal_approx(normal_1) && normal_0.is_equal_approx(normal_2);
+		face.smooth = !flat;
 		manifold::BaryRef bary_ref = mesh_relation.triBary[triangle_i];
 		int32_t face_index = bary_ref.tri;
-		for (int it : mesh_ids) {
-			if (!mesh_id_properties.has(it)) {
-				continue;
-			}
-			if (!mesh_materials.has(it)) {
-				continue;
-			}
-			const std::vector<float> &properties = mesh_id_properties[it];
-			if (face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP < properties.size()) {
-				face.smooth = properties[face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP];
-			}
-			if (face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT < properties.size()) {
-				face.invert = properties[face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT];
-			}
-			for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
-				if (face_index + MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i >= properties.size()) {
-					continue;
-				}
-				face.uvs[vertex_i].x = properties[face_index + MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0 + vertex_i];
-				face.uvs[vertex_i].y = properties[face_index + MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i];
-			}
-			if (!mesh_materials[it].has(face_index)) {
-				continue;
-			}
-			Ref<Material> mat = mesh_materials[it][face_index];
-			int32_t mat_index = r_mesh_merge->materials.find(mat);
-			if (mat_index == -1) {
-				r_mesh_merge->materials.push_back(mat);
-			}
-			face.material = mat_index;
+		if (!mesh_id_properties.has(bary_ref.meshID)) {
+			continue;
 		}
+		const std::vector<float> &properties = mesh_id_properties[bary_ref.meshID];
+		if (face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP < properties.size()) {
+			face.smooth = face.smooth || properties[face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP];
+		}
+		if (!mesh_materials.has(bary_ref.meshID)) {
+			continue;
+		}
+		if (face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT < properties.size()) {
+			face.invert = properties[face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT];
+		}
+		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
+			if (face_index + MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i >= properties.size()) {
+				continue;
+			}
+			face.uvs[vertex_i].x = properties[face_index + MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0 + vertex_i];
+			face.uvs[vertex_i].y = properties[face_index + MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i];
+		}
+		if (!mesh_materials[bary_ref.meshID].has(face_index)) {
+			continue;
+		}
+		Ref<Material> mat = mesh_materials[bary_ref.meshID][face_index];
+		int32_t mat_index = r_mesh_merge->materials.find(mat);
+		if (mat_index == -1) {
+			r_mesh_merge->materials.push_back(mat);
+		}
+		face.material = mat_index;
 	}
 	r_mesh_merge->_regen_face_aabbs();
 }
