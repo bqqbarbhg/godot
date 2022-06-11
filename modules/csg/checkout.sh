@@ -19,11 +19,11 @@ rm -rf ../../thirdparty/manifold/flake.lock
 rm -rf ../../thirdparty/manifold/flake.nix
 # Keep # rm -rf ../../thirdparty/manifold/LICENSE
 # Keep # rm -rf ../../thirdparty/manifold/manifold
-rm -rf ../../thirdparty/manifold/meshIO
-rm -rf ../../thirdparty/manifold/polygon
+# Keep # rm -rf ../../thirdparty/manifold/meshIO
+# Keep # rm -rf ../../thirdparty/manifold/polygon
 # Keep # rm -rf ../../thirdparty/manifold/README.md
 rm -rf ../../thirdparty/manifold/samples
-rm -rf ../../thirdparty/manifold/test
+# Keep # rm -rf ../../thirdparty/manifold/test
 # Keep # rm -rf ../../thirdparty/manifold/third_party
 # Keep # rm -rf ../../thirdparty/manifold/tools
 # Keep # rm -rf ../../thirdparty/manifold/utilities
