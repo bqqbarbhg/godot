@@ -35,3 +35,4 @@ rm -rf ../../thirdparty/manifold/.gitmodules
 rm -rf ../../thirdparty/manifold/third_party/glm/doc
 rm -rf ../../thirdparty/manifold/third_party/glm/test
 rm -rf ../../thirdparty/manifold/third_party/thrust/testing
+rm -rf ../../thirdparty/manifold/third_party/thrust/examples
