@@ -251,7 +251,7 @@ static void unpack_manifold(const manifold::Manifold &p_manifold,
 			face.vertices[vertex_i] = Vector3(position.x, position.y, position.z);
 		}
 		manifold::BaryRef bary_ref = mesh_relation.triBary[triangle_i];
-		int32_t face_index = bary_ref.tri;
+		uint32_t face_index = bary_ref.tri;
 		for (int it : mesh_ids) {
 			if (!mesh_id_properties.has(it)) {
 				continue;
