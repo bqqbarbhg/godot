@@ -30,6 +30,7 @@ thirdparty_sources = [
 
 env_csg.Append(CPPDEFINES=["THRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CPP"])
 env_csg.Append(LINKFLAGS=["-fno-exceptions"])
+env_csg.Append(LINKFLAGS=["-fno-duplicated-branches"])
 
 thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
 env_csg.Prepend(
