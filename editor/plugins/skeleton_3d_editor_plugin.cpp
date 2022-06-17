@@ -1081,6 +1081,17 @@ void Skeleton3DEditor::select_bone(int p_idx) {
 
 Skeleton3DEditor::~Skeleton3DEditor() {
 	singleton = nullptr;
+	if (skeleton) {
+		select_bone(-1);
+#ifdef TOOLS_ENABLED
+		skeleton->disconnect("show_rest_only_changed", callable_mp(this, &Skeleton3DEditor::_update_gizmo_visible));
+		skeleton->disconnect("bone_enabled_changed", callable_mp(this, &Skeleton3DEditor::_bone_enabled_changed));
+		skeleton->disconnect("pose_updated", callable_mp(this, &Skeleton3DEditor::_draw_gizmo));
+		skeleton->disconnect("pose_updated", callable_mp(this, &Skeleton3DEditor::_update_properties));
+		skeleton->set_transform_gizmo_visible(true);
+#endif
+	}
+	edit_mode_toggled(false);
 
 	handles_mesh_instance->queue_delete();
 
