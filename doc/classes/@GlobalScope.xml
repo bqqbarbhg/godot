@@ -2572,6 +2572,8 @@
 		</constant>
 		<constant name="PROPERTY_HINT_SAVE_FILE" value="39" enum="PropertyHint">
 		</constant>
+		<constant name="PROPERTY_HINT_GLOBAL_SAVE_FILE" value="39" enum="PropertyHint">
+		</constant>
 		<constant name="PROPERTY_HINT_INT_IS_OBJECTID" value="40" enum="PropertyHint">
 		</constant>
 		<constant name="PROPERTY_HINT_INT_IS_POINTER" value="42" enum="PropertyHint">
