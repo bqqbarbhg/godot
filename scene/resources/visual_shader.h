@@ -89,8 +89,8 @@ public:
 
 	struct Varying {
 		String name;
-		VaryingMode mode;
-		VaryingType type;
+		VaryingMode mode = {};
+		VaryingType type = {};
 
 		Varying() {
 			mode = {};
