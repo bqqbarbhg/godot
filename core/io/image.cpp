@@ -84,6 +84,7 @@ SavePNGFunc Image::save_png_func = nullptr;
 SaveEXRFunc Image::save_exr_func = nullptr;
 
 SavePNGBufferFunc Image::save_png_buffer_func = nullptr;
+SaveEXRBufferFunc Image::save_exr_buffer_func = nullptr;
 
 void Image::_put_pixelb(int p_x, int p_y, uint32_t p_pixel_size, uint8_t *p_data, const uint8_t *p_pixel) {
 	uint32_t ofs = (p_y * width + p_x) * p_pixel_size;
@@ -2302,6 +2303,13 @@ Error Image::save_exr(const String &p_path, bool p_grayscale) const {
 	return save_exr_func(p_path, Ref<Image>((Image *)this), p_grayscale);
 }
 
+Vector<uint8_t> Image::save_exr_to_buffer() const {
+	if (save_exr_buffer_func == nullptr) {
+		return Vector<uint8_t>();
+	}
+	return save_exr_buffer_func(Ref<Image>((Image *)this), false);
+}
+
 int Image::get_image_data_size(int p_width, int p_height, Format p_format, bool p_mipmaps) {
 	int mm;
 	return _get_dst_image_size(p_width, p_height, p_format, mm, p_mipmaps ? -1 : 0);
@@ -3139,6 +3147,7 @@ void Image::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("save_png", "path"), &Image::save_png);
 	ClassDB::bind_method(D_METHOD("save_png_to_buffer"), &Image::save_png_to_buffer);
 	ClassDB::bind_method(D_METHOD("save_exr", "path", "grayscale"), &Image::save_exr, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("save_exr_to_buffer", "grayscale"), &Image::save_exr_to_buffer, DEFVAL(false));
 
 	ClassDB::bind_method(D_METHOD("detect_alpha"), &Image::detect_alpha);
 	ClassDB::bind_method(D_METHOD("is_invisible"), &Image::is_invisible);

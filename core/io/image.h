@@ -48,6 +48,7 @@ typedef Vector<uint8_t> (*SavePNGBufferFunc)(const Ref<Image> &p_img);
 typedef Ref<Image> (*ImageMemLoadFunc)(const uint8_t *p_png, int p_size);
 
 typedef Error (*SaveEXRFunc)(const String &p_path, const Ref<Image> &p_img, bool p_grayscale);
+typedef Vector<uint8_t> (*SaveEXRBufferFunc)(const Ref<Image> &p_img, bool p_grayscale);
 
 class Image : public Resource {
 	GDCLASS(Image, Resource);
@@ -56,6 +57,7 @@ public:
 	static SavePNGFunc save_png_func;
 	static SaveEXRFunc save_exr_func;
 	static SavePNGBufferFunc save_png_buffer_func;
+	static SaveEXRBufferFunc save_exr_buffer_func;
 
 	enum {
 		MAX_WIDTH = (1 << 24), // force a limit somehow
@@ -282,6 +284,7 @@ public:
 	Error load(const String &p_path);
 	Error save_png(const String &p_path) const;
 	Vector<uint8_t> save_png_to_buffer() const;
+	Vector<uint8_t> save_exr_to_buffer() const;
 	Error save_exr(const String &p_path, bool p_grayscale) const;
 
 	void create_empty(int p_width, int p_height, bool p_use_mipmaps, Format p_format) {
