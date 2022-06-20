@@ -111,6 +111,7 @@ static bool has_server_feature_callback(const String &p_feature) {
 
 static MovieWriterMJPEG *writer_mjpeg = nullptr;
 static MovieWriterPNGWAV *writer_pngwav = nullptr;
+static MovieWriterEXRWAV *writer_exrwav = nullptr;
 
 void register_server_types() {
 	shader_types = memnew(ShaderTypes);
@@ -267,6 +268,9 @@ void register_server_types() {
 
 	writer_pngwav = memnew(MovieWriterPNGWAV);
 	MovieWriter::add_writer(writer_pngwav);
+
+	writer_exrwav = memnew(MovieWriterEXRWAV);
+	MovieWriter::add_writer(writer_exrwav);
 }
 
 void unregister_server_types() {
@@ -274,6 +278,7 @@ void unregister_server_types() {
 	memdelete(shader_types);
 	memdelete(writer_mjpeg);
 	memdelete(writer_pngwav);
+	memdelete(writer_exrwav);
 }
 
 void register_server_singletons() {
