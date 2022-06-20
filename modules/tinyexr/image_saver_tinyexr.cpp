@@ -141,11 +141,8 @@ static int get_channel_count(Image::Format p_format) {
 	}
 }
 
-Vector<uint8_t> save_exr_buffer(const Ref<Image> &p_img, bool p_grayscale, Error *r_error) {
+Vector<uint8_t> save_exr_buffer(const Ref<Image> &p_img, bool p_grayscale) {
 	Image::Format format = p_img->get_format();
-	if (r_error) {
-		*r_error = ERR_UNAVAILABLE;
-	}
 	if (!is_supported_format(format)) {
 		// Format not supported
 		print_error("Image format not supported for saving as EXR. Consider saving as PNG.");
@@ -273,21 +270,20 @@ Vector<uint8_t> save_exr_buffer(const Ref<Image> &p_img, bool p_grayscale, Error
 	const char *err = nullptr;
 
 	size_t bytes = SaveEXRImageToMemory(&image, &header, &mem, &err);
+	if (err && *err != OK) {
+		return Vector<uint8_t>();
+	}
 	Vector<uint8_t> buffer;
 	buffer.resize(bytes);
 	memcpy(buffer.ptrw(), mem, bytes);
 	free(mem);
-	if (r_error) {
-		*r_error = OK;
-	}
 	return buffer;
 }
 
 Error save_exr(const String &p_path, const Ref<Image> &p_img, bool p_grayscale) {
-	Error err;
-	const Vector<uint8_t> buffer = save_exr_buffer(p_img, p_grayscale, &err);
+	const Vector<uint8_t> buffer = save_exr_buffer(p_img, p_grayscale);
 	if (buffer.size() == 0) {
-		print_error(String("Saving EXR failed. Error: {0}").format(varray(err)));
+		print_error(String("Saving EXR failed."));
 		return ERR_FILE_CANT_WRITE;
 	} else {
 		Ref<FileAccess> ref = FileAccess::open(p_path, FileAccess::WRITE);

@@ -2325,7 +2325,7 @@ Vector<uint8_t> Image::save_exr_to_buffer() const {
 	if (save_exr_buffer_func == nullptr) {
 		return Vector<uint8_t>();
 	}
-	return save_exr_buffer_func(Ref<Image>((Image *)this), false, nullptr);
+	return save_exr_buffer_func(Ref<Image>((Image *)this), false);
 }
 
 int Image::get_image_data_size(int p_width, int p_height, Format p_format, bool p_mipmaps) {
@@ -3167,7 +3167,7 @@ void Image::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("save_jpg", "path", "quality"), &Image::save_jpg, DEFVAL(0.75));
 	ClassDB::bind_method(D_METHOD("save_jpg_to_buffer", "quality"), &Image::save_jpg_to_buffer, DEFVAL(0.75));
 	ClassDB::bind_method(D_METHOD("save_exr", "path", "grayscale"), &Image::save_exr, DEFVAL(false));
-	ClassDB::bind_method(D_METHOD("save_exr_to_buffer"), &Image::save_exr_to_buffer);
+	ClassDB::bind_method(D_METHOD("save_exr_to_buffer", "grayscale"), &Image::save_exr_to_buffer, DEFVAL(false));
 
 	ClassDB::bind_method(D_METHOD("detect_alpha"), &Image::detect_alpha);
 	ClassDB::bind_method(D_METHOD("is_invisible"), &Image::is_invisible);

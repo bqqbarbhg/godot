@@ -50,7 +50,7 @@ typedef Vector<uint8_t> (*SaveJPGBufferFunc)(const Ref<Image> &p_img, float p_qu
 typedef Ref<Image> (*ImageMemLoadFunc)(const uint8_t *p_png, int p_size);
 
 typedef Error (*SaveEXRFunc)(const String &p_path, const Ref<Image> &p_img, bool p_grayscale);
-typedef Vector<uint8_t> (*SaveEXRBufferFunc)(const Ref<Image> &p_img, bool p_grayscale, Error *r_err);
+typedef Vector<uint8_t> (*SaveEXRBufferFunc)(const Ref<Image> &p_img, bool p_grayscale);
 
 class Image : public Resource {
 	GDCLASS(Image, Resource);
@@ -60,8 +60,8 @@ public:
 	static SaveJPGFunc save_jpg_func;
 	static SaveEXRFunc save_exr_func;
 	static SavePNGBufferFunc save_png_buffer_func;
-	static SaveJPGBufferFunc save_jpg_buffer_func;
 	static SaveEXRBufferFunc save_exr_buffer_func;
+	static SaveJPGBufferFunc save_jpg_buffer_func;
 
 	enum {
 		MAX_WIDTH = (1 << 24), // force a limit somehow
