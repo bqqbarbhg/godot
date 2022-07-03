@@ -204,13 +204,17 @@ int _main() {
 	return result;
 }
 
+#if defined(LIBRARY_ENABLED)
+extern "C" __declspec(dllexport) int godot_main(int argc, char *argv[]) {
+#else
 int main(int argc, char **argv) {
+#endif
 	// override the arguments for the test handler / if symbol is provided
 	// TEST_MAIN_OVERRIDE
 
 	// _argc and _argv are ignored
 	// we are going to use the WideChar version of them instead
-#ifdef CRASH_HANDLER_EXCEPTION
+#if defined(CRASH_HANDLER_EXCEPTION) && defined(MSVC)
 	__try {
 		return _main();
 	} __except (CrashHandlerException(GetExceptionInformation())) {
@@ -223,7 +227,9 @@ int main(int argc, char **argv) {
 
 HINSTANCE godot_hinstance = nullptr;
 
+#if !defined(LIBRARY_ENABLED)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	godot_hinstance = hInstance;
 	return main(0, nullptr);
 }
+#endif

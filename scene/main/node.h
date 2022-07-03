@@ -269,6 +269,7 @@ public:
 		NOTIFICATION_POST_ENTER_TREE = 27,
 		NOTIFICATION_DISABLED = 28,
 		NOTIFICATION_ENABLED = 29,
+		NOTIFICATION_NODE_RECACHE_REQUESTED = 30,
 		//keep these linked to node
 
 		NOTIFICATION_WM_MOUSE_ENTER = 1002,
@@ -352,7 +353,7 @@ public:
 
 	void set_owner(Node *p_owner);
 	Node *get_owner() const;
-	void get_owned_by(Node *p_by, List<Node *> *p_owned);
+	void get_owned_by(Node *p_by, List<Node *> *p_owned, bool p_include_children_of_owned_by = true);
 
 	void set_unique_name_in_owner(bool p_enabled);
 	bool is_unique_name_in_owner() const;
