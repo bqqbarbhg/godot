@@ -49,6 +49,7 @@
 #endif
 
 #include "extensions/openxr_htc_vive_tracker_extension.h"
+#include "extensions/openxr_palm_pose_extension.h"
 
 #include "modules/openxr/openxr_interface.h"
 
@@ -230,8 +231,8 @@ bool OpenXRAPI::create_instance() {
 	for (auto &requested_extension : requested_extensions) {
 		if (!is_extension_supported(requested_extension.key)) {
 			if (requested_extension.value == nullptr) {
-				// nullptr means this is a manditory extension so we fail
-				ERR_FAIL_V_MSG(false, "OpenXR: OpenXR Runtime does not support OpenGL extension!");
+				// nullptr means this is a mandatory extension so we fail.
+				ERR_FAIL_V_MSG(false, vformat("OpenXR: OpenXR Runtime does not support %s extension!", requested_extension.key.ascii().get_data()));
 			} else {
 				// set this extension as not supported
 				*requested_extension.value = false;
@@ -1662,6 +1663,7 @@ OpenXRAPI::OpenXRAPI() {
 
 	// register our other extensions
 	register_extension_wrapper(memnew(OpenXRHTCViveTrackerExtension(this)));
+	register_extension_wrapper(memnew(OpenXRPalmPoseExtension(this)));
 }
 
 OpenXRAPI::~OpenXRAPI() {
