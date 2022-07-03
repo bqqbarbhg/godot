@@ -170,6 +170,7 @@ opts.Add(EnumVariable("float", "Floating-point precision", "default", ("default"
 opts.Add(EnumVariable("optimize", "Optimization type", "speed", ("speed", "size", "none")))
 opts.Add(BoolVariable("production", "Set defaults to build Godot for use in production", False))
 opts.Add(BoolVariable("use_lto", "Use link-time optimization", False))
+opts.Add("ccache_bin", "Path to ccache, set empty to disable", "ccache")
 
 # Components
 opts.Add(BoolVariable("deprecated", "Enable compatibility code for deprecated and removed features", True))
@@ -200,6 +201,7 @@ opts.Add(BoolVariable("modules_enabled_by_default", "If no, disable all modules 
 opts.Add(BoolVariable("no_editor_splash", "Don't use the custom splash screen for the editor", True))
 opts.Add("system_certs_path", "Use this path as SSL certificates default for editor (for package maintainers)", "")
 opts.Add(BoolVariable("use_precise_math_checks", "Math checks use very precise epsilon (debug option)", False))
+opts.Add(BoolVariable("use_resonance_audio", "Use the audio spatializer.", True))
 
 # Thirdparty libraries
 opts.Add(BoolVariable("builtin_certs", "Use the built-in SSL certificates bundles", True))
@@ -292,6 +294,10 @@ if selected_platform in platform_opts:
 opts.Update(env_base)
 env_base["platform"] = selected_platform  # Must always be re-set after calling opts.Update().
 
+ccache = Tool("ccache", toolpath=["misc/scons/site_tools"])
+if ccache.exists(env_base):
+    ccache.generate(env_base)
+
 # Detect modules.
 modules_detected = OrderedDict()
 module_search_paths = ["modules"]  # Built-in path.
@@ -360,6 +366,12 @@ if env_base["target"] == "release_debug" or env_base["target"] == "debug":
     # DEBUG_ENABLED enables debugging *features* and debug-only code, which is intended
     # to give *users* extra debugging information for their game development.
     env_base.Append(CPPDEFINES=["DEBUG_ENABLED"])
+
+# ensure that anything depending on eigen will only be linked with permissively licensed code.
+env_base.Append(CPPDEFINES=["EIGEN_MPL2_ONLY"])
+
+if env_base["use_precise_math_checks"]:
+    env_base.Append(CPPDEFINES=["PRECISE_MATH_CHECKS"])
 
 if env_base["target"] == "debug":
     # DEV_ENABLED enables *engine developer* code which should only be compiled for those
@@ -619,6 +631,7 @@ if selected_platform in platform_list:
                     env.Append(CCFLAGS=["-Wno-error=strict-overflow"])
                 if cc_version_major >= 12:  # False positives in our error macros, see GH-58747.
                     env.Append(CCFLAGS=["-Wno-error=return-type"])
+                    env.Append(CXXFLAGS=["-Wno-maybe-uninitialized"])  # Confused warning on audio_frame.h
             elif methods.using_clang(env) or methods.using_emcc(env):
                 env.Append(CXXFLAGS=["-Wno-error=#warnings"])
 
