@@ -98,6 +98,9 @@ static void _editor_init() {
 			ResourceImporterScene::add_importer(importer);
 		}
 	}
+	EDITOR_DEF_RST("filesystem/filter/gltfpack_path", "");
+	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING,
+			"filesystem/filter/gltfpack_path", PROPERTY_HINT_GLOBAL_FILE));
 }
 #endif // TOOLS_ENABLED
 
@@ -133,6 +136,7 @@ void initialize_gltf_module(ModuleInitializationLevel p_level) {
 		// Project settings defined here so doctool finds them.
 		GLOBAL_DEF_RST("filesystem/import/blender/enabled", true);
 		GLOBAL_DEF_RST("filesystem/import/fbx/enabled", true);
+		GLOBAL_DEF_RST("filesystem/filter/gltfpack/enabled", true);
 		GDREGISTER_CLASS(EditorSceneFormatImporterBlend);
 		GDREGISTER_CLASS(EditorSceneFormatImporterFBX);
 

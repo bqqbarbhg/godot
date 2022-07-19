@@ -2906,8 +2906,10 @@ Ref<Image> (*Image::webp_unpacker)(const Vector<uint8_t> &) = nullptr;
 Vector<uint8_t> (*Image::png_packer)(const Ref<Image> &) = nullptr;
 Ref<Image> (*Image::png_unpacker)(const Vector<uint8_t> &) = nullptr;
 Vector<uint8_t> (*Image::basis_universal_packer)(const Ref<Image> &, Image::UsedChannels) = nullptr;
+Vector<uint8_t> (*Image::basis_universal_ktx2_packer_ptr)(const Ref<Image> &, Image::UsedChannels) = nullptr;
 Ref<Image> (*Image::basis_universal_unpacker)(const Vector<uint8_t> &) = nullptr;
 Ref<Image> (*Image::basis_universal_unpacker_ptr)(const uint8_t *, int) = nullptr;
+Ref<Resource> (*Image::basis_universal_ktx2_unpacker_ptr)(const uint8_t *, int) = nullptr;
 
 void Image::_set_data(const Dictionary &p_data) {
 	ERR_FAIL_COND(!p_data.has("width"));

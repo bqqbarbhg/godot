@@ -35,6 +35,8 @@
 #include "../gltf_document.h"
 #include "../gltf_state.h"
 
+#include "core/config/project_settings.h"
+#include "editor/editor_settings.h"
 #include "scene/resources/animation.h"
 
 uint32_t EditorSceneFormatImporterGLTF::get_import_flags() const {
@@ -49,21 +51,78 @@ void EditorSceneFormatImporterGLTF::get_extensions(List<String> *r_extensions) c
 Node *EditorSceneFormatImporterGLTF::import_scene(const String &p_path, uint32_t p_flags,
 		const HashMap<StringName, Variant> &p_options, int p_bake_fps,
 		List<String> *r_missing_deps, Error *r_err) {
-	Ref<GLTFDocument> doc;
-	doc.instantiate();
-	Ref<GLTFState> state;
-	state.instantiate();
-	Error err = doc->append_from_file(p_path, state, p_flags, p_bake_fps);
-	if (err != OK) {
-		if (r_err) {
-			*r_err = err;
+	bool gltfpack_enabled = GLOBAL_GET("filesystem/filter/gltfpack/enabled");
+	String gltfpack_path;
+	if (gltfpack_enabled && EditorSettings::get_singleton()->has_setting("filesystem/filter/gltfpack_path")) {
+		gltfpack_path = EDITOR_GET("filesystem/filter/gltfpack_path");
+	}
+		Ref<GLTFDocument> doc;
+		doc.instantiate();
+		Ref<GLTFState> state;
+		state.instantiate();
+	if (!gltfpack_path.is_empty()) {
+		// Get global paths for source and sink.
+		const String source = p_path;
+		const String source_global = ProjectSettings::get_singleton()->globalize_path(source);
+		const String sink = ProjectSettings::get_singleton()->get_imported_files_path().plus_file(
+				vformat("sink-gltfpack-%s-%s.glb", p_path.get_file().get_basename(), p_path.md5_text()));
+		const String sink_global = ProjectSettings::get_singleton()->globalize_path(sink);
+
+		List<String> args;
+		args.push_back("-o");
+		args.push_back(sink_global);
+		args.push_back("-i");
+		args.push_back(source_global);
+
+		args.push_back("-kn"); // Keep named nodes and meshes attached to named nodes so that named nodes can be transformed externally.
+		args.push_back("-km"); // Keep named materials and disable named material merging.
+		args.push_back("-ke"); // Keep extras data.
+		args.push_back("-tc"); // -tc: convert all textures to KTX2 with BasisU supercompression
+		args.push_back("-tu"); // use UASTC when encoding textures (much higher quality and much larger size)
+		// TODO: Fire 2022-08-14 Need to implement mesh optimizer gltf extension
+
+		String standard_out;
+		int ret;
+		OS::get_singleton()->execute(gltfpack_path, args, &standard_out, &ret, true);
+		print_verbose(gltfpack_path);
+		Vector<String> args_printed;
+		for (String arg : args) {
+			args_printed.push_back(arg);
 		}
-		return nullptr;
+		print_verbose(String(" ").join(args_printed));
+		print_verbose(standard_out);
+
+		if (ret != 0) {
+			ERR_PRINT(vformat("gltfpack filter failed with error: %d.", ret));
+			return nullptr;
+		}
+		Error err = doc->append_from_file(sink, state, p_flags, p_bake_fps);
+		if (err != OK) {
+			if (r_err) {
+				*r_err = err;
+			}
+			return nullptr;
+		}
+
+		if (p_options.has("animation/import")) {
+			state->set_create_animations(bool(p_options["animation/import"]));
+		}
+		return doc->generate_scene(state, p_bake_fps);
+		
+	} else {
+		Error err = doc->append_from_file(p_path, state, p_flags, p_bake_fps);
+		if (err != OK) {
+			if (r_err) {
+				*r_err = err;
+			}
+			return nullptr;
+		}
+		if (p_options.has("animation/import")) {
+			state->set_create_animations(bool(p_options["animation/import"]));
+		}
+		return doc->generate_scene(state, p_bake_fps);
 	}
-	if (p_options.has("animation/import")) {
-		state->set_create_animations(bool(p_options["animation/import"]));
-	}
-	return doc->generate_scene(state, p_bake_fps);
+	return nullptr;
 }
 
 #endif // TOOLS_ENABLED

@@ -62,6 +62,7 @@
 #include "scene/resources/surface_tool.h"
 
 #include "modules/modules_enabled.gen.h" // For csg, gridmap.
+#include "scene/resources/texture.h"
 
 #ifdef MODULE_CSG_ENABLED
 #include "modules/csg/csg_shape.h"
@@ -229,6 +230,10 @@ Error GLTFDocument::_serialize_extensions(Ref<GLTFState> state) const {
 	if (state->use_khr_texture_transform) {
 		extensions_used.push_back("KHR_texture_transform");
 		extensions_required.push_back("KHR_texture_transform");
+	}
+	if (state->use_texture_basisu) {
+		extensions_used.push_back("KHR_texture_basisu");
+		extensions_required.push_back("KHR_texture_basisu");
 	}
 	if (!extensions_used.is_empty()) {
 		state->json["extensionsUsed"] = extensions_used;
@@ -2997,6 +3002,7 @@ Error GLTFDocument::_serialize_images(Ref<GLTFState> state, const String &p_path
 		Ref<Image> image = state->images[i]->get_image();
 		ERR_CONTINUE(image.is_null());
 
+		// TODO: fire 2022-08-17 Add basisu export for roundtripping without loss.
 		if (p_path.to_lower().ends_with("glb") || p_path.is_empty()) {
 			GLTFBufferViewIndex bvi;
 
@@ -3173,9 +3179,14 @@ Error GLTFDocument::_parse_images(Ref<GLTFState> state, const String &p_base_pat
 		if (mimetype == "image/png") { // Load buffer as PNG.
 			ERR_FAIL_COND_V(Image::_png_mem_loader_func == nullptr, ERR_UNAVAILABLE);
 			img = Image::_png_mem_loader_func(data_ptr, data_size);
-		} else if (mimetype == "image/jpeg") { // Loader buffer as JPEG.
+		} else if (mimetype == "image/jpeg") { // Load buffer as JPEG.
 			ERR_FAIL_COND_V(Image::_jpg_mem_loader_func == nullptr, ERR_UNAVAILABLE);
 			img = Image::_jpg_mem_loader_func(data_ptr, data_size);
+		} else if (mimetype == "image/ktx2" && state->use_texture_basisu) { // Load buffer as BASISU.		
+			ERR_FAIL_COND_V(Image::basis_universal_ktx2_unpacker_ptr == nullptr, ERR_UNAVAILABLE);
+			Ref<CompressedTexture2D> tex = Image::basis_universal_ktx2_unpacker_ptr(data_ptr, data_size);
+			state->images.push_back(tex);
+			continue;
 		}
 
 		// If we didn't pass the above tests, we attempt loading as PNG and then
@@ -3552,20 +3563,28 @@ Error GLTFDocument::_parse_materials(Ref<GLTFState> state) {
 			material->set_name(vformat("material_%s", itos(i)));
 		}
 		material->set_flag(BaseMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
-		Dictionary pbr_spec_gloss_extensions;
+		Dictionary extensions;
 		if (d.has("extensions")) {
-			pbr_spec_gloss_extensions = d["extensions"];
+			extensions = d["extensions"];
 		}
-		if (pbr_spec_gloss_extensions.has("KHR_materials_pbrSpecularGlossiness")) {
+
+		if (extensions.has("KHR_materials_pbrSpecularGlossiness")) {
 			WARN_PRINT("Material uses a specular and glossiness workflow. Textures will be converted to roughness and metallic workflow, which may not be 100% accurate.");
-			Dictionary sgm = pbr_spec_gloss_extensions["KHR_materials_pbrSpecularGlossiness"];
+			Dictionary sgm = extensions["KHR_materials_pbrSpecularGlossiness"];
 
 			Ref<GLTFSpecGloss> spec_gloss;
 			spec_gloss.instantiate();
 			if (sgm.has("diffuseTexture")) {
 				const Dictionary &diffuse_texture_dict = sgm["diffuseTexture"];
-				if (diffuse_texture_dict.has("index")) {
-					Ref<Texture2D> diffuse_texture = _get_texture(state, diffuse_texture_dict["index"]);
+				int32_t texture_index = -1;
+				if (extensions.has("KHR_texture_basisu") && state->use_texture_basisu) {
+					Dictionary texture_basisu_extension = extensions["KHR_texture_basisu"];
+					texture_index = texture_basisu_extension["source"];
+				} else if (diffuse_texture_dict.has("index")) {
+					texture_index = diffuse_texture_dict["index"];
+				}
+				if (texture_index != -1) {
+					Ref<Texture2D> diffuse_texture = _get_texture(state, texture_index);
 					if (diffuse_texture.is_valid()) {
 						spec_gloss->diffuse_img = diffuse_texture->get_image();
 						material->set_texture(BaseMaterial3D::TEXTURE_ALBEDO, diffuse_texture);
@@ -3592,15 +3611,21 @@ Error GLTFDocument::_parse_materials(Ref<GLTFState> state) {
 			}
 			if (sgm.has("specularGlossinessTexture")) {
 				const Dictionary &spec_gloss_texture = sgm["specularGlossinessTexture"];
-				if (spec_gloss_texture.has("index")) {
-					const Ref<Texture2D> orig_texture = _get_texture(state, spec_gloss_texture["index"]);
+				int32_t texture_index = -1;
+				if (extensions.has("KHR_texture_basisu") && state->use_texture_basisu) {
+					Dictionary texture_basisu_extension = extensions["KHR_texture_basisu"];
+					texture_index = texture_basisu_extension["source"];
+				} else if (spec_gloss_texture.has("index")) {
+					texture_index = spec_gloss_texture["index"];
+				}
+				if (texture_index != -1) {
+					const Ref<Texture2D> orig_texture = _get_texture(state, texture_index);
 					if (orig_texture.is_valid()) {
 						spec_gloss->spec_gloss_img = orig_texture->get_image();
 					}
 				}
 			}
 			spec_gloss_to_rough_metal(spec_gloss, material);
-
 		} else if (d.has("pbrMetallicRoughness")) {
 			const Dictionary &mr = d["pbrMetallicRoughness"];
 			if (mr.has("baseColorFactor")) {
@@ -3612,8 +3637,15 @@ Error GLTFDocument::_parse_materials(Ref<GLTFState> state) {
 
 			if (mr.has("baseColorTexture")) {
 				const Dictionary &bct = mr["baseColorTexture"];
-				if (bct.has("index")) {
-					material->set_texture(BaseMaterial3D::TEXTURE_ALBEDO, _get_texture(state, bct["index"]));
+				int32_t texture_index = -1;
+				if (extensions.has("KHR_texture_basisu") && state->use_texture_basisu) {
+					Dictionary texture_basisu_extension = extensions["KHR_texture_basisu"];
+					texture_index = texture_basisu_extension["source"];
+				} else if (bct.has("index")) {
+					texture_index = bct["index"];
+				}
+				if (texture_index != -1) {
+					material->set_texture(BaseMaterial3D::TEXTURE_ALBEDO, _get_texture(state, texture_index));
 				}
 				if (!mr.has("baseColorFactor")) {
 					material->set_albedo(Color(1, 1, 1));
@@ -3635,26 +3667,41 @@ Error GLTFDocument::_parse_materials(Ref<GLTFState> state) {
 
 			if (mr.has("metallicRoughnessTexture")) {
 				const Dictionary &bct = mr["metallicRoughnessTexture"];
-				if (bct.has("index")) {
-					const Ref<Texture2D> t = _get_texture(state, bct["index"]);
+				int32_t texture_index = -1;
+				if (extensions.has("KHR_texture_basisu") && state->use_texture_basisu) {
+					Dictionary texture_basisu_extension = extensions["KHR_texture_basisu"];
+					texture_index = texture_basisu_extension["source"];
+				} else if (bct.has("index")) {
+					texture_index = bct["index"];
+				}
+				if (texture_index != -1) {
+					const Ref<Texture2D> t = _get_texture(state, texture_index);
 					material->set_texture(BaseMaterial3D::TEXTURE_METALLIC, t);
 					material->set_metallic_texture_channel(BaseMaterial3D::TEXTURE_CHANNEL_BLUE);
 					material->set_texture(BaseMaterial3D::TEXTURE_ROUGHNESS, t);
 					material->set_roughness_texture_channel(BaseMaterial3D::TEXTURE_CHANNEL_GREEN);
-					if (!mr.has("metallicFactor")) {
-						material->set_metallic(1);
-					}
-					if (!mr.has("roughnessFactor")) {
-						material->set_roughness(1);
-					}
+				}
+				if (!mr.has("metallicFactor")) {
+					material->set_metallic(1);
+				}
+				if (!mr.has("roughnessFactor")) {
+					material->set_roughness(1);
 				}
 			}
 		}
 
 		if (d.has("normalTexture")) {
 			const Dictionary &bct = d["normalTexture"];
-			if (bct.has("index")) {
-				material->set_texture(BaseMaterial3D::TEXTURE_NORMAL, _get_texture(state, bct["index"]));
+
+			int32_t texture_index = bct["index"];
+			if (extensions.has("KHR_texture_basisu") && state->use_texture_basisu) {
+				Dictionary texture_basisu_extension = extensions["KHR_texture_basisu"];
+				texture_index = texture_basisu_extension["source"];
+			} else if (bct.has("index")) {
+				texture_index = bct["index"];
+			}
+			if (texture_index != -1) {
+				material->set_texture(BaseMaterial3D::TEXTURE_NORMAL, _get_texture(state, texture_index));
 				material->set_feature(BaseMaterial3D::FEATURE_NORMAL_MAPPING, true);
 			}
 			if (bct.has("scale")) {
@@ -3663,8 +3710,16 @@ Error GLTFDocument::_parse_materials(Ref<GLTFState> state) {
 		}
 		if (d.has("occlusionTexture")) {
 			const Dictionary &bct = d["occlusionTexture"];
-			if (bct.has("index")) {
-				material->set_texture(BaseMaterial3D::TEXTURE_AMBIENT_OCCLUSION, _get_texture(state, bct["index"]));
+
+			int32_t texture_index = -1;
+			if (extensions.has("KHR_texture_basisu") && state->use_texture_basisu) {
+				Dictionary texture_basisu_extension = extensions["KHR_texture_basisu"];
+				texture_index = texture_basisu_extension["source"];
+			} else if (bct.has("index")) {
+				texture_index = bct["index"];
+			}
+			if (texture_index != -1) {
+				material->set_texture(BaseMaterial3D::TEXTURE_AMBIENT_OCCLUSION, _get_texture(state, texture_index));
 				material->set_ao_texture_channel(BaseMaterial3D::TEXTURE_CHANNEL_RED);
 				material->set_feature(BaseMaterial3D::FEATURE_AMBIENT_OCCLUSION, true);
 			}
@@ -3681,8 +3736,15 @@ Error GLTFDocument::_parse_materials(Ref<GLTFState> state) {
 
 		if (d.has("emissiveTexture")) {
 			const Dictionary &bct = d["emissiveTexture"];
-			if (bct.has("index")) {
-				material->set_texture(BaseMaterial3D::TEXTURE_EMISSION, _get_texture(state, bct["index"]));
+			int32_t texture_index = bct["index"];
+			if (extensions.has("KHR_texture_basisu") && state->use_texture_basisu) {
+				Dictionary texture_basisu_extension = extensions["KHR_texture_basisu"];
+				texture_index = texture_basisu_extension["source"];
+			} else if (bct.has("index")) {
+				texture_index = bct["index"];
+			}
+			if (texture_index != -1) {
+				material->set_texture(BaseMaterial3D::TEXTURE_EMISSION, _get_texture(state, texture_index));
 				material->set_feature(BaseMaterial3D::FEATURE_EMISSION, true);
 				material->set_emission(Color(0, 0, 0));
 			}
@@ -7098,6 +7160,15 @@ Error GLTFDocument::_parse_gltf_extensions(Ref<GLTFState> state) {
 		if (extensions_required.find("KHR_draco_mesh_compression") != -1) {
 			ERR_PRINT("glTF2 extension KHR_draco_mesh_compression is not supported.");
 			return ERR_UNAVAILABLE;
+		}
+		if (extensions_required.find("KHR_texture_basisu") != -1) {
+			state->set_use_basisu(true);
+		}
+	}
+	if (state->json.has("extensions") && state->json["extensions"].get_type() == Variant::ARRAY) {
+		Array extensions = state->json["extensions"];
+		if (extensions.find("KHR_texture_basisu") != -1) {
+			state->set_use_basisu(true);
 		}
 	}
 	return OK;

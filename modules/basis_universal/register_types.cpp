@@ -30,8 +30,24 @@
 
 #include "register_types.h"
 
+#include "core/error/error_macros.h"
+#include "core/io/file_access.h"
+#include "core/io/file_access_memory.h"
+#include "core/io/resource.h"
+#include "core/io/resource_format_binary.h"
+#include "core/io/resource_loader.h"
+#include "core/io/stream_peer.h"
+#include "core/math/basis.h"
+#include "core/object/ref_counted.h"
 #include "core/os/os.h"
+#include "scene/resources/texture.h"
 #include "servers/rendering_server.h"
+#include <sys/types.h>
+#include <transcoder/basisu.h>
+#include <transcoder/basisu_file_headers.h>
+#include <transcoder/basisu_transcoder_internal.h>
+#include <cstdint>
+#include <cstring>
 
 #ifdef TOOLS_ENABLED
 #include <encoder/basisu_comp.h>
@@ -50,95 +66,144 @@ enum BasisDecompressFormat {
 #define USE_RG_AS_RGBA
 
 #ifdef TOOLS_ENABLED
-static Vector<uint8_t> basis_universal_packer(const Ref<Image> &p_image, Image::UsedChannels p_channels) {
-	Vector<uint8_t> budata;
-
-	{
-		Ref<Image> image = p_image->duplicate();
-
-		// unfortunately, basis universal does not support compressing supplied mipmaps,
-		// so for the time being, only compressing individual images will have to do.
-
-		if (image->has_mipmaps()) {
-			image->clear_mipmaps();
-		}
-		if (image->get_format() != Image::FORMAT_RGBA8) {
-			image->convert(Image::FORMAT_RGBA8);
-		}
-
-		basisu::image buimg(image->get_width(), image->get_height());
-
-		{
-			Vector<uint8_t> vec = image->get_data();
-			const uint8_t *r = vec.ptr();
-
-			memcpy(buimg.get_ptr(), r, vec.size());
-		}
-
-		basisu::basis_compressor_params params;
-		params.m_uastc = true;
-		params.m_max_endpoint_clusters = 512;
-		params.m_max_selector_clusters = 512;
-		params.m_multithreading = true;
-		//params.m_quality_level = 0;
-		//params.m_disable_hierarchical_endpoint_codebooks = true;
-		//params.m_no_selector_rdo = true;
-
-		basisu::job_pool jpool(OS::get_singleton()->get_processor_count());
-		params.m_pJob_pool = &jpool;
-
-		params.m_mip_gen = false; //sorry, please some day support provided mipmaps.
-		params.m_source_images.push_back(buimg);
-
-		BasisDecompressFormat decompress_format = BASIS_DECOMPRESS_RG;
-		params.m_check_for_alpha = false;
-
-		switch (p_channels) {
-			case Image::USED_CHANNELS_L: {
-				decompress_format = BASIS_DECOMPRESS_RGB;
-			} break;
-			case Image::USED_CHANNELS_LA: {
-				params.m_force_alpha = true;
-				decompress_format = BASIS_DECOMPRESS_RGBA;
-			} break;
-			case Image::USED_CHANNELS_R: {
-				decompress_format = BASIS_DECOMPRESS_RGB;
-			} break;
-			case Image::USED_CHANNELS_RG: {
-#ifdef USE_RG_AS_RGBA
-				image->convert_rg_to_ra_rgba8();
-				decompress_format = BASIS_DECOMPRESS_RG_AS_RA;
-#else
-				params.m_seperate_rg_to_color_alpha = true;
-				decompress_format = BASIS_DECOMPRESS_RG;
-#endif
-			} break;
-			case Image::USED_CHANNELS_RGB: {
-				decompress_format = BASIS_DECOMPRESS_RGB;
-			} break;
-			case Image::USED_CHANNELS_RGBA: {
-				params.m_force_alpha = true;
-				decompress_format = BASIS_DECOMPRESS_RGBA;
-			} break;
-		}
-
-		basisu::basis_compressor c;
-		c.init(params);
-
-		int buerr = c.process();
-		ERR_FAIL_COND_V(buerr != basisu::basis_compressor::cECSuccess, budata);
-
-		const basisu::uint8_vec &buvec = c.get_output_basis_file();
-		budata.resize(buvec.size() + 4);
-
-		{
-			uint8_t *w = budata.ptrw();
-			uint32_t *decf = (uint32_t *)w;
-			*decf = decompress_format;
-			memcpy(w + 4, &buvec[0], buvec.size());
-		}
+static void basis_universal_compressor(basisu::basis_compressor &r_compressor, BasisDecompressFormat &r_decompress_format, const Ref<Image> &p_image, Image::UsedChannels p_channels) {
+	basisu::basis_compressor_params params;
+	Ref<Image> image = p_image->duplicate();
+	if (image->get_format() != Image::FORMAT_RGBA8) {
+		image->convert(Image::FORMAT_RGBA8);
 	}
+	Ref<Image> image_single = image->duplicate();
+	{
+		if (image_single->has_mipmaps()) {
+			image_single->clear_mipmaps();
+		}
+		basisu::image buimg(image_single->get_width(), image_single->get_height());
+		Vector<uint8_t> vec = image_single->get_data();
+		const uint8_t *r = vec.ptr();
+		memcpy(buimg.get_ptr(), r, vec.size());
+		params.m_source_images.push_back(buimg);
+	}
+	basisu::vector<basisu::image> source_images;
+	for (int32_t mipmap_i = 1; mipmap_i < image->get_mipmap_count(); mipmap_i++) {
+		Ref<Image> mip = image->get_image_from_mipmap(mipmap_i);
+		basisu::image buimg(mip->get_width(), mip->get_height());
+		Vector<uint8_t> vec = mip->get_data();
+		const uint8_t *r = vec.ptr();
+		memcpy(buimg.get_ptr(), r, vec.size());
+		source_images.push_back(buimg);
+	}
+	params.m_source_mipmap_images.push_back(source_images);
 
+	params.m_uastc = true;
+	params.m_quality_level = basisu::BASISU_QUALITY_MIN;
+
+	params.m_pack_uastc_flags &= ~basisu::cPackUASTCLevelMask;
+
+	static const uint32_t s_level_flags[basisu::TOTAL_PACK_UASTC_LEVELS] = { basisu::cPackUASTCLevelFastest, basisu::cPackUASTCLevelFaster, basisu::cPackUASTCLevelDefault, basisu::cPackUASTCLevelSlower, basisu::cPackUASTCLevelVerySlow };
+	params.m_pack_uastc_flags |= s_level_flags[0];
+	params.m_rdo_uastc = 0.0f;
+	params.m_rdo_uastc_quality_scalar = 0.0f;
+	params.m_rdo_uastc_dict_size = 1024;
+
+	params.m_mip_fast = true;
+	params.m_multithreading = true;
+
+	basisu::job_pool jpool(OS::get_singleton()->get_processor_count());
+	params.m_pJob_pool = &jpool;
+
+	r_decompress_format = BASIS_DECOMPRESS_RG;
+	params.m_check_for_alpha = false;
+
+	switch (p_channels) {
+		case Image::USED_CHANNELS_L: {
+			r_decompress_format = BASIS_DECOMPRESS_RGB;
+		} break;
+		case Image::USED_CHANNELS_LA: {
+			params.m_force_alpha = true;
+			r_decompress_format = BASIS_DECOMPRESS_RGBA;
+		} break;
+		case Image::USED_CHANNELS_R: {
+			r_decompress_format = BASIS_DECOMPRESS_RGB;
+		} break;
+		case Image::USED_CHANNELS_RG: {
+#ifdef USE_RG_AS_RGBA
+			image->convert_rg_to_ra_rgba8();
+			r_decompress_format = BASIS_DECOMPRESS_RG_AS_RA;
+#else
+			params.m_seperate_rg_to_color_alpha = true;
+			decompress_format = BASIS_DECOMPRESS_RG;
+#endif
+		} break;
+		case Image::USED_CHANNELS_RGB: {
+			r_decompress_format = BASIS_DECOMPRESS_RGB;
+		} break;
+		case Image::USED_CHANNELS_RGBA: {
+			params.m_force_alpha = true;
+			r_decompress_format = BASIS_DECOMPRESS_RGBA;
+		} break;
+	}
+	r_compressor.init(params);
+}
+
+static Vector<uint8_t> basis_universal_packer(const Ref<Image> &p_image, Image::UsedChannels p_channels) {
+	basisu::basis_compressor c;
+	BasisDecompressFormat decompress_format;
+	basis_universal_compressor(c, decompress_format, p_image, p_channels);
+	int buerr = c.process();
+	Vector<uint8_t> budata;
+	ERR_FAIL_COND_V(buerr != basisu::basis_compressor::cECSuccess, budata);
+	const basisu::uint8_vec &buvec = c.get_output_basis_file();
+	budata.resize(buvec.size() + 4);
+	uint8_t *w = budata.ptrw();
+	uint32_t *decf = (uint32_t *)w;
+	*decf = decompress_format;
+	memcpy(w + 4, &buvec[0], buvec.size());
+	return budata;
+}
+
+static Ref<Resource> basis_universal_ktx2_unpacker_ptr(const uint8_t *p_data, int p_size) {
+	basist::ktx2_transcoder transcoder;
+	transcoder.init(p_data, p_size);
+	basist::ktx2_header header = transcoder.get_header();
+	Ref<StreamPeerBuffer> buffer;
+	buffer.instantiate();
+	buffer->put_32(CompressedTexture2D::DATA_FORMAT_BASIS_UNIVERSAL);
+	int16_t width = header.m_pixel_width;
+	buffer->put_16(width);
+	int16_t height = header.m_pixel_height;
+	buffer->put_16(height);
+	int32_t level_count = header.m_level_count;
+	buffer->put_32(level_count);
+	buffer->put_32(Image::FORMAT_RGBA8);
+	Vector<uint8_t> image_data;
+	image_data.resize(header.m_pixel_height * header.m_type_size);
+	basist::transcoder_texture_format fmt{};
+	transcoder.transcode_image_level(0, 0, 0, image_data.ptrw(), image_data.size(), fmt);
+
+	buffer->put_32(image_data.size());
+	buffer->put_data(image_data.ptr(), image_data.size());
+	Vector<uint8_t> data = buffer->get_data_array();
+	Ref<PortableCompressedTexture2D> tex;
+	tex.instantiate();
+	tex->set_keep_compressed_buffer(true);
+	Ref<FileAccessMemory> f;
+	f.instantiate();
+	f->open_custom(data.ptr(), data.size());
+	tex->create_from_image(CompressedTexture2D::load_image_from_file(f, f->get_length()), PortableCompressedTexture2D::COMPRESSION_MODE_BASIS_UNIVERSAL);
+	return tex;
+}
+
+static Vector<uint8_t> basis_universal_ktx2_packer_ptr(const Ref<Image> &p_image, Image::UsedChannels p_channels) {
+	basisu::basis_compressor c;
+	BasisDecompressFormat decompress_format;
+	basis_universal_compressor(c, decompress_format, p_image, p_channels);
+	int buerr = c.process();
+	Vector<uint8_t> budata;
+	ERR_FAIL_COND_V(buerr != basisu::basis_compressor::cECSuccess, budata);
+	const basisu::uint8_vec &buvec = c.get_output_ktx2_file();
+	budata.resize(buvec.size());
+	uint8_t *w = budata.ptrw();
+	memcpy(w, &buvec[0], buvec.size());
 	return budata;
 }
 #endif // TOOLS_ENABLED
@@ -222,12 +287,16 @@ static Ref<Image> basis_universal_unpacker_ptr(const uint8_t *p_data, int p_size
 
 	ERR_FAIL_COND_V(!tr.validate_header(ptr, size), image);
 
-	basist::basisu_image_info info;
-	tr.get_image_info(ptr, size, info, 0);
+	basist::basisu_file_info info;
+	tr.get_file_info(ptr, size, info);
+	basist::basisu_image_info image_info;
+	tr.get_image_info(ptr, size, image_info, 0);
 
 	int block_size = basist::basis_get_bytes_per_block_or_pixel(format);
 	Vector<uint8_t> gpudata;
-	gpudata.resize(info.m_total_blocks * block_size);
+	ERR_FAIL_INDEX_V(0, info.m_image_mipmap_levels.size(), Ref<Image>());
+	uint32_t total_mip_levels = info.m_image_mipmap_levels[0];
+	gpudata.resize(Image::get_image_data_size(image_info.m_width, image_info.m_height, imgfmt, total_mip_levels > 1));
 
 	{
 		uint8_t *w = gpudata.ptrw();
@@ -238,11 +307,11 @@ static Ref<Image> basis_universal_unpacker_ptr(const uint8_t *p_data, int p_size
 
 		int ofs = 0;
 		tr.start_transcoding(ptr, size);
-		for (uint32_t i = 0; i < info.m_total_levels; i++) {
+		for (uint32_t i = 0; i < total_mip_levels; i++) {
 			basist::basisu_image_level_info level;
 			tr.get_image_level_info(ptr, size, level, 0, i);
 
-			bool ret = tr.transcode_image_level(ptr, size, 0, i, dst + ofs, level.m_total_blocks - i, format);
+			bool ret = tr.transcode_image_level(ptr, size, 0, i, dst + ofs, level.m_total_blocks, format);
 			if (!ret) {
 				printf("failed! on level %u\n", i);
 				break;
@@ -250,10 +319,9 @@ static Ref<Image> basis_universal_unpacker_ptr(const uint8_t *p_data, int p_size
 
 			ofs += level.m_total_blocks * block_size;
 		};
-	};
-
-	image.instantiate();
-	image->create(info.m_width, info.m_height, info.m_total_levels > 1, imgfmt, gpudata);
+		image.instantiate();
+		image->create(image_info.m_width, image_info.m_height, total_mip_levels > 1, imgfmt, gpudata);
+	}
 
 	return image;
 }
@@ -276,6 +344,8 @@ void initialize_basis_universal_module(ModuleInitializationLevel p_level) {
 	using namespace basist;
 	basisu_encoder_init();
 	Image::basis_universal_packer = basis_universal_packer;
+	Image::basis_universal_ktx2_packer_ptr = basis_universal_ktx2_packer_ptr;
+	Image::basis_universal_ktx2_unpacker_ptr = basis_universal_ktx2_unpacker_ptr;
 #endif
 	Image::basis_universal_unpacker = basis_universal_unpacker;
 	Image::basis_universal_unpacker_ptr = basis_universal_unpacker_ptr;
@@ -288,6 +358,8 @@ void uninitialize_basis_universal_module(ModuleInitializationLevel p_level) {
 
 #ifdef TOOLS_ENABLED
 	Image::basis_universal_packer = nullptr;
+	Image::basis_universal_ktx2_packer_ptr = nullptr;
+	Image::basis_universal_ktx2_unpacker_ptr = nullptr;
 #endif
 	Image::basis_universal_unpacker = nullptr;
 	Image::basis_universal_unpacker_ptr = nullptr;

@@ -61,6 +61,7 @@ class GLTFState : public Resource {
 	bool use_named_skin_binds = false;
 	bool use_khr_texture_transform = false;
 	bool discard_meshes_and_materials = false;
+	bool use_texture_basisu = false;
 	bool create_animations = true;
 
 	Vector<Ref<GLTFNode>> nodes;
@@ -115,6 +116,9 @@ public:
 	bool get_discard_meshes_and_materials();
 	void set_discard_meshes_and_materials(bool p_discard_meshes_and_materials);
 
+	bool get_use_basisu();
+	void set_use_basisu(bool p_use_basisu);
+
 	Array get_nodes();
 	void set_nodes(Array p_nodes);
 
@@ -135,6 +139,9 @@ public:
 
 	String get_scene_name();
 	void set_scene_name(String p_scene_name);
+
+	String get_filename();
+	void set_filename(String p_filename);
 
 	String get_base_path();
 	void set_base_path(String p_base_path);

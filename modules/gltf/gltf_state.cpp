@@ -84,6 +84,10 @@ void GLTFState::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_animations"), &GLTFState::get_animations);
 	ClassDB::bind_method(D_METHOD("set_animations", "animations"), &GLTFState::set_animations);
 	ClassDB::bind_method(D_METHOD("get_scene_node", "idx"), &GLTFState::get_scene_node);
+	ClassDB::bind_method(D_METHOD("get_filename"), &GLTFState::get_filename);
+	ClassDB::bind_method(D_METHOD("set_filename", "filename"), &GLTFState::set_filename);
+	ClassDB::bind_method(D_METHOD("get_use_basisu"), &GLTFState::get_use_basisu);
+	ClassDB::bind_method(D_METHOD("set_use_basisu", "use_basisu"), &GLTFState::set_use_basisu);
 
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "json"), "set_json", "get_json"); // Dictionary
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "major_version"), "set_major_version", "get_major_version"); // int
@@ -109,6 +113,9 @@ void GLTFState::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "skeletons", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_skeletons", "get_skeletons"); // Vector<Ref<GLTFSkeleton>>
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "skeleton_to_node", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_skeleton_to_node", "get_skeleton_to_node"); // RBMap<GLTFSkeletonIndex,
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "create_animations"), "set_create_animations", "get_create_animations"); // bool
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "filename"), "set_filename", "get_filename"); // bool
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_basisu"), "set_use_basisu", "get_use_basisu"); // bool
+
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "animations", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_animations", "get_animations"); // Vector<Ref<GLTFAnimation>>
 }
 
@@ -334,4 +341,20 @@ String GLTFState::get_base_path() {
 
 void GLTFState::set_base_path(String p_base_path) {
 	base_path = p_base_path;
+}
+
+String GLTFState::get_filename() {
+	return filename;
+}
+
+void GLTFState::set_filename(String p_filename) {
+	filename = p_filename;
+}
+
+bool GLTFState::get_use_basisu() {
+	return use_texture_basisu;
+}
+
+void GLTFState::set_use_basisu(bool p_use_basisu) {
+	use_texture_basisu = p_use_basisu;
 }
