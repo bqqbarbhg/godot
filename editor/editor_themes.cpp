@@ -514,9 +514,9 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 
 	theme->set_color("mono_color", "Editor", mono_color);
 
-	Color success_color = Color(0.45, 0.95, 0.5);
-	Color warning_color = Color(1, 0.87, 0.4);
-	Color error_color = Color(1, 0.47, 0.42);
+	Color success_color = dark_theme ? Color(0.45, 0.95, 0.5) : Color(0.27, 0.55, 0.0);
+	Color warning_color = dark_theme ? Color(1, 0.87, 0.4) : Color(0.95, 0.56, 0.14);
+	Color error_color = dark_theme ? Color(1, 0.47, 0.42) : Color(1, 0.17, 0.10);
 	Color property_color = font_color.lerp(Color(0.5, 0.5, 0.5), 0.5);
 	Color readonly_color = property_color.lerp(dark_theme ? Color(0, 0, 0) : Color(1, 1, 1), 0.5);
 	Color readonly_warning_color = error_color.lerp(dark_theme ? Color(0, 0, 0) : Color(1, 1, 1), 0.5);
