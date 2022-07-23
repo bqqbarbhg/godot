@@ -309,8 +309,8 @@ public:
 
 	void regen_normal_maps();
 
-	Error lightmap_unwrap(const Transform3D &p_base_transform = Transform3D(), float p_texel_size = 0.05);
-	Error lightmap_unwrap_cached(const Transform3D &p_base_transform, float p_texel_size, const Vector<uint8_t> &p_src_cache, Vector<uint8_t> &r_dst_cache, bool p_generate_cache = true);
+	Error lightmap_unwrap(const Transform3D &p_base_transform = Transform3D(), float p_texel_size = 0.05, Mesh::ArrayType p_mesh_type = Mesh::ARRAY_TEX_UV2);
+	Error unwrap_cached(const Transform3D &p_base_transform, float p_texel_size, const Vector<uint8_t> &p_src_cache, Vector<uint8_t> &r_dst_cache, bool p_generate_cache = true, Mesh::ArrayType p_mesh_type = Mesh::ARRAY_TEX_UV2);
 
 	virtual void reload_from_file() override;
 

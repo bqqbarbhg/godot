@@ -1847,12 +1847,12 @@ struct ArrayMeshLightmapSurface {
 	uint32_t format = 0;
 };
 
-Error ArrayMesh::lightmap_unwrap(const Transform3D &p_base_transform, float p_texel_size) {
+Error ArrayMesh::lightmap_unwrap(const Transform3D &p_base_transform, float p_texel_size, Mesh::ArrayType p_mesh_type) {
 	Vector<uint8_t> null_cache;
-	return lightmap_unwrap_cached(p_base_transform, p_texel_size, null_cache, null_cache, false);
+	return unwrap_cached(p_base_transform, p_texel_size, null_cache, null_cache, false, p_mesh_type);
 }
 
-Error ArrayMesh::lightmap_unwrap_cached(const Transform3D &p_base_transform, float p_texel_size, const Vector<uint8_t> &p_src_cache, Vector<uint8_t> &r_dst_cache, bool p_generate_cache) {
+Error ArrayMesh::unwrap_cached(const Transform3D &p_base_transform, float p_texel_size, const Vector<uint8_t> &p_src_cache, Vector<uint8_t> &r_dst_cache, bool p_generate_cache, Mesh::ArrayType p_mesh_type) {
 	ERR_FAIL_COND_V(!array_mesh_lightmap_unwrap_callback, ERR_UNCONFIGURED);
 	ERR_FAIL_COND_V_MSG(blend_shapes.size() != 0, ERR_UNAVAILABLE, "Can't unwrap mesh with blend shapes.");
 	ERR_FAIL_COND_V_MSG(p_texel_size <= 0.0f, ERR_PARAMETER_RANGE_ERROR, "Texel size must be greater than 0.");
@@ -2004,7 +2004,7 @@ Error ArrayMesh::lightmap_unwrap_cached(const Transform3D &p_base_transform, flo
 			if (lightmap_surfaces[surface].format & ARRAY_FORMAT_NORMAL) {
 				surfaces_tools[surface]->set_normal(v.normal);
 			}
-			if (lightmap_surfaces[surface].format & ARRAY_FORMAT_TANGENT) {
+			if (lightmap_surfaces[surface].format & ARRAY_FORMAT_TANGENT || p_mesh_type == Mesh::ARRAY_TEX_UV) {
 				Plane t;
 				t.normal = v.tangent;
 				t.d = v.binormal.dot(v.normal.cross(v.tangent)) < 0 ? -1 : 1;
@@ -2017,8 +2017,12 @@ Error ArrayMesh::lightmap_unwrap_cached(const Transform3D &p_base_transform, flo
 				surfaces_tools[surface]->set_weights(v.weights);
 			}
 
-			Vector2 uv2(gen_uvs[gen_indices[i + j] * 2 + 0], gen_uvs[gen_indices[i + j] * 2 + 1]);
-			surfaces_tools[surface]->set_uv2(uv2);
+			Vector2 current_uv(gen_uvs[gen_indices[i + j] * 2 + 0], gen_uvs[gen_indices[i + j] * 2 + 1]);
+			if (p_mesh_type == Mesh::ARRAY_TEX_UV) {
+				surfaces_tools[surface]->set_uv(current_uv);
+			} else if (p_mesh_type == Mesh::ARRAY_TEX_UV2) {
+				surfaces_tools[surface]->set_uv2(current_uv);
+			}
 
 			surfaces_tools[surface]->add_vertex(v.vertex);
 		}
