@@ -35,7 +35,7 @@
 #include "core/math/math_funcs.h"
 #include "core/math/vector2.h"
 #include "core/object/ref_counted.h"
-#include "core/templates/map.h"
+#include "core/templates/hash_map.h"
 #include "core/templates/vector.h"
 
 // Based on https://github.com/robertjoosten/maya-keyframe-reduction
