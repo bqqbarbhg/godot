@@ -227,10 +227,10 @@ public:
 public:
 	struct KeyframeReductionSetting {
 		// Maximum allowed error when reducing the animation curves.
-		real_t max_error = 0.1;
+		real_t max_error = CMP_EPSILON;
 
 		// Step size at which to sample the animation curves."
-		real_t step_size = 1.0f;
+		real_t step_size = 0.5f;
 		// The threshold to split tangents.
 		real_t tangent_split_angle_threshold_value = 5.0f;
 	};

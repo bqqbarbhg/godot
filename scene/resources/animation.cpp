@@ -3878,7 +3878,6 @@ void Animation::_position_track_optimize(int p_idx, real_t p_allowed_linear_err,
 	Ref<BezierKeyframeReduce> reduce;
 	reduce.instantiate();
 	BezierKeyframeReduce::KeyframeReductionSetting settings;
-	settings.max_error = p_allowed_linear_err;
 	Vector<Vector<BezierKeyframeReduce::Bezier>> beziers;
 	Vector<BezierTrack> bezier_tracks;
 	Vector<Vector<BezierKeyframeReduce::Bezier>> out_curves;
@@ -3916,7 +3915,6 @@ void Animation::_blend_shape_track_optimize(int p_idx, real_t p_allowed_linear_e
 	Ref<BezierKeyframeReduce> reduce;
 	reduce.instantiate();
 	BezierKeyframeReduce::KeyframeReductionSetting settings;
-	settings.max_error = p_allowed_linear_err;
 	Vector<BezierKeyframeReduce::Bezier> bezier;
 	BezierTrack bezier_track;
 	Vector<BezierKeyframeReduce::Bezier> out_curve;
@@ -3953,11 +3951,10 @@ void Animation::_rotation_track_optimize(int p_idx, real_t p_allowed_angular_err
 	ERR_FAIL_COND(tracks[p_idx]->type != TYPE_ROTATION_3D);
 	RotationTrack *track = static_cast<RotationTrack *>(tracks[p_idx]);
 	track->interpolation = Animation::INTERPOLATION_CUBIC;
+	String original_path = track_get_path(p_idx);
 	Ref<BezierKeyframeReduce> reduce;
 	reduce.instantiate();
 	BezierKeyframeReduce::KeyframeReductionSetting settings;
-	settings.max_error = p_allowed_angular_err;
-	settings.tangent_split_angle_threshold_value = p_max_optimizable_angle;
 	Vector<Vector<BezierKeyframeReduce::Bezier>> beziers;
 	Vector<Vector<BezierKeyframeReduce::Bezier>> out_curves;
 	for (int32_t i = 0; i < 4; i++) {
@@ -3980,25 +3977,32 @@ void Animation::_rotation_track_optimize(int p_idx, real_t p_allowed_angular_err
 	}
 	PackedStringArray element_paths;
 	element_paths.resize(4);
-	element_paths.write[0] = ":rotation:x";
-	element_paths.write[1] = ":rotation:y";
-	element_paths.write[2] = ":rotation:z";
-	element_paths.write[3] = ":rotation:w";
+	element_paths.write[0] = ":quaternion:x";
+	element_paths.write[1] = ":quaternion:y";
+	element_paths.write[2] = ":quaternion:z";
+	element_paths.write[3] = ":quaternion:w";
 	for (int32_t bezier_i = 0; bezier_i < 4; bezier_i++) {
 		reduce->reduce(beziers[bezier_i], out_curves.write[bezier_i], settings);
 		int32_t track_i = add_track(TrackType::TYPE_BEZIER);
-		track_set_path(track_i, String(track->path) + element_paths[bezier_i]);
-		BezierTrack *track = static_cast<BezierTrack *>(tracks[track_i]);
+		track_set_path(track_i, original_path + element_paths[bezier_i]);
+		BezierTrack *bezier_track = static_cast<BezierTrack *>(tracks[track_i]);
 		for (const BezierKeyframeReduce::Bezier &bezier : out_curves.write[bezier_i]) {
 			TKey<BezierKey> elem;
 			elem.value.in_handle = bezier.in_handle;
 			elem.value.out_handle = bezier.out_handle;
 			elem.value.value = bezier.time_value.y;
 			elem.time = bezier.time_value.x;
-			track->values.push_back(elem);
+			bezier_track->values.push_back(elem);
 		}
 	}
 	remove_track(p_idx);
+	int32_t track_i = add_track(TrackType::TYPE_VALUE);
+	track_set_path(track_i, original_path + ":rotation_edit");
+	ValueTrack *rotation_edit_track = static_cast<ValueTrack *>(tracks[track_i]);
+	TKey<Variant> elem;
+	elem.value = 1;
+	elem.time = 0;
+	rotation_edit_track->values.push_back(elem);
 }
 
 void Animation::_scale_track_optimize(int p_idx, real_t p_allowed_linear_err) {
@@ -4009,7 +4013,6 @@ void Animation::_scale_track_optimize(int p_idx, real_t p_allowed_linear_err) {
 	Ref<BezierKeyframeReduce> reduce;
 	reduce.instantiate();
 	BezierKeyframeReduce::KeyframeReductionSetting settings;
-	settings.max_error = p_allowed_linear_err;
 	Vector<Vector<BezierKeyframeReduce::Bezier>> beziers;
 	Vector<BezierTrack> bezier_tracks;
 	Vector<Vector<BezierKeyframeReduce::Bezier>> out_curves;
