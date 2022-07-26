@@ -6463,13 +6463,13 @@ AnimationTrackEditor::AnimationTrackEditor() {
 	optimize_linear_error->set_max(1.0);
 	optimize_linear_error->set_min(0.001);
 	optimize_linear_error->set_step(0.001);
-	optimize_linear_error->set_value(CMP_EPSILON);
+	optimize_linear_error->set_value(0.05);
 	optimize_vb->add_margin_child(TTR("Max. Linear Error:"), optimize_linear_error);
 	optimize_angular_error = memnew(SpinBox);
 	optimize_angular_error->set_max(1.0);
 	optimize_angular_error->set_min(0.001);
 	optimize_angular_error->set_step(0.001);
-	optimize_angular_error->set_value(CMP_EPSILON);
+	optimize_angular_error->set_value(0.01);
 
 	optimize_vb->add_margin_child(TTR("Max. Angular Error:"), optimize_angular_error);
 	optimize_max_angle = memnew(SpinBox);
