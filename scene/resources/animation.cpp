@@ -30,8 +30,8 @@
 
 #include "animation.h"
 
-#include "core/math/basis.h"
 #include "core/io/marshalls.h"
+#include "core/math/basis.h"
 #include "core/math/geometry_3d.h"
 #include "core/math/quaternion.h"
 #include "core/math/vector3.h"
@@ -3874,7 +3874,6 @@ void Animation::_position_track_optimize(int p_idx, real_t p_allowed_linear_err,
 	ERR_FAIL_INDEX(p_idx, tracks.size());
 	ERR_FAIL_COND(tracks[p_idx]->type != TYPE_POSITION_3D);
 	PositionTrack *track = static_cast<PositionTrack *>(tracks[p_idx]);
-	track->interpolation = Animation::INTERPOLATION_CUBIC;
 	Ref<BezierKeyframeReduce> reduce;
 	reduce.instantiate();
 	BezierKeyframeReduce::KeyframeReductionSetting settings;
@@ -3915,7 +3914,6 @@ void Animation::_blend_shape_track_optimize(int p_idx, real_t p_allowed_linear_e
 	ERR_FAIL_INDEX(p_idx, tracks.size());
 	ERR_FAIL_COND(tracks[p_idx]->type != TYPE_BLEND_SHAPE);
 	BlendShapeTrack *track = static_cast<BlendShapeTrack *>(tracks[p_idx]);
-	track->interpolation = Animation::INTERPOLATION_CUBIC;
 	Ref<BezierKeyframeReduce> reduce;
 	reduce.instantiate();
 	BezierKeyframeReduce::KeyframeReductionSetting settings;
@@ -3958,7 +3956,6 @@ void Animation::_rotation_track_optimize(int p_idx, real_t p_allowed_angular_err
 	ERR_FAIL_INDEX(p_idx, tracks.size());
 	ERR_FAIL_COND(tracks[p_idx]->type != TYPE_ROTATION_3D);
 	RotationTrack *track = static_cast<RotationTrack *>(tracks[p_idx]);
-	track->interpolation = Animation::INTERPOLATION_CUBIC;
 	Ref<BezierKeyframeReduce> reduce;
 	reduce.instantiate();
 	BezierKeyframeReduce::KeyframeReductionSetting settings;
@@ -4002,19 +3999,8 @@ void Animation::_rotation_track_optimize(int p_idx, real_t p_allowed_angular_err
 		}
 	}
 	track->rotations.clear();
+	track->interpolation = INTERPOLATION_LINEAR;
 	segment_times.sort();
-	PackedStringArray element_paths;
-	element_paths.resize(4);
-	element_paths.write[0] = ":quaternion:x";
-	element_paths.write[1] = ":quaternion:y";
-	element_paths.write[2] = ":quaternion:z";
-	element_paths.write[3] = ":quaternion:w";
-	PackedInt32Array track_ids;
-	for (int32_t i = 0; i < 4; i++) {
-		int32_t track_i = add_track(TrackType::TYPE_BEZIER);
-		track_set_path(track_i, String(track->path) + element_paths[i]);
-		track_ids.push_back(track_i);
-	}
 	for (double &time : segment_times) {
 		bool ok = true;
 		Vector3 axis_x;
@@ -4052,33 +4038,17 @@ void Animation::_rotation_track_optimize(int p_idx, real_t p_allowed_angular_err
 		basis.set_column(Vector3::AXIS_X, x);
 		basis.set_column(Vector3::AXIS_Y, y);
 		basis.set_column(Vector3::AXIS_Z, z);
-		Quaternion quat = basis.get_rotation_quaternion();
-		for (int32_t bezier_i = 0; bezier_i < 4; bezier_i++) {
-			BezierTrack *bezier_track = static_cast<BezierTrack *>(tracks[track_ids[bezier_i]]);
-			for (const BezierKeyframeReduce::Bezier &bezier : out_curves.write[bezier_i]) {
-				TKey<BezierKey> elem;
-				elem.value.value = quat[bezier_i];
-				elem.time = time;
-				bezier_track->values.push_back(elem);
-			}
-		}
+		TKey<Quaternion> key;
+		key.time = time;
+		key.value = basis.get_rotation_quaternion();
+		track->rotations.push_back(key);
 	}
-
-	remove_track(p_idx);
-	int32_t track_i = add_track(TrackType::TYPE_VALUE);
-	track_set_path(track_i, String(track->path) + ":rotation_edit");
-	ValueTrack *rotation_edit_track = static_cast<ValueTrack *>(tracks[track_i]);
-	TKey<Variant> elem;
-	elem.value = 1;
-	elem.time = 0;
-	rotation_edit_track->values.push_back(elem);
 }
 
 void Animation::_scale_track_optimize(int p_idx, real_t p_allowed_linear_err) {
 	ERR_FAIL_INDEX(p_idx, tracks.size());
 	ERR_FAIL_COND(tracks[p_idx]->type != TYPE_SCALE_3D);
 	ScaleTrack *track = static_cast<ScaleTrack *>(tracks[p_idx]);
-	track->interpolation = Animation::INTERPOLATION_CUBIC;
 	Ref<BezierKeyframeReduce> reduce;
 	reduce.instantiate();
 	BezierKeyframeReduce::KeyframeReductionSetting settings;
