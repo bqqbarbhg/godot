@@ -469,7 +469,7 @@ public:
 
 	void clear();
 
-	void optimize(real_t p_allowed_linear_err = 0.05, real_t p_allowed_angular_err = 0.01, real_t p_max_optimizable_angle = Math_PI * 0.125);
+	void optimize(real_t p_allowed_linear_err = CMP_EPSILON, real_t p_allowed_angular_err = CMP_EPSILON, real_t p_max_optimizable_angle = Math_PI * Math::rad2deg(1.0f));
 	void compress(uint32_t p_page_size = 8192, uint32_t p_fps = 120, float p_split_tolerance = 4.0); // 4.0 seems to be the split tolerance sweet spot from many tests
 
 	Animation();
