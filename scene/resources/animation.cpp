@@ -3883,58 +3883,29 @@ void Animation::_position_track_optimize(int p_idx, real_t p_allowed_linear_err,
 	Vector<BezierTrack> bezier_tracks;
 	Vector<Vector<BezierKeyframeReduce::Bezier>> out_curves;
 	constexpr const int32_t elem_in_vector3 = 3;
+	PackedStringArray element_paths;
+	element_paths.resize(3);
+	element_paths.write[0] = ":x";
+	element_paths.write[1] = ":y";
+	element_paths.write[2] = ":z";
 	for (int32_t i = 0; i < elem_in_vector3; i++) {
 		beziers.push_back(Vector<BezierKeyframeReduce::Bezier>());
 		bezier_tracks.push_back(BezierTrack());
 		out_curves.push_back(Vector<BezierKeyframeReduce::Bezier>());
-	}
-	for (int rotation_i = 0; rotation_i < track->positions.size();
-			rotation_i++) {
-		const TKey<Vector3> &key = track->positions[rotation_i];
-		double time = key.time;
-		Vector3 value = key.value;
-		LocalVector<float> values_split;
-		values_split.resize(3);
-		values_split[0] = value.x;
-		values_split[1] = value.y;
-		values_split[2] = value.z;
-		for (int32_t elem_i = 0; elem_i < elem_in_vector3; elem_i++) {
-			BezierKeyframeReduce::Vector2Bezier point =
-					BezierKeyframeReduce::Vector2Bezier(time, values_split[elem_i]);
-			beziers.write[elem_i].push_back(
-					BezierKeyframeReduce::Bezier(point, Vector2(), Vector2()));
-		}
-	}
-	Vector<double> segment_times;
-	for (int32_t bezier_i = 0; bezier_i < elem_in_vector3; bezier_i++) {
-		reduce->reduce(beziers[bezier_i], out_curves.write[bezier_i], settings);
-		for (const BezierKeyframeReduce::Bezier &bezier : out_curves.write[bezier_i]) {
-			double time = bezier.time_value.x;
-			segment_times.push_back(time);
+		reduce->reduce(beziers[i], out_curves.write[i], settings);
+		int32_t track_i = add_track(TrackType::TYPE_BEZIER);
+		track_set_path(track_i, String(track->path) + element_paths[i]);
+		BezierTrack *track = static_cast<BezierTrack *>(tracks[track_i]);
+		for (const BezierKeyframeReduce::Bezier &bezier : out_curves.write[i]) {
+			TKey<BezierKey> elem;
+			elem.value.in_handle = bezier.in_handle;
+			elem.value.out_handle = bezier.out_handle;
+			elem.value.value = bezier.time_value.y;
+			elem.time = bezier.time_value.x;
+			track->values.push_back(elem);
 		}
 	}
 	track->positions.clear();
-	segment_times.sort();
-	for (double &time : segment_times) {
-		Vector3 pos;
-		bool ok = true;
-		pos.x = BezierKeyframeReduce::_interpolate(out_curves[0], time, length, &ok);
-		if (!ok) {
-			continue;
-		}
-		pos.y = BezierKeyframeReduce::_interpolate(out_curves[1], time, length, &ok);
-		if (!ok) {
-			continue;
-		}
-		pos.z = BezierKeyframeReduce::_interpolate(out_curves[2], time, length, &ok);
-		if (!ok) {
-			continue;
-		}
-		TKey<Vector3> key;
-		key.time = time;
-		key.value = pos;
-		track->positions.push_back(key);
-	}
 }
 
 void Animation::_blend_shape_track_optimize(int p_idx, real_t p_allowed_linear_err) {
@@ -3959,25 +3930,20 @@ void Animation::_blend_shape_track_optimize(int p_idx, real_t p_allowed_linear_e
 		bezier.push_back(
 				BezierKeyframeReduce::Bezier(point, Vector2(), Vector2()));
 	}
-	Vector<double> segment_times;
 	reduce->reduce(bezier, out_curve, settings);
-	for (const BezierKeyframeReduce::Bezier &bezier : out_curve) {
-		double time = bezier.time_value.x;
-		segment_times.push_back(time);
-	}
 	track->blend_shapes.clear();
-	segment_times.sort();
-	for (double &time : segment_times) {
-		float elem;
-		bool ok = true;
-		elem = BezierKeyframeReduce::_interpolate(out_curve, time, length, &ok);
-		if (!ok) {
-			continue;
+	for (int32_t bezier_i = 0; bezier_i < 1; bezier_i++) {
+		int32_t track_i = add_track(TrackType::TYPE_BEZIER);
+		track_set_path(track_i, String(track->path) + ":x");
+		BezierTrack *track = static_cast<BezierTrack *>(tracks[track_i]);
+		for (const BezierKeyframeReduce::Bezier &bezier : out_curve) {
+			TKey<BezierKey> elem;
+			elem.value.in_handle = bezier.in_handle;
+			elem.value.out_handle = bezier.out_handle;
+			elem.value.value = bezier.time_value.y;
+			elem.time = bezier.time_value.x;
+			track->values.push_back(elem);
 		}
-		TKey<float> key;
-		key.time = time;
-		key.value = elem;
-		track->blend_shapes.push_back(key);
 	}
 }
 
@@ -4002,76 +3968,37 @@ void Animation::_rotation_track_optimize(int p_idx, real_t p_allowed_angular_err
 			rotation_i++) {
 		const TKey<Quaternion> &key = track->rotations[rotation_i];
 		double time = key.time;
-		Basis value = key.value.normalized();
-		LocalVector<float> values_split;
-		values_split.resize(elem_in_log_quat);
-		Vector3 axis_x = value.get_column(Vector3::AXIS_X);
-		values_split[0] = axis_x.x;
-		values_split[1] = axis_x.y;
-		values_split[2] = axis_x.z;
-		Vector3 axis_y = value.get_column(Vector3::AXIS_Y);
-		values_split[3] = axis_y.x;
-		values_split[4] = axis_y.y;
-		values_split[5] = axis_y.z;
-		for (int32_t elem_i = 0; elem_i < elem_in_log_quat; elem_i++) {
-			BezierKeyframeReduce::Vector2Bezier point =
-					BezierKeyframeReduce::Vector2Bezier(time, values_split[elem_i]);
-			beziers.write[elem_i].push_back(
-					BezierKeyframeReduce::Bezier(point, Vector2(), Vector2()));
-		}
+		Quaternion value = key.value.normalized();
+		BezierKeyframeReduce::Vector2Bezier point = BezierKeyframeReduce::Vector2Bezier(time, value.x);
+		beziers.write[0].push_back(BezierKeyframeReduce::Bezier(point, Vector2(), Vector2()));
+		point = BezierKeyframeReduce::Vector2Bezier(time, value.y);
+		beziers.write[1].push_back(BezierKeyframeReduce::Bezier(point, Vector2(), Vector2()));
+		point = BezierKeyframeReduce::Vector2Bezier(time, value.z);
+		beziers.write[2].push_back(BezierKeyframeReduce::Bezier(point, Vector2(), Vector2()));
+		point = BezierKeyframeReduce::Vector2Bezier(time, value.w);
+		beziers.write[3].push_back(BezierKeyframeReduce::Bezier(point, Vector2(), Vector2()));
 	}
-	Vector<double> segment_times;
-	for (int32_t bezier_i = 0; bezier_i < elem_in_log_quat; bezier_i++) {
+	PackedStringArray element_paths;
+	element_paths.resize(4);
+	element_paths.write[0] = ":x";
+	element_paths.write[1] = ":y";
+	element_paths.write[2] = ":z";
+	element_paths.write[3] = ":w";
+	for (int32_t bezier_i = 0; bezier_i < 4; bezier_i++) {
 		reduce->reduce(beziers[bezier_i], out_curves.write[bezier_i], settings);
+		int32_t track_i = add_track(TrackType::TYPE_BEZIER);
+		track_set_path(track_i, String(track->path) + element_paths[bezier_i]);
+		BezierTrack *track = static_cast<BezierTrack *>(tracks[track_i]);
 		for (const BezierKeyframeReduce::Bezier &bezier : out_curves.write[bezier_i]) {
-			double time = bezier.time_value.x;
-			segment_times.push_back(time);
+			TKey<BezierKey> elem;
+			elem.value.in_handle = bezier.in_handle;
+			elem.value.out_handle = bezier.out_handle;
+			elem.value.value = bezier.time_value.y;
+			elem.time = bezier.time_value.x;
+			track->values.push_back(elem);
 		}
 	}
 	track->rotations.clear();
-	segment_times.sort();
-	for (double &time : segment_times) {
-		bool ok = true;
-		Vector3 axis_x;
-		axis_x.x = BezierKeyframeReduce::_interpolate(out_curves[0], time, length, &ok);
-		if (!ok) {
-			continue;
-		}
-		axis_x.y = BezierKeyframeReduce::_interpolate(out_curves[1], time, length, &ok);
-		if (!ok) {
-			continue;
-		}
-		axis_x.z = BezierKeyframeReduce::_interpolate(out_curves[2], time, length, &ok);
-		if (!ok) {
-			continue;
-		}
-		Vector3 axis_y;
-		axis_y.x = BezierKeyframeReduce::_interpolate(out_curves[3], time, length, &ok);
-		if (!ok) {
-			continue;
-		}
-		axis_y.y = BezierKeyframeReduce::_interpolate(out_curves[4], time, length, &ok);
-		if (!ok) {
-			continue;
-		}
-		axis_y.z = BezierKeyframeReduce::_interpolate(out_curves[5], time, length, &ok);
-		if (!ok) {
-			continue;
-		}
-		// Compute rotation matrix from orthogonal basis from 6 dimensions.
-		Vector3 x = axis_x.normalized();
-		Vector3 z = x.cross(axis_y);
-		z = z.normalized();
-		Vector3 y = z.cross(x);
-		Basis basis;
-		basis.set_column(Vector3::AXIS_X, x);
-		basis.set_column(Vector3::AXIS_Y, y);
-		basis.set_column(Vector3::AXIS_Z, z);
-		TKey<Quaternion> key;
-		key.time = time;
-		key.value = basis.get_rotation_quaternion();
-		track->rotations.push_back(key);
-	}
 }
 
 void Animation::_scale_track_optimize(int p_idx, real_t p_allowed_linear_err) {
@@ -4109,36 +4036,29 @@ void Animation::_scale_track_optimize(int p_idx, real_t p_allowed_linear_err) {
 					BezierKeyframeReduce::Bezier(point, Vector2(), Vector2()));
 		}
 	}
-	Vector<double> segment_times;
-	for (int32_t bezier_i = 0; bezier_i < elem_in_vector3; bezier_i++) {
-		reduce->reduce(beziers[bezier_i], out_curves.write[bezier_i], settings);
-		for (const BezierKeyframeReduce::Bezier &bezier : out_curves.write[bezier_i]) {
-			double time = bezier.time_value.x;
-			segment_times.push_back(time);
+	PackedStringArray element_paths;
+	element_paths.resize(3);
+	element_paths.write[0] = ":x";
+	element_paths.write[1] = ":y";
+	element_paths.write[2] = ":z";
+	for (int32_t i = 0; i < elem_in_vector3; i++) {
+		beziers.push_back(Vector<BezierKeyframeReduce::Bezier>());
+		bezier_tracks.push_back(BezierTrack());
+		out_curves.push_back(Vector<BezierKeyframeReduce::Bezier>());
+		reduce->reduce(beziers[i], out_curves.write[i], settings);
+		int32_t track_i = add_track(TrackType::TYPE_BEZIER);
+		track_set_path(track_i, String(track->path) + element_paths[i]);
+		BezierTrack *track = static_cast<BezierTrack *>(tracks[track_i]);
+		for (const BezierKeyframeReduce::Bezier &bezier : out_curves.write[i]) {
+			TKey<BezierKey> elem;
+			elem.value.in_handle = bezier.in_handle;
+			elem.value.out_handle = bezier.out_handle;
+			elem.value.value = bezier.time_value.y;
+			elem.time = bezier.time_value.x;
+			track->values.push_back(elem);
 		}
 	}
 	track->scales.clear();
-	segment_times.sort();
-	for (double &time : segment_times) {
-		Vector3 pos;
-		bool ok = true;
-		pos.x = BezierKeyframeReduce::_interpolate(out_curves[0], time, length, &ok);
-		if (!ok) {
-			continue;
-		}
-		pos.y = BezierKeyframeReduce::_interpolate(out_curves[1], time, length, &ok);
-		if (!ok) {
-			continue;
-		}
-		pos.z = BezierKeyframeReduce::_interpolate(out_curves[2], time, length, &ok);
-		if (!ok) {
-			continue;
-		}
-		TKey<Vector3> key;
-		key.time = time;
-		key.value = pos;
-		track->scales.push_back(key);
-	}
 }
 
 void Animation::optimize(real_t p_allowed_linear_err, real_t p_allowed_angular_err, real_t p_max_optimizable_angle) {
