@@ -3885,9 +3885,9 @@ void Animation::_position_track_optimize(int p_idx, real_t p_allowed_linear_err,
 	constexpr const int32_t elem_in_vector3 = 3;
 	PackedStringArray element_paths;
 	element_paths.resize(3);
-	element_paths.write[0] = ":x";
-	element_paths.write[1] = ":y";
-	element_paths.write[2] = ":z";
+	element_paths.write[0] = ":position:x";
+	element_paths.write[1] = ":position:y";
+	element_paths.write[2] = ":position:z";
 	for (int32_t i = 0; i < elem_in_vector3; i++) {
 		beziers.push_back(Vector<BezierKeyframeReduce::Bezier>());
 		bezier_tracks.push_back(BezierTrack());
@@ -3905,7 +3905,7 @@ void Animation::_position_track_optimize(int p_idx, real_t p_allowed_linear_err,
 			track->values.push_back(elem);
 		}
 	}
-	track->positions.clear();
+	remove_track(p_idx);
 }
 
 void Animation::_blend_shape_track_optimize(int p_idx, real_t p_allowed_linear_err) {
@@ -3945,6 +3945,7 @@ void Animation::_blend_shape_track_optimize(int p_idx, real_t p_allowed_linear_e
 			track->values.push_back(elem);
 		}
 	}
+	remove_track(p_idx);
 }
 
 void Animation::_rotation_track_optimize(int p_idx, real_t p_allowed_angular_err, real_t p_max_optimizable_angle) {
@@ -3959,8 +3960,7 @@ void Animation::_rotation_track_optimize(int p_idx, real_t p_allowed_angular_err
 	settings.tangent_split_angle_threshold_value = p_max_optimizable_angle;
 	Vector<Vector<BezierKeyframeReduce::Bezier>> beziers;
 	Vector<Vector<BezierKeyframeReduce::Bezier>> out_curves;
-	constexpr const int32_t elem_in_log_quat = 6;
-	for (int32_t i = 0; i < elem_in_log_quat; i++) {
+	for (int32_t i = 0; i < 4; i++) {
 		beziers.push_back(Vector<BezierKeyframeReduce::Bezier>());
 		out_curves.push_back(Vector<BezierKeyframeReduce::Bezier>());
 	}
@@ -3980,10 +3980,10 @@ void Animation::_rotation_track_optimize(int p_idx, real_t p_allowed_angular_err
 	}
 	PackedStringArray element_paths;
 	element_paths.resize(4);
-	element_paths.write[0] = ":x";
-	element_paths.write[1] = ":y";
-	element_paths.write[2] = ":z";
-	element_paths.write[3] = ":w";
+	element_paths.write[0] = ":rotation:x";
+	element_paths.write[1] = ":rotation:y";
+	element_paths.write[2] = ":rotation:z";
+	element_paths.write[3] = ":rotation:w";
 	for (int32_t bezier_i = 0; bezier_i < 4; bezier_i++) {
 		reduce->reduce(beziers[bezier_i], out_curves.write[bezier_i], settings);
 		int32_t track_i = add_track(TrackType::TYPE_BEZIER);
@@ -3998,7 +3998,7 @@ void Animation::_rotation_track_optimize(int p_idx, real_t p_allowed_angular_err
 			track->values.push_back(elem);
 		}
 	}
-	track->rotations.clear();
+	remove_track(p_idx);
 }
 
 void Animation::_scale_track_optimize(int p_idx, real_t p_allowed_linear_err) {
@@ -4038,9 +4038,9 @@ void Animation::_scale_track_optimize(int p_idx, real_t p_allowed_linear_err) {
 	}
 	PackedStringArray element_paths;
 	element_paths.resize(3);
-	element_paths.write[0] = ":x";
-	element_paths.write[1] = ":y";
-	element_paths.write[2] = ":z";
+	element_paths.write[0] = ":scale:x";
+	element_paths.write[1] = ":scale:y";
+	element_paths.write[2] = ":scale:z";
 	for (int32_t i = 0; i < elem_in_vector3; i++) {
 		beziers.push_back(Vector<BezierKeyframeReduce::Bezier>());
 		bezier_tracks.push_back(BezierTrack());
@@ -4058,7 +4058,7 @@ void Animation::_scale_track_optimize(int p_idx, real_t p_allowed_linear_err) {
 			track->values.push_back(elem);
 		}
 	}
-	track->scales.clear();
+	remove_track(p_idx);
 }
 
 void Animation::optimize(real_t p_allowed_linear_err, real_t p_allowed_angular_err, real_t p_max_optimizable_angle) {
