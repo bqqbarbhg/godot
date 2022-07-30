@@ -7018,6 +7018,18 @@ Error GLTFDocument::_parse_gltf_state(Ref<GLTFState> state, const String &p_sear
 		ERR_FAIL_COND_V(err != OK, ERR_PARSE_ERROR);
 	}
 
+	if (!state->json.has("meshes")) {
+		Ref<GLTFSkin> skin;
+		skin.instantiate();
+		skin->joints.resize(state->nodes.size());
+		for (GLTFNodeIndex node = 0; node < state->nodes.size(); node++) {
+			skin->joints.write[node] = node;
+		}
+		state->skins.push_back(skin);
+		ERR_FAIL_COND_V(_expand_skin(state, skin), ERR_PARSE_ERROR);
+		ERR_FAIL_COND_V(_verify_skin(state, skin), ERR_PARSE_ERROR);
+	}
+
 	/* PARSE SKINS */
 	err = _parse_skins(state);
 
