@@ -6272,6 +6272,68 @@ void GLTFDocument::_process_mesh_instances(Ref<GLTFState> state, Node *scene_roo
 			mi->set_owner(skeleton->get_owner());
 
 			mi->set_skin(state->skins.write[skin_i]->godot_skin);
+			{
+				// Apply the skin scale to the mesh.
+				Vector3 scale = Vector3(1.0,1.0,1.0);
+				Ref<Skin> skin = mi->get_skin();
+				if (skin->get_bind_count()) {
+					Vector<Vector3> bind_scales;
+					bind_scales.resize(skin->get_bind_count());
+					bind_scales.fill(scale);
+					for (int32_t pose_i = 0; pose_i < skin->get_bind_count(); pose_i++) {
+						Transform3D pose = skin->get_bind_pose(pose_i);
+						bind_scales.write[pose_i] = pose.get_basis().get_scale();
+					}
+					bind_scales.sort();
+					bind_scales.reverse();
+					scale = bind_scales[0] * mi->get_global_transform().get_basis().get_scale();
+					for (int32_t pose_i = 0; pose_i < skin->get_bind_count(); pose_i++) {
+						Transform3D pose = skin->get_bind_pose(pose_i);
+						pose.basis.scale(bind_scales[0].inverse());
+						pose.origin *= bind_scales[0].inverse();
+						skin->set_bind_pose(pose_i, pose);
+					}
+					struct MeshSurface {
+						Array surface;
+						Mesh::PrimitiveType primitive_type = {};
+						Array blend_shapes;
+						Dictionary lods;
+						Ref<Material> material;
+						String name;
+						uint32_t flags;
+					};
+					Vector<MeshSurface> surfaces;
+					surfaces.resize(mi->get_mesh()->get_surface_count());
+					for (int32_t surface_i = 0; surface_i < mi->get_mesh()->get_surface_count(); surface_i++) {
+						Array mesh_array = mi->get_mesh()->get_surface_arrays(surface_i);
+						Vector<Vector3> vertex_array = mesh_array[Mesh::ARRAY_VERTEX];
+						for (Vector3 &vertex : vertex_array) {
+							vertex *= scale;
+						}
+						surfaces.write[surface_i].surface = mesh_array;
+						Array blend_shapes;
+						blend_shapes.resize(mi->get_mesh()->get_blend_shape_count());
+						for (int32_t blend_i = 0; blend_i < mi->get_mesh()->get_blend_shape_count(); blend_i++) {
+							Array mesh_array = mi->get_mesh()->get_surface_blend_shape_arrays(surface_i, blend_i);
+							Vector<Vector3> vertex_array = mesh_array[Mesh::ARRAY_VERTEX];
+							for (Vector3 &vertex : vertex_array) {
+								vertex *= scale;
+							}
+							blend_shapes[blend_i] = mesh_array;
+						}
+						surfaces.write[surface_i].primitive_type = mi->get_mesh()->get_surface_primitive_type(surface_i);
+						surfaces.write[surface_i].blend_shapes = blend_shapes;
+						surfaces.write[surface_i].lods = Dictionary();
+						surfaces.write[surface_i].material = mi->get_mesh()->get_surface_material(surface_i);
+						surfaces.write[surface_i].name = surfaces.write[surface_i].material->get_name();
+						surfaces.write[surface_i].flags = mi->get_mesh()->get_surface_format(surface_i);
+					}
+					mi->get_mesh()->clear();
+					for (MeshSurface surface : surfaces) {
+						mi->get_mesh()->add_surface(surface.primitive_type, surface.surface, surface.blend_shapes, surface.lods, surface.material, surface.name, surface.flags);
+					}
+				}
+			}
 			mi->set_skeleton_path(mi->get_path_to(skeleton));
 			mi->set_transform(Transform3D());
 		}
