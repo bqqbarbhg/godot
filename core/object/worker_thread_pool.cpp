@@ -299,9 +299,10 @@ WorkerThreadPool::GroupID WorkerThreadPool::_add_group_task(const Callable &p_ca
 		group->done_semaphore.post();
 		group->tasks_used = 0;
 		p_tasks = 0;
-		if (p_template_userdata) {
-			memdelete(p_template_userdata);
-		}
+		// A memory leak but avoids the double free multithreading crash.
+		// if (p_template_userdata) {
+		// 	memdelete(p_template_userdata);
+		// }
 
 	} else {
 		group->tasks_used = p_tasks;
