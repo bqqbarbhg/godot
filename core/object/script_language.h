@@ -151,12 +151,16 @@ public:
 	virtual void get_script_method_list(List<MethodInfo> *p_list) const = 0;
 	virtual void get_script_property_list(List<PropertyInfo> *p_list) const = 0;
 
-	virtual int get_member_line(const StringName &p_member) const { return -1; }
+	virtual int get_member_line(const StringName &p_member) const {
+		return -1;
+	}
 
 	virtual void get_constants(HashMap<StringName, Variant> *p_constants) {}
 	virtual void get_members(HashSet<StringName> *p_constants) {}
 
-	virtual bool is_placeholder_fallback_enabled() const { return false; }
+	virtual bool is_placeholder_fallback_enabled() const {
+		return false;
+	}
 
 	virtual const Variant get_rpc_config() const = 0;
 
