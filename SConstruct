@@ -187,7 +187,7 @@ opts.Add(
     EnumVariable(
         "library_type",
         "Build library type",
-        "executable",
+        "shared_library",
         ("executable", "static_library", "shared_library"),
     )
 )
@@ -208,14 +208,6 @@ opts.Add(BoolVariable("modules_enabled_by_default", "If no, disable all modules 
 opts.Add(BoolVariable("no_editor_splash", "Don't use the custom splash screen for the editor", True))
 opts.Add("system_certs_path", "Use this path as SSL certificates default for editor (for package maintainers)", "")
 opts.Add(BoolVariable("use_precise_math_checks", "Math checks use very precise epsilon (debug option)", False))
-opts.Add(
-    EnumVariable(
-        "library_type",
-        "Build library type",
-        "executable",
-        ("executable", "static_library", "shared_library"),
-    )
-)
 
 # Thirdparty libraries
 opts.Add(BoolVariable("builtin_certs", "Use the built-in SSL certificates bundles", False))
@@ -267,6 +259,7 @@ if env_base["library_type"] == "static_library":
 elif env_base["library_type"] == "shared_library":
     env_base.__class__.add_program = methods.add_shared_library
     env_base.Append(CPPDEFINES=["LIBRARY_ENABLED"])
+    env_base.Append(CCFLAGS=["-fPIC"])
 else:
     env_base.__class__.add_program = methods.add_program
 

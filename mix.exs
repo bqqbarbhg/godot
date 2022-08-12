@@ -37,7 +37,7 @@ defmodule Godot.Mixfile do
       licenses: ["MIT"],
       files: [
         "lib", "LICENSE.txt", "mix.exs", "README.md",
-        "c_src", "c_src/*.md", "Makefile", "_build/dev/lib/godot/priv/bundlex/cnode/libgodot.linuxbsd.opt.tools.64.llvm.so"],
+        "c_src", "c_src/*.md", "Makefile", "_build/dev/lib/godot/priv/bundlex/cnode/libgodot.linuxbsd.opt.64.so"],
       links: %{"GitHub" => "https://github.com/V-Sekai/godot/tree/elixir"}
     ]
   end

@@ -3,6 +3,7 @@
 ```bash
 sudo apt install -y elixir erlang-dev
 mix deps.get
+mix deps.compile
 mix compile
 ```
 

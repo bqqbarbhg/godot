@@ -16,7 +16,7 @@
          interface: [:cnode],
          preprocessor: Unifex,
          lib_dirs: [Path.absname("bin")],
-         libs: ["godot.linuxbsd.opt.tools.64.llvm"],
+         libs: ["godot.linuxbsd.opt.64"],
          language: :cpp,
          linker_flags: ["-Wl,-rpath=_build/dev/lib/godot/priv/"],
        ]
