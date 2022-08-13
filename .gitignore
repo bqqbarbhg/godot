@@ -374,3 +374,7 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 *.lnk
+
+deps/
+
+_build/

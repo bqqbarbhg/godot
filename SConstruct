@@ -193,7 +193,7 @@ opts.Add(
     EnumVariable(
         "library_type",
         "Build library type",
-        "executable",
+        "shared_library",
         ("executable", "static_library", "shared_library"),
     )
 )
