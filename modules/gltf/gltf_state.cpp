@@ -84,6 +84,8 @@ void GLTFState::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_animations"), &GLTFState::get_animations);
 	ClassDB::bind_method(D_METHOD("set_animations", "animations"), &GLTFState::set_animations);
 	ClassDB::bind_method(D_METHOD("get_scene_node", "idx"), &GLTFState::get_scene_node);
+	ClassDB::bind_method(D_METHOD("get_filename"), &GLTFState::get_filename);
+	ClassDB::bind_method(D_METHOD("set_filename", "filename"), &GLTFState::set_filename);
 
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "json"), "set_json", "get_json"); // Dictionary
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "major_version"), "set_major_version", "get_major_version"); // int
@@ -334,4 +336,12 @@ String GLTFState::get_base_path() {
 
 void GLTFState::set_base_path(String p_base_path) {
 	base_path = p_base_path;
+}
+
+String GLTFState::get_filename() {
+	return filename;
+}
+
+void GLTFState::set_filename(String p_filename) {
+	filename = p_filename;
 }
