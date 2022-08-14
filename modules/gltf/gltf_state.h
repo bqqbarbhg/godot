@@ -136,6 +136,9 @@ public:
 	String get_scene_name();
 	void set_scene_name(String p_scene_name);
 
+	String get_filename();
+	void set_filename(String p_filename);
+
 	String get_base_path();
 	void set_base_path(String p_base_path);
 
