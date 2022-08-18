@@ -73,8 +73,8 @@ Node *EditorSceneFormatImporterGLTF::import_scene(const String &p_path, uint32_t
 
 	String standard_out;
 	int ret;
-	OS::get_singleton()->execute(gltfpack_path, args, &standard_out, &ret, true);
-	print_verbose(gltfpack_path);
+	OS::get_singleton()->execute("", args, &standard_out, &ret, true);
+	print_verbose("");
 	Vector<String> args_printed;
 	for (String arg : args) {
 		args_printed.push_back(arg);

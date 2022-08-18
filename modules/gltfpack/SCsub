@@ -29,7 +29,10 @@ thirdparty_sources = [
 
 thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
 
+env_gltfpack.Append(CPPDEFINES=["WITH_BASISU", "__wasi__"])
 env_gltfpack.Prepend(CPPPATH=[thirdparty_dir])
+env_gltfpack.Prepend(CPPPATH=[ "#thirdparty/basis_universal/"])
+env_gltfpack.Prepend(CPPPATH=[ "#thirdparty/zstd/"])
 
 env_thirdparty = env_gltfpack.Clone()
 env_thirdparty.disable_warnings()

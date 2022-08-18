@@ -61,6 +61,8 @@
 #include "transcoder/basisu_transcoder.cpp"
 
 #undef CLAMP
-#include "zstd/zstd.c"
+// -- GODOT begin --
+// #include "zstd/zstd.c"
+// -- GODOT end --
 
 #endif
