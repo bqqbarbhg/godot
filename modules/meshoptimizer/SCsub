@@ -9,7 +9,7 @@ env_meshoptimizer = env_modules.Clone()
 
 thirdparty_obj = []
 
-thirdparty_dir = "#thirdparty/meshoptimizer/"
+thirdparty_dir = "#thirdparty/meshoptimizer/src/"
 thirdparty_sources = [
     "allocator.cpp",
     "clusterizer.cpp",
