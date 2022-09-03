@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  physical_bone_2d.h                                                   */
+/*  skeleton_modification_2d.h                                           */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,58 +28,70 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef PHYSICAL_BONE_2D_H
-#define PHYSICAL_BONE_2D_H
+#ifndef SKELETON_MODIFICATION_2D_H
+#define SKELETON_MODIFICATION_2D_H
 
-#include "scene/2d/physics_body_2d.h"
 #include "scene/2d/skeleton_2d.h"
 
-class Joint2D;
+///////////////////////////////////////
+// SkeletonModification2D
+///////////////////////////////////////
 
-class PhysicalBone2D : public RigidBody2D {
-	GDCLASS(PhysicalBone2D, RigidBody2D);
+class Bone2D;
 
-protected:
-	void _notification(int p_what);
-	static void _bind_methods();
+class SkeletonModification2D : public Node {
+	GDCLASS(SkeletonModification2D, Node);
 
 private:
-	NodePath bone_nodepath;
-	mutable Variant bone_node_cache;
-	bool follow_bone_when_simulating = false;
+	static void _bind_methods();
 
-	Joint2D *child_joint = nullptr;
-	bool auto_configure_joint = true;
+	bool editor_gizmo_dirty = false;
+	bool enabled = true;
+	bool run_in_editor = true;
+	bool skeleton_change_queued = true;
+	mutable Variant cached_skeleton;
+	NodePath skeleton_path = NodePath("..");
 
-	bool simulate_physics = false;
-	bool _internal_simulate_physics = false;
+	void _do_gizmo_draw();
 
-	void _find_joint_child();
-	void _auto_configure_joint();
-
-	void _start_physics_simulation();
-	void _stop_physics_simulation();
-	void _position_at_bone2d();
+protected:
+	bool _cache_node(Variant &cache, const NodePath &target_node_path) const;
+	Bone2D *_cache_bone(Variant &cache, const NodePath &target_node_path) const;
+	PackedByteArray get_configuration_warnings() const override;
 
 public:
-	Joint2D *get_joint() const;
-	bool get_auto_configure_joint() const;
-	void set_auto_configure_joint(bool p_auto_configure);
+	enum { UNCACHED_BONE_IDX = -2 };
 
-	void set_simulate_physics(bool p_simulate);
-	bool get_simulate_physics() const;
-	bool is_simulating_physics() const;
+	void set_enabled(bool p_enabled);
+	bool get_enabled() const;
+	void set_run_in_editor(bool p_enabled_in_editor);
+	bool get_run_in_editor() const;
 
-	Node2D *get_cached_bone_node();
-	void set_bone_node(const NodePath &p_nodepath);
-	NodePath get_bone_node() const;
-	void set_follow_bone_when_simulating(bool p_follow);
-	bool get_follow_bone_when_simulating() const;
+	NodePath get_skeleton_path() const;
+	void set_skeleton_path(NodePath p_path);
+	Skeleton2D *get_skeleton() const;
 
-	PackedStringArray get_configuration_warnings() const override;
+	void _validate_property(PropertyInfo &p_property) const;
+	void _notification(int32_t p_what);
 
-	PhysicalBone2D();
-	~PhysicalBone2D();
+	virtual void execute(real_t delta);
+	GDVIRTUAL1(_execute, real_t);
+	virtual void draw_editor_gizmo();
+	GDVIRTUAL0(_draw_editor_gizmo);
+	virtual bool is_property_hidden(String property_name) const;
+	GDVIRTUAL1R(bool, _is_property_hidden, String);
+	void set_editor_gizmo_dirty(bool p_dirty);
+
+	Variant resolve_node(const NodePath &target_node_path) const;
+	Variant resolve_bone(const NodePath &target_node_path) const;
+	Transform2D get_target_transform(Variant resolved_target) const;
+	real_t get_target_rotation(Variant resolved_target) const;
+	Vector2 get_target_position(Variant resolved_target) const;
+
+	float clamp_angle(float p_angle, float p_min_bound, float p_max_bound, bool p_invert);
+	void editor_draw_angle_constraints(Bone2D *p_operation_bone, float p_min_bound, float p_max_bound, bool p_constraint_enabled, bool p_constraint_in_localspace, bool p_constraint_inverted);
+
+	SkeletonModification2D() {}
 };
 
-#endif // PHYSICAL_BONE_2D_H
+#endif // SKELETON_MODIFICATION_2D_H

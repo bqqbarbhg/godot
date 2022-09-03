@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  physical_bone_2d.h                                                   */
+/*  skeleton_modification_2d_twoboneik.h                                 */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,58 +28,57 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef PHYSICAL_BONE_2D_H
-#define PHYSICAL_BONE_2D_H
+#ifndef SKELETON_MODIFICATION_2D_TWOBONEIK_H
+#define SKELETON_MODIFICATION_2D_TWOBONEIK_H
 
-#include "scene/2d/physics_body_2d.h"
 #include "scene/2d/skeleton_2d.h"
+#include "scene/2d/skeleton_modification_2d.h"
 
-class Joint2D;
+///////////////////////////////////////
+// SkeletonModification2DJIGGLE
+///////////////////////////////////////
 
-class PhysicalBone2D : public RigidBody2D {
-	GDCLASS(PhysicalBone2D, RigidBody2D);
-
-protected:
-	void _notification(int p_what);
-	static void _bind_methods();
+class SkeletonModification2DTwoBoneIK : public SkeletonModification2D {
+	GDCLASS(SkeletonModification2DTwoBoneIK, SkeletonModification2D);
 
 private:
-	NodePath bone_nodepath;
-	mutable Variant bone_node_cache;
-	bool follow_bone_when_simulating = false;
+	NodePath target_node;
+	mutable Variant target_node_cache;
+	float target_minimum_distance = 0;
+	float target_maximum_distance = 0;
+	bool flip_bend_direction = false;
 
-	Joint2D *child_joint = nullptr;
-	bool auto_configure_joint = true;
+	NodePath joint_one_bone_node;
+	mutable Variant joint_one_bone_node_cache;
 
-	bool simulate_physics = false;
-	bool _internal_simulate_physics = false;
+	NodePath joint_two_bone_node;
+	mutable Variant joint_two_bone_node_cache;
 
-	void _find_joint_child();
-	void _auto_configure_joint();
-
-	void _start_physics_simulation();
-	void _stop_physics_simulation();
-	void _position_at_bone2d();
+protected:
+	static void _bind_methods();
+	void execute(real_t delta) override;
+	TypedArray<String> get_configuration_warnings() const override;
+	void draw_editor_gizmo() override;
 
 public:
-	Joint2D *get_joint() const;
-	bool get_auto_configure_joint() const;
-	void set_auto_configure_joint(bool p_auto_configure);
+	void set_target_node(const NodePath &p_target_node);
+	NodePath get_target_node() const;
 
-	void set_simulate_physics(bool p_simulate);
-	bool get_simulate_physics() const;
-	bool is_simulating_physics() const;
+	void set_target_minimum_distance(float p_minimum_distance);
+	float get_target_minimum_distance() const;
+	void set_target_maximum_distance(float p_maximum_distance);
+	float get_target_maximum_distance() const;
+	void set_flip_bend_direction(bool p_flip_direction);
+	bool get_flip_bend_direction() const;
 
-	Node2D *get_cached_bone_node();
-	void set_bone_node(const NodePath &p_nodepath);
-	NodePath get_bone_node() const;
-	void set_follow_bone_when_simulating(bool p_follow);
-	bool get_follow_bone_when_simulating() const;
+	void set_joint_one_bone_node(const NodePath &p_node);
+	NodePath get_joint_one_bone_node() const;
 
-	PackedStringArray get_configuration_warnings() const override;
+	void set_joint_two_bone_node(const NodePath &p_node);
+	NodePath get_joint_two_bone_node() const;
 
-	PhysicalBone2D();
-	~PhysicalBone2D();
+	SkeletonModification2DTwoBoneIK();
+	~SkeletonModification2DTwoBoneIK();
 };
 
-#endif // PHYSICAL_BONE_2D_H
+#endif // SKELETON_MODIFICATION_2D_TWOBONEIK_H

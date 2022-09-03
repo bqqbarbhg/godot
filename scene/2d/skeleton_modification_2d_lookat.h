@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  physical_bone_2d.h                                                   */
+/*  skeleton_modification_2d_lookat.h                                    */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,58 +28,63 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef PHYSICAL_BONE_2D_H
-#define PHYSICAL_BONE_2D_H
+#ifndef SKELETON_MODIFICATION_2D_LOOKAT_H
+#define SKELETON_MODIFICATION_2D_LOOKAT_H
 
-#include "scene/2d/physics_body_2d.h"
 #include "scene/2d/skeleton_2d.h"
+#include "scene/2d/skeleton_modification_2d.h"
 
-class Joint2D;
+///////////////////////////////////////
+// SkeletonModification2DLookAt
+///////////////////////////////////////
 
-class PhysicalBone2D : public RigidBody2D {
-	GDCLASS(PhysicalBone2D, RigidBody2D);
-
-protected:
-	void _notification(int p_what);
-	static void _bind_methods();
+class SkeletonModification2DLookAt : public SkeletonModification2D {
+	GDCLASS(SkeletonModification2DLookAt, SkeletonModification2D);
 
 private:
-	NodePath bone_nodepath;
+	NodePath bone_node;
 	mutable Variant bone_node_cache;
-	bool follow_bone_when_simulating = false;
 
-	Joint2D *child_joint = nullptr;
-	bool auto_configure_joint = true;
+	NodePath target_node;
+	mutable Variant target_node_cache;
 
-	bool simulate_physics = false;
-	bool _internal_simulate_physics = false;
+	float additional_rotation = 0;
+	bool enable_constraint = false;
+	float constraint_angle_min = 0;
+	float constraint_angle_max = (2.0 * Math_PI);
+	bool constraint_angle_invert = false;
+	bool constraint_in_localspace = true;
 
-	void _find_joint_child();
-	void _auto_configure_joint();
-
-	void _start_physics_simulation();
-	void _stop_physics_simulation();
-	void _position_at_bone2d();
+protected:
+	static void _bind_methods();
+	void execute(real_t delta) override;
+	void draw_editor_gizmo() override;
+	bool is_property_hidden(String property_name) const override;
+	TypedArray<String> get_configuration_warnings() const override;
 
 public:
-	Joint2D *get_joint() const;
-	bool get_auto_configure_joint() const;
-	void set_auto_configure_joint(bool p_auto_configure);
-
-	void set_simulate_physics(bool p_simulate);
-	bool get_simulate_physics() const;
-	bool is_simulating_physics() const;
-
-	Node2D *get_cached_bone_node();
-	void set_bone_node(const NodePath &p_nodepath);
+	void set_bone_node(const NodePath &p_target_node);
 	NodePath get_bone_node() const;
-	void set_follow_bone_when_simulating(bool p_follow);
-	bool get_follow_bone_when_simulating() const;
 
-	PackedStringArray get_configuration_warnings() const override;
+	void set_target_node(const NodePath &p_target_node);
+	NodePath get_target_node() const;
 
-	PhysicalBone2D();
-	~PhysicalBone2D();
+	void set_additional_rotation(float p_rotation);
+	float get_additional_rotation() const;
+
+	void set_enable_constraint(bool p_constraint);
+	bool get_enable_constraint() const;
+	void set_constraint_angle_min(float p_angle_min);
+	float get_constraint_angle_min() const;
+	void set_constraint_angle_max(float p_angle_max);
+	float get_constraint_angle_max() const;
+	void set_constraint_angle_invert(bool p_invert);
+	bool get_constraint_angle_invert() const;
+	void set_constraint_in_localspace(bool p_constraint_in_localspace);
+	bool get_constraint_in_localspace() const;
+
+	SkeletonModification2DLookAt();
+	~SkeletonModification2DLookAt();
 };
 
-#endif // PHYSICAL_BONE_2D_H
+#endif // SKELETON_MODIFICATION_2D_LOOKAT_H

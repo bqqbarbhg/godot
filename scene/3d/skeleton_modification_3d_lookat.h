@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  physical_bone_2d.h                                                   */
+/*  skeleton_modification_3d_lookat.h                                    */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,58 +28,61 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef PHYSICAL_BONE_2D_H
-#define PHYSICAL_BONE_2D_H
+#ifndef SKELETON_MODIFICATION_3D_LOOKAT_H
+#define SKELETON_MODIFICATION_3D_LOOKAT_H
 
-#include "scene/2d/physics_body_2d.h"
-#include "scene/2d/skeleton_2d.h"
+#include "scene/3d/skeleton_3d.h"
+#include "scene/3d/skeleton_modification_3d.h"
 
-class Joint2D;
-
-class PhysicalBone2D : public RigidBody2D {
-	GDCLASS(PhysicalBone2D, RigidBody2D);
-
-protected:
-	void _notification(int p_what);
-	static void _bind_methods();
-
-private:
-	NodePath bone_nodepath;
-	mutable Variant bone_node_cache;
-	bool follow_bone_when_simulating = false;
-
-	Joint2D *child_joint = nullptr;
-	bool auto_configure_joint = true;
-
-	bool simulate_physics = false;
-	bool _internal_simulate_physics = false;
-
-	void _find_joint_child();
-	void _auto_configure_joint();
-
-	void _start_physics_simulation();
-	void _stop_physics_simulation();
-	void _position_at_bone2d();
+class SkeletonModification3DLookAt : public SkeletonModification3D {
+	GDCLASS(SkeletonModification3DLookAt, SkeletonModification3D);
 
 public:
-	Joint2D *get_joint() const;
-	bool get_auto_configure_joint() const;
-	void set_auto_configure_joint(bool p_auto_configure);
+	enum LockRotationPlane {
+		ROTATION_UNLOCKED,
+		ROTATION_PLANE_X,
+		ROTATION_PLANE_Y,
+		ROTATION_PLANE_Z
+	};
 
-	void set_simulate_physics(bool p_simulate);
-	bool get_simulate_physics() const;
-	bool is_simulating_physics() const;
+private:
+	String bone_name;
+	mutable int bone_idx = UNCACHED_BONE_IDX;
+	NodePath target_node;
+	String target_bone;
+	mutable Variant target_cache;
 
-	Node2D *get_cached_bone_node();
-	void set_bone_node(const NodePath &p_nodepath);
-	NodePath get_bone_node() const;
-	void set_follow_bone_when_simulating(bool p_follow);
-	bool get_follow_bone_when_simulating() const;
+	Vector3 additional_rotation = Vector3();
+	bool lock_rotation_to_plane = false;
+	LockRotationPlane lock_rotation_plane = ROTATION_UNLOCKED;
 
-	PackedStringArray get_configuration_warnings() const override;
+protected:
+	static void _bind_methods();
+	void execute(real_t delta) override;
+	void skeleton_changed(Skeleton3D *skeleton) override;
+	bool is_property_hidden(String property_name) const override;
+	bool is_bone_property(String property_name) const override;
+	TypedArray<String> get_configuration_warnings() const override;
 
-	PhysicalBone2D();
-	~PhysicalBone2D();
+public:
+	void set_bone(const String &p_name);
+	String get_bone() const;
+
+	void set_target_node(const NodePath &p_target_node);
+	NodePath get_target_node() const;
+	void set_target_bone(const String &p_target_bone);
+	String get_target_bone() const;
+
+	void set_additional_rotation(Vector3 p_offset);
+	Vector3 get_additional_rotation() const;
+
+	void set_lock_rotation_plane(LockRotationPlane p_plane);
+	LockRotationPlane get_lock_rotation_plane() const;
+
+	SkeletonModification3DLookAt() {}
+	~SkeletonModification3DLookAt() {}
 };
 
-#endif // PHYSICAL_BONE_2D_H
+VARIANT_ENUM_CAST(SkeletonModification3DLookAt::LockRotationPlane);
+
+#endif // SKELETON_MODIFICATION_3D_LOOKAT_H

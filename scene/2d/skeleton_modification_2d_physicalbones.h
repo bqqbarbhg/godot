@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  physical_bone_2d.h                                                   */
+/*  skeleton_modification_2d_physicalbones.h                             */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,58 +28,48 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef PHYSICAL_BONE_2D_H
-#define PHYSICAL_BONE_2D_H
+#ifndef SKELETON_MODIFICATION_2D_PHYSICALBONES_H
+#define SKELETON_MODIFICATION_2D_PHYSICALBONES_H
 
-#include "scene/2d/physics_body_2d.h"
+#include "scene/2d/physical_bone_2d.h"
 #include "scene/2d/skeleton_2d.h"
+#include "scene/2d/skeleton_modification_2d.h"
 
-class Joint2D;
+///////////////////////////////////////
+// SkeletonModification2DJIGGLE
+///////////////////////////////////////
 
-class PhysicalBone2D : public RigidBody2D {
-	GDCLASS(PhysicalBone2D, RigidBody2D);
-
-protected:
-	void _notification(int p_what);
-	static void _bind_methods();
+class SkeletonModification2DPhysicalBones : public SkeletonModification2D {
+	GDCLASS(SkeletonModification2DPhysicalBones, SkeletonModification2D);
 
 private:
-	NodePath bone_nodepath;
-	mutable Variant bone_node_cache;
-	bool follow_bone_when_simulating = false;
+	struct PhysicalBone_Data2D {
+		NodePath physical_bone_node;
+		mutable Variant physical_bone_node_cache;
+	};
+	Vector<PhysicalBone_Data2D> physical_bone_chain;
 
-	Joint2D *child_joint = nullptr;
-	bool auto_configure_joint = true;
+#ifdef TOOLS_ENABLED
+	void _fetch_physical_bones();
+#endif
 
-	bool simulate_physics = false;
-	bool _internal_simulate_physics = false;
-
-	void _find_joint_child();
-	void _auto_configure_joint();
-
-	void _start_physics_simulation();
-	void _stop_physics_simulation();
-	void _position_at_bone2d();
+protected:
+	static void _bind_methods();
+	bool _get(const StringName &p_path, Variant &r_ret) const;
+	bool _set(const StringName &p_path, const Variant &p_value);
+	void _get_property_list(List<PropertyInfo> *p_list) const;
+	void execute(real_t p_delta) override;
+	TypedArray<String> get_configuration_warnings() const override;
 
 public:
-	Joint2D *get_joint() const;
-	bool get_auto_configure_joint() const;
-	void set_auto_configure_joint(bool p_auto_configure);
+	int get_joint_count();
+	void set_joint_count(int p_new_length);
 
-	void set_simulate_physics(bool p_simulate);
-	bool get_simulate_physics() const;
-	bool is_simulating_physics() const;
+	void set_physical_bone_node(int p_joint_idx, const NodePath &p_path);
+	NodePath get_physical_bone_node(int p_joint_idx) const;
 
-	Node2D *get_cached_bone_node();
-	void set_bone_node(const NodePath &p_nodepath);
-	NodePath get_bone_node() const;
-	void set_follow_bone_when_simulating(bool p_follow);
-	bool get_follow_bone_when_simulating() const;
-
-	PackedStringArray get_configuration_warnings() const override;
-
-	PhysicalBone2D();
-	~PhysicalBone2D();
+	SkeletonModification2DPhysicalBones();
+	~SkeletonModification2DPhysicalBones();
 };
 
-#endif // PHYSICAL_BONE_2D_H
+#endif // SKELETON_MODIFICATION_2D_PHYSICALBONES_H
