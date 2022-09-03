@@ -641,14 +641,14 @@ double AnimationNodeStateMachinePlayback::process(AnimationNodeStateMachine *p_s
 }
 
 bool AnimationNodeStateMachinePlayback::_check_advance_condition(const Ref<AnimationNodeStateMachine> state_machine, const Ref<AnimationNodeStateMachineTransition> transition) const {
-	if (transition->has_auto_advance()) {
-		return true;
+	if (!transition->has_auto_advance()) {
+		return false;
 	}
 
 	StringName advance_condition_name = transition->get_advance_condition_name();
 
-	if (advance_condition_name != StringName() && bool(state_machine->get_parameter(advance_condition_name))) {
-		return true;
+	if (advance_condition_name != StringName() && !bool(state_machine->get_parameter(advance_condition_name))) {
+		return false;
 	}
 
 	if (transition->expression.is_valid()) {
@@ -666,15 +666,17 @@ bool AnimationNodeStateMachinePlayback::_check_advance_condition(const Ref<Anima
 		if (expression_base) {
 			Ref<Expression> exp = transition->expression;
 			bool ret = exp->execute(Array(), expression_base, false, Engine::get_singleton()->is_editor_hint()); // Avoids allowing the user to crash the system with an expression by only allowing const calls.
-			if (!exp->has_execute_failed()) {
-				if (ret) {
-					return true;
+			if (exp->has_execute_failed()) {
+				return false;
+			} else {
+				if (!ret) {
+					return false;
 				}
 			}
 		}
 	}
 
-	return false;
+	return true;
 }
 
 void AnimationNodeStateMachinePlayback::_bind_methods() {
