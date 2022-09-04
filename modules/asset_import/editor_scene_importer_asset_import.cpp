@@ -739,285 +739,6 @@ void EditorSceneImporterAlembic::tree(AbcG::IObject iObj, Node *p_root, Node *cu
 			}
 		}
 
-		if (anim.is_null()) {
-			anim = memnew(Animation);
-		}
-
-		float length = 0.0f;
-		length = anim->get_length() / ticks_per_second;
-		for (size_t i = 0; i < anim->mNumChannels; i++) {
-			const aiNodeAnim *track = anim->mChannels[i];
-			String node_name = _ai_string_to_string(track->mNodeName);
-			NodePath node_path = node_name;
-			bool is_bone = false;
-			if (node_name.split(ASSIMP_FBX_KEY).size() > 1) {
-				String p_track_type = node_name.split(ASSIMP_FBX_KEY)[1];
-				if (p_track_type == "_Translation" || p_track_type == "_Rotation" || p_track_type == "_Scaling") {
-					continue;
-				}
-			}
-			Node *node = ap->get_owner()->find_node(node_name);
-			if (node == NULL) {
-				continue;
-			}
-			if (p_removed_nodes.has(node_name)) {
-				continue;
-			}
-			const String path = ap->get_owner()->get_path_to(node);
-			if (path.empty()) {
-				print_verbose("Can't animate path");
-				continue;
-			}
-			node_path = path;
-			if (ap->get_owner()->has_node(node_path) == false) {
-				continue;
-			}
-			if (track->mNumRotationKeys || track->mNumPositionKeys || track->mNumScalingKeys) {
-				//make transform track
-				int track_idx = animation->get_track_count();
-				animation->add_track(Animation::TYPE_TRANSFORM);
-				animation->track_set_path(track_idx, node_path);
-				//first determine animation length
-
-				for (int i = 0; i < track->mNumRotationKeys; i++) {
-					length = MAX(length, track->mRotationKeys[i].mTime / ticks_per_second);
-				}
-				for (int i = 0; i < track->mNumPositionKeys; i++) {
-					length = MAX(length, track->mPositionKeys[i].mTime / ticks_per_second);
-				}
-				for (int i = 0; i < track->mNumScalingKeys; i++) {
-					length = MAX(length, track->mScalingKeys[i].mTime / ticks_per_second);
-				}
-
-				float increment = 1.0 / float(p_bake_fps);
-				float time = 0.0;
-
-				Vector3 base_pos;
-				Quat base_rot;
-				Vector3 base_scale = Vector3(1, 1, 1);
-
-				if (track->mNumRotationKeys != 0) {
-					aiQuatKey key = track->mRotationKeys[0];
-					real_t x = key.mValue.x;
-					real_t y = key.mValue.y;
-					real_t z = key.mValue.z;
-					real_t w = key.mValue.w;
-					Quat q(x, y, z, w);
-					q = q.normalized();
-					base_rot = q;
-				}
-
-				if (track->mNumPositionKeys != 0) {
-					aiVectorKey key = track->mPositionKeys[0];
-					real_t x = key.mValue.x;
-					real_t y = key.mValue.y;
-					real_t z = key.mValue.z;
-					base_pos = Vector3(x, y, z);
-				}
-
-				if (track->mNumScalingKeys != 0) {
-					aiVectorKey key = track->mScalingKeys[0];
-					real_t x = key.mValue.x;
-					real_t y = key.mValue.y;
-					real_t z = key.mValue.z;
-					base_scale = Vector3(x, y, z);
-				}
-
-				bool last = false;
-
-				Vector<Vector3> pos_values;
-				Vector<float> pos_times;
-				Vector<Vector3> scale_values;
-				Vector<float> scale_times;
-				Vector<Quat> rot_values;
-				Vector<float> rot_times;
-
-				for (size_t p = 0; p < track->mNumPositionKeys; p++) {
-					aiVector3D pos = track->mPositionKeys[p].mValue;
-					pos_values.push_back(Vector3(pos.x, pos.y, pos.z));
-					pos_times.push_back(track->mPositionKeys[p].mTime / ticks_per_second);
-				}
-
-				for (size_t r = 0; r < track->mNumRotationKeys; r++) {
-					aiQuaternion quat = track->mRotationKeys[r].mValue;
-					rot_values.push_back(Quat(quat.x, quat.y, quat.z, quat.w).normalized());
-					rot_times.push_back(track->mRotationKeys[r].mTime / ticks_per_second);
-				}
-
-				for (size_t sc = 0; sc < track->mNumScalingKeys; sc++) {
-					aiVector3D scale = track->mScalingKeys[sc].mValue;
-					scale_values.push_back(Vector3(scale.x, scale.y, scale.z));
-					scale_times.push_back(track->mScalingKeys[sc].mTime / ticks_per_second);
-				}
-				while (true) {
-					Vector3 pos = base_pos;
-					Quat rot = base_rot;
-					Vector3 scale = base_scale;
-
-					if (pos_values.size()) {
-						pos = _interpolate_track<Vector3>(pos_times, pos_values, time, AssetImportAnimation::INTERP_LINEAR);
-					}
-
-					if (rot_values.size()) {
-						rot = _interpolate_track<Quat>(rot_times, rot_values, time, AssetImportAnimation::INTERP_LINEAR).normalized();
-					}
-
-					if (scale_values.size()) {
-						scale = _interpolate_track<Vector3>(scale_times, scale_values, time, AssetImportAnimation::INTERP_LINEAR);
-					}
-
-					if (sk != NULL && sk->find_bone(node_name) != -1) {
-						Transform xform;
-						xform.basis.set_quat_scale(rot, scale);
-						xform.origin = pos;
-
-						int bone = sk->find_bone(node_name);
-						Transform rest_xform = sk->get_bone_rest(bone);
-						xform = rest_xform.affine_inverse() * xform;
-						rot = xform.basis.get_rotation_quat();
-						scale = xform.basis.get_scale();
-						pos = xform.origin;
-					}
-					{
-						Transform xform;
-						xform.basis.set_quat_scale(rot, scale);
-						xform.origin = pos;
-						Transform anim_xform;
-						String ext = p_path.get_file().get_extension().to_lower();
-						if (ext == "fbx") {
-							real_t factor = 1.0f;
-							if (p_scene->mMetaData != NULL) {
-								p_scene->mMetaData->Get("UnitScaleFactor", factor);
-							}
-							anim_xform = anim_xform.scaled(Vector3(factor, factor, factor));
-						}
-						xform = anim_xform * xform;
-						rot = xform.basis.get_rotation_quat();
-						scale = xform.basis.get_scale();
-						pos = xform.origin;
-					}
-					rot.normalize();
-
-					animation->track_set_interpolation_type(track_idx, Animation::INTERPOLATION_LINEAR);
-					animation->transform_track_insert_key(track_idx, time, pos, rot, scale);
-
-					if (last) {
-						break;
-					}
-					time += increment;
-					if (time >= length) {
-						last = true;
-						time = length;
-					}
-				}
-			}
-		}
-		for (size_t i = 0; i < anim->mNumChannels; i++) {
-			const aiNodeAnim *track = anim->mChannels[i];
-			String node_name = _ai_string_to_string(track->mNodeName);
-			Vector<String> split_name = node_name.split(ASSIMP_FBX_KEY);
-			String bare_name = split_name[0];
-			Node *node = ap->get_owner()->find_node(bare_name);
-			MeshInstance *mi = Object::cast_to<MeshInstance>(node);
-			if (node != NULL && split_name.size() > 1) {
-				Map<String, Vector<const aiNodeAnim *>>::Element *E = node_tracks.find(bare_name);
-				Vector<const aiNodeAnim *> ai_tracks;
-				if (E) {
-					ai_tracks = E->get();
-					ai_tracks.push_back(anim->mChannels[i]);
-				} else {
-					ai_tracks.push_back(anim->mChannels[i]);
-				}
-				node_tracks.insert(bare_name, ai_tracks);
-			}
-		}
-		for (Map<Skeleton *, MeshInstance *>::Element *E = p_skeletons.front(); E; E = E->next()) {
-			Skeleton *sk = E->key();
-			Map<String, Vector<const aiNodeAnim *>> anim_tracks;
-			for (size_t i = 0; i < sk->get_bone_count(); i++) {
-				String _bone_name = sk->get_bone_name(i);
-				Vector<const aiNodeAnim *> ai_tracks;
-
-				if (sk->find_bone(_bone_name) == -1) {
-					continue;
-				}
-				for (size_t j = 0; j < anim->mNumChannels; j++) {
-					if (_ai_string_to_string(anim->mChannels[j]->mNodeName).split(ASSIMP_FBX_KEY).size() == 1) {
-						continue;
-					}
-					String track_name = _ai_string_to_string(anim->mChannels[j]->mNodeName).split(ASSIMP_FBX_KEY)[0];
-					if (track_name != _bone_name) {
-						continue;
-					}
-					if (sk->find_bone(_bone_name) == -1) {
-						continue;
-					}
-					ai_tracks.push_back(anim->mChannels[j]);
-				}
-				if (ai_tracks.size() == 0) {
-					continue;
-				}
-				anim_tracks.insert(_bone_name, ai_tracks);
-			}
-			for (Map<String, Vector<const aiNodeAnim *>>::Element *F = anim_tracks.front(); F; F = F->next()) {
-				_insert_pivot_anim_track(p_meshes, F->key(), F->get(), ap, sk, length, ticks_per_second, animation, p_bake_fps, p_path, p_scene);
-			}
-		}
-		for (Map<String, Vector<const aiNodeAnim *>>::Element *E = node_tracks.front(); E; E = E->next()) {
-			if (p_removed_nodes.has(E->key())) {
-				continue;
-			}
-			if (removed_bones.find(E->key())) {
-				continue;
-			}
-			_insert_pivot_anim_track(p_meshes, E->key(), E->get(), ap, NULL, length, ticks_per_second, animation, p_bake_fps, p_path, p_scene);
-		}
-		for (int i = 0; i < anim->mNumMorphMeshChannels; i++) {
-			const aiMeshMorphAnim *anim_mesh = anim->mMorphMeshChannels[i];
-			const String prop_name = _ai_string_to_string(anim_mesh->mName);
-			const String mesh_name = prop_name.split("*")[0];
-			if (p_removed_nodes.has(mesh_name)) {
-				continue;
-			}
-			ERR_CONTINUE(prop_name.split("*").size() != 2);
-			const MeshInstance *mesh_instance = Object::cast_to<MeshInstance>(ap->get_owner()->find_node(mesh_name));
-			ERR_CONTINUE(mesh_instance == NULL);
-			if (ap->get_owner()->find_node(mesh_instance->get_name()) == NULL) {
-				print_verbose("Can't find mesh in scene: " + mesh_instance->get_name());
-				continue;
-			}
-			const String path = ap->get_owner()->get_path_to(mesh_instance);
-			if (path.empty()) {
-				print_verbose("Can't find mesh in scene");
-				continue;
-			}
-			Ref<Mesh> mesh = mesh_instance->get_mesh();
-			ERR_CONTINUE(mesh.is_null());
-			const Map<String, Map<uint32_t, String>>::Element *E = p_path_morph_mesh_names.find(mesh_name);
-			ERR_CONTINUE(E == NULL);
-			for (size_t k = 0; k < anim_mesh->mNumKeys; k++) {
-				for (size_t j = 0; j < anim_mesh->mKeys[k].mNumValuesAndWeights; j++) {
-					const Map<uint32_t, String>::Element *F = E->get().find(anim_mesh->mKeys[k].mValues[j]);
-					ERR_CONTINUE(F == NULL);
-					const String prop = "blend_shapes/" + F->get();
-					const NodePath node_path = String(path) + ":" + prop;
-					ERR_CONTINUE(ap->get_owner()->has_node(node_path) == false);
-					int32_t blend_track_idx = -1;
-					if (anim->find_track(node_path) == -1) {
-						blend_track_idx = anim->get_track_count();
-						anim->add_track(Animation::TYPE_VALUE);
-						anim->track_set_interpolation_type(blend_track_idx, Animation::INTERPOLATION_LINEAR);
-						anim->track_set_path(blend_track_idx, node_path);
-					} else {
-						blend_track_idx = anim->find_track(node_path);
-					}
-					float t = anim_mesh->mKeys[k].mTime / ticks_per_second;
-					float w = anim_mesh->mKeys[k].mWeights[j];
-					anim->track_insert_key(blend_track_idx, t, w);
-				}
-			}
-		}
-
 		if (schema.getTopologyVariance() == kHomogenousTopology && schema.isConstant() == false) {
 			TimeSamplingPtr ts = schema.getTimeSampling();
 			size_t numChannels = schema.getNumSamples();
@@ -1057,69 +778,112 @@ void EditorSceneImporterAlembic::tree(AbcG::IObject iObj, Node *p_root, Node *cu
 					animMesh->mWeight = 1.0f;
 					animMeshes.push_back(animMesh);
 				}
-			}
-			{
-				size_t keys = 6;
-				for (size_t q = 0; q < numChannels; q++) {
-					aiMeshMorphAnim *meshMorphAnim = new aiMeshMorphAnim();
-					aiString name = current->mName;
-					name.Append("*");
-					name.length = 1 + ASSIMP_itoa10(name.data + name.length, MAXLEN - 1, morphs.size());
-					meshMorphAnim->mName.Set(name.C_Str());
-					meshMorphAnim->mNumKeys = keys;
-					meshMorphAnim->mKeys = new aiMeshMorphKey[keys];
 
-					// Bracket the playing frame with weights of 0, during with 1 and after with 0.
+				const aiMeshMorphAnim *anim_mesh = anim->mMorphMeshChannels[i];
+				const String prop_name = _ai_string_to_string(anim_mesh->mName);
+				const String mesh_name = prop_name.split("*")[0];
+				if (p_removed_nodes.has(mesh_name)) {
+					continue;
+				}
+				ERR_CONTINUE(prop_name.split("*").size() != 2);
+				const MeshInstance *mesh_instance = Object::cast_to<MeshInstance>(ap->get_owner()->find_node(mesh_name));
+				ERR_CONTINUE(mesh_instance == NULL);
+				if (ap->get_owner()->find_node(mesh_instance->get_name()) == NULL) {
+					print_verbose("Can't find mesh in scene: " + mesh_instance->get_name());
+					continue;
+				}
+				const String path = ap->get_owner()->get_path_to(mesh_instance);
+				if (path.empty()) {
+					print_verbose("Can't find mesh in scene");
+					continue;
+				}
 
-					meshMorphAnim->mKeys[0].mNumValuesAndWeights = 1;
-					meshMorphAnim->mKeys[0].mValues = new unsigned int[1];
-					meshMorphAnim->mKeys[0].mWeights = new double[1];
+				{
+					size_t keys = 6;
+					for (size_t q = 0; q < numChannels; q++) {
+						aiMeshMorphAnim *meshMorphAnim = new aiMeshMorphAnim();
+						aiString name = current->mName;
+						name.Append("*");
+						name.length = 1 + ASSIMP_itoa10(name.data + name.length, MAXLEN - 1, morphs.size());
+						meshMorphAnim->mName.Set(name.C_Str());
+						meshMorphAnim->mNumKeys = keys;
+						meshMorphAnim->mKeys = new aiMeshMorphKey[keys];
 
-					meshMorphAnim->mKeys[0].mValues[0] = q;
-					meshMorphAnim->mKeys[0].mWeights[0] = 0.0f;
-					meshMorphAnim->mKeys[0].mTime = 0.0f;
+						// Bracket the playing frame with weights of 0, during with 1 and after with 0.
 
-					meshMorphAnim->mKeys[1].mNumValuesAndWeights = 1;
-					meshMorphAnim->mKeys[1].mValues = new unsigned int[1];
-					meshMorphAnim->mKeys[1].mWeights = new double[1];
+						meshMorphAnim->mKeys[0].mNumValuesAndWeights = 1;
+						meshMorphAnim->mKeys[0].mValues = new unsigned int[1];
+						meshMorphAnim->mKeys[0].mWeights = new double[1];
 
-					meshMorphAnim->mKeys[1].mValues[0] = q;
-					meshMorphAnim->mKeys[1].mWeights[0] = 0.0f;
-					meshMorphAnim->mKeys[1].mTime = q - 0.01f;
+						meshMorphAnim->mKeys[0].mValues[0] = q;
+						meshMorphAnim->mKeys[0].mWeights[0] = 0.0f;
+						meshMorphAnim->mKeys[0].mTime = 0.0f;
 
-					meshMorphAnim->mKeys[2].mNumValuesAndWeights = 1;
-					meshMorphAnim->mKeys[2].mValues = new unsigned int[1];
-					meshMorphAnim->mKeys[2].mWeights = new double[1];
+						meshMorphAnim->mKeys[1].mNumValuesAndWeights = 1;
+						meshMorphAnim->mKeys[1].mValues = new unsigned int[1];
+						meshMorphAnim->mKeys[1].mWeights = new double[1];
 
-					meshMorphAnim->mKeys[2].mValues[0] = q;
-					meshMorphAnim->mKeys[2].mWeights[0] = 1.0f;
-					meshMorphAnim->mKeys[2].mTime = q;
+						meshMorphAnim->mKeys[1].mValues[0] = q;
+						meshMorphAnim->mKeys[1].mWeights[0] = 0.0f;
+						meshMorphAnim->mKeys[1].mTime = q - 0.01f;
 
-					meshMorphAnim->mKeys[3].mNumValuesAndWeights = 1;
-					meshMorphAnim->mKeys[3].mValues = new unsigned int[1];
-					meshMorphAnim->mKeys[3].mWeights = new double[1];
+						meshMorphAnim->mKeys[2].mNumValuesAndWeights = 1;
+						meshMorphAnim->mKeys[2].mValues = new unsigned int[1];
+						meshMorphAnim->mKeys[2].mWeights = new double[1];
 
-					meshMorphAnim->mKeys[3].mValues[0] = q;
-					meshMorphAnim->mKeys[3].mWeights[0] = 1.0f;
-					meshMorphAnim->mKeys[3].mTime = q + 1;
+						meshMorphAnim->mKeys[2].mValues[0] = q;
+						meshMorphAnim->mKeys[2].mWeights[0] = 1.0f;
+						meshMorphAnim->mKeys[2].mTime = q;
 
-					meshMorphAnim->mKeys[4].mNumValuesAndWeights = 1;
-					meshMorphAnim->mKeys[4].mValues = new unsigned int[1];
-					meshMorphAnim->mKeys[4].mWeights = new double[1];
+						meshMorphAnim->mKeys[3].mNumValuesAndWeights = 1;
+						meshMorphAnim->mKeys[3].mValues = new unsigned int[1];
+						meshMorphAnim->mKeys[3].mWeights = new double[1];
 
-					meshMorphAnim->mKeys[4].mValues[0] = q;
-					meshMorphAnim->mKeys[4].mWeights[0] = 0.0f;
-					meshMorphAnim->mKeys[4].mTime = q + 1.01;
+						meshMorphAnim->mKeys[3].mValues[0] = q;
+						meshMorphAnim->mKeys[3].mWeights[0] = 1.0f;
+						meshMorphAnim->mKeys[3].mTime = q + 1;
 
-					meshMorphAnim->mKeys[5].mNumValuesAndWeights = 1;
-					meshMorphAnim->mKeys[5].mValues = new unsigned int[1];
-					meshMorphAnim->mKeys[5].mWeights = new double[1];
+						meshMorphAnim->mKeys[4].mNumValuesAndWeights = 1;
+						meshMorphAnim->mKeys[4].mValues = new unsigned int[1];
+						meshMorphAnim->mKeys[4].mWeights = new double[1];
 
-					meshMorphAnim->mKeys[5].mValues[0] = q;
-					meshMorphAnim->mKeys[5].mWeights[0] = 0.0f;
-					meshMorphAnim->mKeys[5].mTime = numChannels;
+						meshMorphAnim->mKeys[4].mValues[0] = q;
+						meshMorphAnim->mKeys[4].mWeights[0] = 0.0f;
+						meshMorphAnim->mKeys[4].mTime = q + 1.01;
 
-					morphs.push_back(meshMorphAnim);
+						meshMorphAnim->mKeys[5].mNumValuesAndWeights = 1;
+						meshMorphAnim->mKeys[5].mValues = new unsigned int[1];
+						meshMorphAnim->mKeys[5].mWeights = new double[1];
+
+						meshMorphAnim->mKeys[5].mValues[0] = q;
+						meshMorphAnim->mKeys[5].mWeights[0] = 0.0f;
+						meshMorphAnim->mKeys[5].mTime = numChannels;
+
+						##add to track
+					}
+				}
+
+				ERR_CONTINUE(E == NULL);
+				for (size_t k = 0; k < anim_mesh->mNumKeys; k++) {
+					for (size_t j = 0; j < anim_mesh->mKeys[k].mNumValuesAndWeights; j++) {
+						const Map<uint32_t, String>::Element *F = E->get().find(anim_mesh->mKeys[k].mValues[j]);
+						ERR_CONTINUE(F == NULL);
+						const String prop = "blend_shapes/" + F->get();
+						const NodePath node_path = String(path) + ":" + prop;
+						ERR_CONTINUE(ap->get_owner()->has_node(node_path) == false);
+						int32_t blend_track_idx = -1;
+						if (anim->find_track(node_path) == -1) {
+							blend_track_idx = anim->get_track_count();
+							anim->add_track(Animation::TYPE_VALUE);
+							anim->track_set_interpolation_type(blend_track_idx, Animation::INTERPOLATION_LINEAR);
+							anim->track_set_path(blend_track_idx, node_path);
+						} else {
+							blend_track_idx = anim->find_track(node_path);
+						}
+						float t = anim_mesh->mKeys[k].mTime / ticks_per_second;
+						float w = anim_mesh->mKeys[k].mWeights[j];
+						anim->track_insert_key(blend_track_idx, t, w);
+					}
 				}
 			}
 		}
@@ -1155,6 +919,7 @@ void EditorSceneImporterAlembic::tree(AbcG::IObject iObj, Node *p_root, Node *cu
 		tree(AbcG::IObject(iObj, iObj.getChildHeader(i).getName()), p_root, current->get_child(i), showProps, prefix);
 	};
 }
+
 void EditorSceneImporterAlembic::tree(Abc::ICompoundProperty iProp, Node *p_root, std::string prefix) {
 	if (iProp.getObject().getFullName() != "/") {
 		prefix = prefix + "   ";
@@ -1192,6 +957,7 @@ void EditorSceneImporterAlembic::tree(Abc::ICompoundProperty iProp, Node *p_root
 		}
 	}
 }
+
 void EditorSceneImporterAlembic::tree(Abc::IArrayProperty iProp, Node *p_root, std::string prefix) {
 	if (iProp.getObject().getFullName() != "/") {
 		prefix = prefix + "   ";
@@ -1207,6 +973,7 @@ void EditorSceneImporterAlembic::tree(Abc::IArrayProperty iProp, Node *p_root, s
 
 	std::cout << iProp.getName() << "\r" << std::endl;
 }
+
 void EditorSceneImporterAlembic::GetRelevantSampleTimes(double frame, double fps, double shutterOpen, double shutterClose, AbcA::TimeSamplingPtr timeSampling, size_t numSamples, SampleTimeSet &output) {
 	if (numSamples < 2) {
 		output.insert(0.0);
@@ -1261,6 +1028,7 @@ void EditorSceneImporterAlembic::GetRelevantSampleTimes(double frame, double fps
 		output.insert(shutterCloseCeil.second);
 	}
 }
+
 void EditorSceneImporterAlembic::tree(Abc::IScalarProperty iProp, Node *p_root, std::string prefix) {
 	if (iProp.getObject().getFullName() != "/") {
 		prefix = prefix + "   ";
