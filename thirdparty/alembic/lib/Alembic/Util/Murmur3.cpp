@@ -39,9 +39,9 @@
 #include <Alembic/Util/Murmur3.h>
 #include <Alembic/Util/PlainOldDataType.h>
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
 #include <machine/endian.h>
-#elif !defined(_WIN32)
+#elif !defined(_MSC_VER)
 #include <endian.h>
 #endif
 
@@ -60,7 +60,7 @@ void MurmurHash3_x64_128 ( const void * key, const size_t len,
     uint64_t h2 = 0;
 
 
-#ifdef _WIN32
+#ifdef _MSC_VER
     uint64_t c1 = 0x87c37b91114253d5LL;
     uint64_t c2 = 0x4cf5ad432745937fLL;
 #else
@@ -230,7 +230,7 @@ void MurmurHash3_x64_128 ( const void * key, const size_t len,
     h1 += h2;
     h2 += h1;
 
-#ifdef _WIN32
+#ifdef _MSC_VER
     h1 ^= h1 >> 33;
     h1 *= 0xff51afd7ed558ccdLL;
     h1 ^= h1 >> 33;

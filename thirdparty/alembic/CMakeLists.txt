@@ -33,9 +33,9 @@
 ##
 ##-*****************************************************************************
 
-PROJECT(Alembic)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
+PROJECT(Alembic VERSION 1.8.3)
 
 MESSAGE(STATUS "CMAKE SYSTEM NAME: ${CMAKE_SYSTEM_NAME}")
 
@@ -47,14 +47,6 @@ ENDIF()
 IF (NOT DEFINED QUIET)
     SET(CMAKE_VERBOSE_MAKEFILE TRUE)
 ENDIF()
-
-# Declare the project version
-SET(PROJECT_VERSION_MAJOR "1")
-SET(PROJECT_VERSION_MINOR "7")
-SET(PROJECT_VERSION_PATCH "10")
-SET(PROJECT_VERSION
-     ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
-SET(VERSION ${PROJECT_VERSION})
 
 #-******************************************************************************
 # OPTIONS (set with -D<option>=<value>)
@@ -73,10 +65,11 @@ OPTION(USE_TESTS "Include Alembic tests" ON)
 OPTION(ALEMBIC_BUILD_LIBS "Build library, if off use external alembic libs" ON)
 OPTION(ALEMBIC_ILMBASE_LINK_STATIC "IlmBase is a static library" OFF)
 OPTION(ALEMBIC_SHARED_LIBS "Build shared libraries" ON)
-OPTION(ALEMBIC_LIB_USES_BOOST
-    "Main Alembic library uses boost for things like shared_ptr" OFF)
-OPTION(ALEMBIC_LIB_USES_TR1
-    "Main Alembic library uses std::tr1 for things like shared_ptr" OFF)
+SET(PYALEMBIC_PYTHON_MAJOR 3 CACHE STRING "Which major version of python to look for when building PyAlembic")
+
+option(DOCS_PATH
+    "Create and install the HTML based API documentation to this location (requires Doxygen)"
+    OFF)
 
 # Set static/dynamic build options
 SET(LIB_TYPE STATIC)
@@ -111,21 +104,20 @@ IF ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
     ENDIF()
 ENDIF()
 
+IF (APPLE)
+  SET(CMAKE_MACOSX_RPATH ON)
+ENDIF()
+
 SET(LINUX FALSE)
 IF ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     SET(LINUX TRUE)
 ENDIF()
 
-IF (NOT ${ALEMBIC_LIB_USES_TR1} AND NOT ${ALEMBIC_LIB_USES_BOOST})
-    # TODO figure out how to do this for Windows
-    INCLUDE(CheckCXXCompilerFlag)
-    CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-    CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-    IF (COMPILER_SUPPORTS_CXX11)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-    ELSEIF (COMPILER_SUPPORTS_CXX0X)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-    ENDIF()
+# if not set fall back to VFX reference platform 2018 to 2020
+IF ("${CMAKE_CXX_STANDARD}" STREQUAL "")
+    MESSAGE("Defaulting CMAKE_CXX_STANDARD to 14")
+    SET(CMAKE_CXX_STANDARD 14)
+    SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 ENDIF()
 
 # Set visibility for GNU compilers
@@ -134,17 +126,13 @@ IF (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 ENDIF()
 
 # Set some debug vs opt flags
-IF ("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
-    ADD_DEFINITIONS(-DDEBUG=1 -UNDEBUG)
-    IF (NOT WINDOWS)
-        ADD_DEFINITIONS(-Wall -Werror -Wextra -Wno-unused-parameter)
-    ENDIF()
-ELSEIF ("${CMAKE_BUILD_TYPE}" MATCHES "Release")
-    ADD_DEFINITIONS(-DNDEBUG=1 -UDEBUG)
-    IF (NOT WINDOWS)
-        ADD_DEFINITIONS(-O3)
-    ENDIF()
-ENDIF()
+if ("${CMAKE_BUILD_TYPE}" MATCHES "Debug" AND NOT MSVC)
+    add_definitions(-Wall -Werror -Wextra -Wno-unused-parameter -Wno-deprecated)
+    if((CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0) OR
+        CMAKE_CXX_COMPILER_ID MATCHES "CLANG")
+        add_definitions( -Wno-error=implicit-fallthrough)
+    endif()
+endif()
 
 IF (NOT ${WINDOWS})
     SET(EXTERNAL_MATH_LIBS "-lm")
@@ -152,14 +140,12 @@ ELSE()
     SET(EXTERNAL_MATH_LIBS "")
 ENDIF()
 
-IF (${WINDOWS})
+IF (MSVC)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
-    IF (MSVC)
-        IF ((CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16) AND
-            (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15))
-            # MSVC15/MSVS2009 fix
-            SET (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /bigobj" )
-        ENDIF ()
+    IF ((CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16) AND
+        (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15))
+        # MSVC15/MSVS2009 fix
+        SET (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /bigobj" )
     ENDIF ()
     ADD_DEFINITIONS(-DPLATFORM_WINDOWS -DPLATFORM=WINDOWS)
     IF (NOT ALEMBIC_ILMBASE_LINK_STATIC)
@@ -178,7 +164,7 @@ ENDIF()
 
 IF (DEFINED ENV{ALEMBIC_INSTALL_PREFIX})
     SET( CMAKE_INSTALL_PREFIX
-        $ENV{ALEMBIC_INSTALL_PREFIX}/alembic-${VERSION})
+        $ENV{ALEMBIC_INSTALL_PREFIX}/alembic-${PROJECT_VERSION})
 ENDIF()
 
 # Tell me what my install location would be
@@ -220,22 +206,18 @@ ENDIF()
 
 FIND_PACKAGE(Threads REQUIRED)
 
-# We only need boost if including PyAlembic, or using it in the lib
-IF (ALEMBIC_LIB_USES_BOOST OR USE_PYALEMBIC)
-    INCLUDE("./cmake/AlembicBoost.cmake")
-    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+IF (DOCS_PATH)
+    FIND_PACKAGE(Doxygen)
 ENDIF()
 
 # IlmBase
 INCLUDE("./cmake/AlembicIlmBase.cmake")
-INCLUDE_DIRECTORIES(${ALEMBIC_ILMBASE_INCLUDE_DIRECTORY})
 
 # HDF5
 IF (USE_HDF5)
     FIND_PACKAGE(ZLIB REQUIRED)
     SET(ALEMBIC_WITH_HDF5 "1")
     INCLUDE("./cmake/AlembicHDF5.cmake")
-    INCLUDE_DIRECTORIES(${HDF5_INCLUDE_DIRS})
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DH5_USE_18_API")
 ENDIF()
 
@@ -255,16 +237,17 @@ ENDIF()
 
 # PyAlembic
 IF (USE_PYALEMBIC)
-    INCLUDE("./cmake/AlembicPython.cmake")
-    INCLUDE("./cmake/AlembicPyIlmBase.cmake")
-    IF (PYTHONLIBS_FOUND)
-        MESSAGE(STATUS "ALEMBIC_PYTHON_INCLUDE_DIRS: ${ALEMBIC_PYTHON_INCLUDE_DIRS}")
-        MESSAGE(STATUS "ALEMBIC_PYTHON_LIBRARY: ${ALEMBIC_PYTHON_LIBRARY}")
-        INCLUDE_DIRECTORIES(${ALEMBIC_PYTHON_INCLUDE_DIRS} ${ALEMBIC_PYILMBASE_INCLUDE_DIRECTORY})
+
+    FIND_PACKAGE(Python${PYALEMBIC_PYTHON_MAJOR} COMPONENTS Interpreter Development)
+
+    if(Python${PYALEMBIC_PYTHON_MAJOR}_FOUND)
+        MESSAGE(STATUS "Found Python ${Python${PYALEMBIC_PYTHON_MAJOR}_VERSION}")
+        INCLUDE("./cmake/AlembicPyIlmBase.cmake")
         ADD_SUBDIRECTORY(python)
-    ELSE()
+    else()
         MESSAGE(WARNING "Python not found! Skipping PyAlembic")
-    ENDIF()
+    endif()
+
 ENDIF()
 
 #-******************************************************************************
@@ -340,6 +323,6 @@ info_cfg_option(USE_STATIC_HDF5)
 info_cfg_option(USE_TESTS)
 info_cfg_option(ALEMBIC_ILMBASE_LINK_STATIC)
 info_cfg_option(ALEMBIC_SHARED_LIBS)
-info_cfg_option(ALEMBIC_LIB_USES_BOOST)
-info_cfg_option(ALEMBIC_LIB_USES_TR1)
+info_cfg_option(PYALEMBIC_PYTHON_MAJOR)
+info_cfg_option(DOCS_PATH)
 MESSAGE("${_config_msg}")

@@ -1,6 +1,6 @@
 rm -rf ../../thirdparty/alembic
 cd ../../thirdparty/
-git clone https://github.com/alembic/alembic.git -b 1.7.10 alembic
+git clone https://github.com/alembic/alembic.git -b 1.8.3 alembic
 cd alembic
 rm -rf maya
 rm -rf prman

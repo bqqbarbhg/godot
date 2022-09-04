@@ -36,7 +36,7 @@
 
 #include <Alembic/AbcCoreOgawa/ReadUtil.h>
 
-#if defined(_WIN32)
+#if defined(_MSC_VER)
 #  if defined(max)
 #    undef max
 #  endif
@@ -1323,6 +1323,11 @@ ReadData( void * iIntoLocation,
         curPod != Alembic::Util::kWstringPOD ),
         "Cannot convert the data to or from a string, or wstring." );
 
+    if ( !iData )
+    {
+        ABCA_THROW("ReadData invalid: Null IDataPtr.");
+        return;
+    }
     std::size_t dataSize = iData->getSize();
 
     if ( dataSize < 16 )
@@ -1445,6 +1450,16 @@ ReadArraySample( Ogawa::IDataPtr iDims,
 }
 
 //-*****************************************************************************
+template < typename POD >
+static inline POD DerefUnaligned(const void* iData)
+{
+    // on some platforms, dereferencing an unaligned pointer causes a crash. so, copy byte by byte.
+    POD ret;
+    memcpy(&ret, iData, sizeof(POD));
+    return ret;
+}
+
+//-*****************************************************************************
 void
 ReadTimeSamplesAndMax( Ogawa::IDataPtr iData,
                        std::vector <  AbcA::TimeSamplingPtr > & oTimeSamples,
@@ -1458,18 +1473,32 @@ ReadTimeSamplesAndMax( Ogawa::IDataPtr iData,
 
     iData->read( iData->getSize(), &( buf.front() ), 0, 0 );
     std::size_t pos = 0;
-    while ( pos < buf.size() )
+    std::size_t bufSize = buf.size();
+    while ( pos < bufSize )
     {
-        Util::uint32_t maxSample = *( (Util::uint32_t *)( &buf[pos] ) );
+        // make sure maxSample, tpc, and numSamples
+        // don't go beyond our butter
+        if ( pos + 8 + sizeof( chrono_t ) > bufSize)
+        {
+            ABCA_THROW("Read invalid: TimeSamples info.");
+        }
+
+        Util::uint32_t maxSample = DerefUnaligned<Util::uint32_t>(&buf[pos]);
         pos += 4;
 
         oMaxSamples.push_back( maxSample );
 
-        chrono_t tpc = *( ( chrono_t * )( &buf[pos] ) );
+        chrono_t tpc = DerefUnaligned<chrono_t>(&buf[pos]);
         pos += sizeof( chrono_t );
 
-        Util::uint32_t numSamples = *( (Util::uint32_t *)( &buf[pos] ) );
+        Util::uint32_t numSamples = DerefUnaligned<Util::uint32_t>(&buf[pos]);
         pos += 4;
+
+        // make sure our numSamples don't go beyond the buffer
+        if ( pos + sizeof( chrono_t ) * numSamples > bufSize)
+        {
+            ABCA_THROW("Read invalid: TimeSamples sample times.");
+        }
 
         std::vector< chrono_t > sampleTimes( numSamples );
         memcpy( &( sampleTimes.front() ), &buf[pos],
@@ -1516,12 +1545,23 @@ ReadObjectHeaders( Ogawa::IGroupPtr iGroup,
         return;
     }
 
-    data->read( buf.size(), &( buf.front() ), 0, iThreadId );
+    std::size_t bufSize = buf.size();
+    data->read( bufSize, &( buf.front() ), 0, iThreadId );
     std::size_t pos = 0;
-    while ( pos < buf.size() )
+    while ( pos < bufSize )
     {
-        Util::uint32_t nameSize = *( (Util::uint32_t *)( &buf[pos] ) );
+        if (pos + 4 > bufSize)
+        {
+            ABCA_THROW("Read invalid: Object Headers name size.");
+        }
+
+        Util::uint32_t nameSize = DerefUnaligned<Util::uint32_t>(&buf[pos]);
         pos += 4;
+
+        if (pos + nameSize + 1 > bufSize)
+        {
+            ABCA_THROW("Read invalid: Object Headers name and MetaData index.");
+        }
 
         std::string name( &buf[pos], nameSize );
         pos += nameSize;
@@ -1534,18 +1574,33 @@ ReadObjectHeaders( Ogawa::IGroupPtr iGroup,
 
         if ( metaDataIndex == 0xff )
         {
-            Util::uint32_t metaDataSize = *( (Util::uint32_t *)( &buf[pos] ) );
+            if (pos + 4 > bufSize)
+            {
+                ABCA_THROW("Read invalid: Object Headers MetaData size.");
+            }
+
+            Util::uint32_t metaDataSize = DerefUnaligned<Util::uint32_t>(&buf[pos]);
             pos += 4;
+
+            if (pos + metaDataSize > bufSize)
+            {
+                ABCA_THROW("Read invalid: Object Headers MetaData string.");
+            }
 
             std::string metaData( &buf[pos], metaDataSize );
             pos += metaDataSize;
 
             objPtr->getMetaData().deserialize( metaData );
         }
-        else
+        else if ( metaDataIndex < iMetaDataVec.size() )
         {
             objPtr->getMetaData() = iMetaDataVec[metaDataIndex];
         }
+        else
+        {
+            ABCA_THROW("Read invalid: Object Headers MetaData index.");
+        }
+
 
         oHeaders.push_back( objPtr );
     }
@@ -1553,26 +1608,32 @@ ReadObjectHeaders( Ogawa::IGroupPtr iGroup,
 
 //-*****************************************************************************
 Util::uint32_t GetUint32WithHint(const std::vector< char > & iBuf,
+                           std::size_t iBufSize,
                            Util::uint32_t iSizeHint,
                            std::size_t & ioPos)
 {
     Util::uint32_t retVal = 0;
 
-    if ( iSizeHint == 0 )
+    if ( iSizeHint == 0 && ioPos + 1 <= iBufSize )
     {
         retVal = ( Util::uint32_t ) ( ( Util::uint8_t ) iBuf[ioPos] );
         ioPos ++;
     }
-    else if ( iSizeHint == 1 )
+    else if ( iSizeHint == 1 && ioPos + 2 <= iBufSize )
     {
         retVal = ( Util::uint32_t )( *( (Util::uint16_t *)( &iBuf[ioPos] ) ) );
         ioPos += 2;
     }
-    else if ( iSizeHint == 2 )
+    else if ( iSizeHint == 2 && ioPos + 4 <= iBufSize )
     {
         retVal = *( ( Util::uint32_t * )( &iBuf[ioPos] ) );
         ioPos += 4;
     }
+    else
+    {
+        ABCA_THROW("Read invalid: Property Header bad uint32 hint.");
+    }
+
     return retVal;
 }
 
@@ -1643,12 +1704,18 @@ ReadPropertyHeaders( Ogawa::IGroupPtr iGroup,
     std::vector< char > buf( data->getSize() );
     data->read( data->getSize(), &( buf.front() ), 0, iThreadId );
     std::size_t pos = 0;
-    while ( pos < buf.size() )
+    std::size_t bufSize = buf.size();
+    while ( pos < bufSize )
     {
         PropertyHeaderPtr header( new PropertyHeaderAndFriends() );
 
+        if (pos + 4 > bufSize)
+        {
+            ABCA_THROW("Read invalid: Property header start.");
+        }
+
         // first 4 bytes is always info
-        Util::uint32_t info =  *( (Util::uint32_t *)( &buf[pos] ) );
+        Util::uint32_t info = DerefUnaligned<Util::uint32_t>(&buf[pos]);
         pos += 4;
 
         Util::uint32_t ptype = info & 0x0003;
@@ -1698,15 +1765,15 @@ ReadPropertyHeaders( Ogawa::IGroupPtr iGroup,
 
             header->isHomogenous = ( info & 0x400 ) != 0;
 
-            header->nextSampleIndex = GetUint32WithHint( buf, sizeHint, pos );
+            header->nextSampleIndex = GetUint32WithHint( buf, bufSize, sizeHint, pos );
 
             if ( ( info & 0x0200 ) != 0 )
             {
                 header->firstChangedIndex =
-                    GetUint32WithHint( buf, sizeHint, pos );
+                    GetUint32WithHint( buf, bufSize, sizeHint, pos );
 
                 header->lastChangedIndex =
-                    GetUint32WithHint( buf, sizeHint, pos );
+                    GetUint32WithHint( buf, bufSize, sizeHint, pos );
             }
             else if ( ( info & 0x800 ) != 0 )
             {
@@ -1722,7 +1789,7 @@ ReadPropertyHeaders( Ogawa::IGroupPtr iGroup,
             if ( ( info & 0x0100 ) != 0 )
             {
                 header->timeSamplingIndex =
-                    GetUint32WithHint( buf, sizeHint, pos );
+                    GetUint32WithHint( buf, bufSize, sizeHint, pos );
 
                 header->header.setTimeSampling(
                     iArchive.getTimeSampling( header->timeSamplingIndex ) );
@@ -1733,7 +1800,12 @@ ReadPropertyHeaders( Ogawa::IGroupPtr iGroup,
             }
         }
 
-        Util::uint32_t nameSize = GetUint32WithHint( buf, sizeHint, pos );
+        Util::uint32_t nameSize = GetUint32WithHint( buf, bufSize, sizeHint, pos );
+
+        if (pos + nameSize > bufSize)
+        {
+            ABCA_THROW("Read invalid: Property Headers name.");
+        }
 
         std::string name( &buf[pos], nameSize );
         header->header.setName( name );
@@ -1744,18 +1816,36 @@ ReadPropertyHeaders( Ogawa::IGroupPtr iGroup,
         if ( metaDataIndex == 0xff )
         {
             Util::uint32_t metaDataSize =
-                GetUint32WithHint( buf, sizeHint, pos );
+                GetUint32WithHint( buf, bufSize, sizeHint, pos );
 
-            std::string metaData( &buf[pos], metaDataSize );
-            pos += metaDataSize;
+            if (pos + metaDataSize > bufSize)
+            {
+                ABCA_THROW("Read invalid: Property Header MetaData string.");
+            }
+            // found empty metadata
+            else if (pos == bufSize)
+            {
+                pos += metaDataSize;
+                AbcA::MetaData md;
+                header->header.setMetaData( md );
+            }
+            else
+            {
+                std::string metaData( &buf[pos], metaDataSize );
+                pos += metaDataSize;
 
-            AbcA::MetaData md;
-            md.deserialize( metaData );
-            header->header.setMetaData( md );
+                AbcA::MetaData md;
+                md.deserialize( metaData );
+                header->header.setMetaData( md );
+            }
+        }
+        else if (metaDataIndex < iMetaDataVec.size())
+        {
+            header->header.setMetaData( iMetaDataVec[metaDataIndex] );
         }
         else
         {
-            header->header.setMetaData( iMetaDataVec[metaDataIndex] );
+            ABCA_THROW("Read invalid: Property Header MetaData index.");
         }
 
         oHeaders.push_back( header );
@@ -1780,15 +1870,35 @@ ReadIndexedMetaData( Ogawa::IDataPtr iData,
     // read as part of opening the archive so threadid 0 is ok
     iData->read( iData->getSize(), &( buf.front() ), 0, 0 );
     std::size_t pos = 0;
-    while ( pos < buf.size() )
+    std::size_t bufSize = buf.size();
+    while ( pos < bufSize )
     {
+        if (pos + 1 > bufSize)
+        {
+            ABCA_THROW("Read invalid: Indexed MetaData string size.");
+        }
+
         // these are all small (less than 256 byte) meta data strings
         Util::uint8_t metaDataSize = buf[pos++];
-        std::string metaData( &buf[pos], metaDataSize );
-        pos += metaDataSize;
-        AbcA::MetaData md;
-        md.deserialize( metaData );
-        oMetaDataVec.push_back( md );
+
+        if (pos + metaDataSize > bufSize)
+        {
+            ABCA_THROW("Read invalid: Indexed MetaData string.");
+        }
+        else if (pos == bufSize)
+        {
+            pos += metaDataSize;
+            AbcA::MetaData md;
+            oMetaDataVec.push_back( md );
+        }
+        else
+        {
+            std::string metaData( &buf[pos], metaDataSize );
+            pos += metaDataSize;
+            AbcA::MetaData md;
+            md.deserialize( metaData );
+            oMetaDataVec.push_back( md );
+        }
     }
 }
 

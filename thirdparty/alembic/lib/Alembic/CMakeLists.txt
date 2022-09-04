@@ -78,13 +78,6 @@ TARGET_LINK_LIBRARIES(Alembic
     ${ZLIB_LIBRARY}
   )
 
-# link in atomic if we are using tr1 and the compiler is new enough
-# to want  __atomic_compare_exchange_n
-IF ( ${ALEMBIC_LIB_USES_TR1} AND CMAKE_COMPILER_IS_GNUCXX AND
-    CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.8 )
-    TARGET_LINK_LIBRARIES( Alembic atomic )
-ENDIF()
-
 SET( ALEMBIC_LIB_INSTALL_DIR lib CACHE PATH "Where to install the Alembic libs")
 INSTALL(TARGETS Alembic
         EXPORT AlembicTargets
@@ -96,12 +89,18 @@ INSTALL(TARGETS Alembic
 # PACKAGE EXPORTS
 #-******************************************************************************
 
-CONFIGURE_FILE(AlembicConfig.cmake.in
-    "${CMAKE_CURRENT_BINARY_DIR}/AlembicConfig.cmake"
-    @ONLY
-    )
+set(alembic_targets_file "${PROJECT_NAME}Targets.cmake")
+
+SET(ConfigPackageLocation lib/cmake/Alembic CACHE PATH
+        "Where to install the Alembic's cmake files")
 
 INCLUDE(CMakePackageConfigHelpers)
+
+configure_package_config_file(AlembicConfig.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/AlembicConfig.cmake"
+     INSTALL_DESTINATION ${ConfigPackageLocation}
+     )
+
 WRITE_BASIC_PACKAGE_VERSION_FILE(
     "${CMAKE_CURRENT_BINARY_DIR}/AlembicConfigVersion.cmake"
     VERSION
@@ -113,13 +112,10 @@ WRITE_BASIC_PACKAGE_VERSION_FILE(
 EXPORT(TARGETS
     Alembic
     FILE
-    "${CMAKE_CURRENT_BINARY_DIR}/AlembicTargets.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/${alembic_targets_file}"
     NAMESPACE
     Alembic::
     )
-
-SET(ConfigPackageLocation lib/cmake/Alembic CACHE PATH
-    "Where to install the Alembic's cmake files")
 
 INSTALL(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/AlembicConfig.cmake"
@@ -128,10 +124,23 @@ INSTALL(FILES
     ${ConfigPackageLocation}
     )
 
+IF (DOCS_PATH)
+    IF(NOT DOXYGEN_FOUND)
+         MESSAGE(FATAL_ERROR "Doxygen is needed to build the documentation.")
+    ENDIF()
+
+    SET(DOXYGEN_EXCLUDE_PATTERNS */Tests/*)
+    SET(DOXYGEN_OUTPUT_DIRECTORY ${DOCS_PATH})
+    SET(DOXYGEN_GENERATE_HTML YES)
+    DOXYGEN_ADD_DOCS( doxygen ${CMAKE_CURRENT_SOURCE_DIR} )
+
+ENDIF()
+
+
 INSTALL(EXPORT
     AlembicTargets
     FILE
-    AlembicTargets.cmake
+    ${alembic_targets_file}
     NAMESPACE
     Alembic::
     DESTINATION

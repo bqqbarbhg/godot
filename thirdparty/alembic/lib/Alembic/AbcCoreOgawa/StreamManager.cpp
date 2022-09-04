@@ -43,39 +43,31 @@ namespace ALEMBIC_VERSION_NS {
 // Lets define a compare exchange macro for use below
 
 // C++11 std::atomics version
-#if !defined( ALEMBIC_LIB_USES_TR1 ) && __cplusplus >= 201103L
+#if __cplusplus >= 201103L
 #define COMPARE_EXCHANGE( V, COMP, EXCH ) V.compare_exchange_weak( COMP, EXCH, std::memory_order_seq_cst, std::memory_order_seq_cst )
 // Windows
-#elif defined( _WIN32 )
+#elif defined( _MSC_VER )
 #define COMPARE_EXCHANGE( V, COMP, EXCH ) (InterlockedCompareExchange64( &V, EXCH, COMP ) == COMP)
+#elif defined( __HAIKU__ )
 
-Alembic::Util::int64_t __builtin_ffsll( Alembic::Util::int64_t iValue )
+#define COMPARE_EXCHANGE( V, COMP, EXCH ) __atomic_compare_exchange_n( &V, &COMP, EXCH, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST )
+#include <strings.h>
+int ffsll(long long i)
 {
-    if ( !iValue )
-    {
-        return 0;
-    }
-
-    for ( Alembic::Util::int64_t bit = 0; bit < 64; ++bit )
-    {
-        if ( iValue & ( Alembic::Util::int64_t( 1 ) << bit ) )
-        {
-            return bit + 1;
-        }
-    }
-
-    return 0;
+	return (__builtin_ffsll(i));
 }
 
-
-// gcc 4.8 and above not using C++11
-#elif defined(__GNUC__) && __GNUC__ >= 4 && __GNUC_MINOR__ >= 8
-#define COMPARE_EXCHANGE( V, COMP, EXCH ) __atomic_compare_exchange_n( &V, &COMP, EXCH, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST )
-// gcc 4.1 and above not using C++11
-#elif defined(__GNUC__) && __GNUC__ >= 4 && __GNUC_MINOR__ >= 1
-#define COMPARE_EXCHANGE( V, COMP, EXCH ) __sync_bool_compare_and_swap( &V, COMP, EXCH )
 #else
 #error Please contact alembic-discuss@googlegroups.com for support.
+#endif
+
+#ifdef _MSC_VER
+Alembic::Util::int64_t ffsll( Alembic::Util::int64_t iValue )
+{
+    unsigned long index = 0;
+    _BitScanForward64(&index, iValue);
+    return index;
+}
 #endif
 
 StreamManager::StreamManager( std::size_t iNumStreams )
@@ -138,7 +130,7 @@ StreamIDPtr StreamManager::get()
     do
     {
         oldVal = m_streams;
-        val = __builtin_ffsll( oldVal );
+        val = ffsll( oldVal );
 
         if ( val == 0 )
         {

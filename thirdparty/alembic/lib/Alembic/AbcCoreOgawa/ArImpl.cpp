@@ -81,7 +81,7 @@ void ArImpl::init()
 {
     Ogawa::IGroupPtr group = m_archive.getGroup();
 
-    int version = -1;
+    Util::int32_t version = -1;
     std::size_t numChildren = group->getNumChildren();
 
     if ( numChildren > 5 && group->isChildData( 0 ) &&
@@ -104,7 +104,7 @@ void ArImpl::init()
         "Unsupported file version detected: " << version );
 
     // if it isn't there, something is wrong
-    int fileVersion = 0;
+    Util::int32_t fileVersion = 0;
 
     Ogawa::IDataPtr data = group->getData( 1, 0 );
     if ( data->getSize() == 4 )
@@ -122,8 +122,9 @@ void ArImpl::init()
 
     ReadIndexedMetaData( group->getData( 5, 0 ), m_indexMetaData );
 
-    m_data.reset( new OrData( group->getGroup( 2, false, 0 ), "", 0, *this,
-                              m_indexMetaData ) );
+    m_data = Alembic::Util::shared_ptr < OrData >( new OrData(
+        group->getGroup( 2, false, 0 ), "", 0, *this,
+        m_indexMetaData ) );
 
     m_header->setName( "ABC" );
     m_header->setFullName( "/" );
@@ -132,11 +133,9 @@ void ArImpl::init()
     data = group->getData( 3, 0 );
     if ( data->getSize() > 0 )
     {
-        char * buf = new char[ data->getSize() ];
-        data->read( data->getSize(), buf, 0, 0 );
-        std::string metaData(buf, data->getSize() );
+        std::string metaData(data->getSize(), 0);
+        data->read( data->getSize(), &(metaData[0]), 0, 0 );
         m_header->getMetaData().deserialize( metaData );
-        delete [] buf;
     }
 
 }
