@@ -1068,7 +1068,8 @@ void AnimationNodeStateMachineEditor::_add_transition(const bool p_nested_action
 	if (connecting_from != StringName() && connecting_to_node != StringName()) {
 		Ref<AnimationNodeStateMachineTransition> tr;
 		tr.instantiate();
-		tr->set_switch_mode(AnimationNodeStateMachineTransition::SwitchMode(transition_mode->get_selected()));
+		tr->set_switch_mode(AnimationNodeStateMachineTransition::SwitchMode(switch_mode->get_selected()));
+		tr->set_auto_advance(auto_advance->is_pressed());
 
 		if (!p_nested_action) {
 			updating = true;
@@ -1291,7 +1292,7 @@ void AnimationNodeStateMachineEditor::_state_machine_draw() {
 			}
 		}
 
-		_connection_draw(from, to, AnimationNodeStateMachineTransition::SwitchMode(transition_mode->get_selected()), true, false, false, false, false);
+		_connection_draw(from, to, AnimationNodeStateMachineTransition::SwitchMode(switch_mode->get_selected()), true, false, false, false, false);
 	}
 
 	Ref<Texture2D> tr_reference_icon = get_theme_icon(SNAME("TransitionImmediateBig"), SNAME("EditorIcons"));
@@ -1550,10 +1551,12 @@ void AnimationNodeStateMachineEditor::_notification(int p_what) {
 			tool_create->set_icon(get_theme_icon(SNAME("ToolAddNode"), SNAME("EditorIcons")));
 			tool_connect->set_icon(get_theme_icon(SNAME("ToolConnect"), SNAME("EditorIcons")));
 
-			transition_mode->clear();
-			transition_mode->add_icon_item(get_theme_icon(SNAME("TransitionImmediate"), SNAME("EditorIcons")), TTR("Immediate"));
-			transition_mode->add_icon_item(get_theme_icon(SNAME("TransitionSync"), SNAME("EditorIcons")), TTR("Sync"));
-			transition_mode->add_icon_item(get_theme_icon(SNAME("TransitionEnd"), SNAME("EditorIcons")), TTR("At End"));
+			switch_mode->clear();
+			switch_mode->add_icon_item(get_theme_icon(SNAME("TransitionImmediate"), SNAME("EditorIcons")), TTR("Immediate"));
+			switch_mode->add_icon_item(get_theme_icon(SNAME("TransitionSync"), SNAME("EditorIcons")), TTR("Sync"));
+			switch_mode->add_icon_item(get_theme_icon(SNAME("TransitionEnd"), SNAME("EditorIcons")), TTR("At End"));
+
+			auto_advance->set_icon(get_theme_icon(SNAME("AutoPlay"), SNAME("EditorIcons")));
 
 			tool_erase->set_icon(get_theme_icon(SNAME("Remove"), SNAME("EditorIcons")));
 			tool_group->set_icon(get_theme_icon(SNAME("Group"), SNAME("EditorIcons")));
@@ -1856,7 +1859,7 @@ void AnimationNodeStateMachineEditor::_erase_selected(const bool p_nested_action
 
 void AnimationNodeStateMachineEditor::_update_mode() {
 	if (tool_select->is_pressed()) {
-		tool_erase_hb->show();
+		selection_tools_hb->show();
 		bool nothing_selected = selected_nodes.is_empty() && selected_transition_from == StringName() && selected_transition_to == StringName();
 		bool start_end_selected = selected_nodes.size() == 1 && (*selected_nodes.begin() == state_machine->start_node || *selected_nodes.begin() == state_machine->end_node);
 		tool_erase->set_disabled(nothing_selected || start_end_selected || read_only);
@@ -1879,7 +1882,13 @@ void AnimationNodeStateMachineEditor::_update_mode() {
 			}
 		}
 	} else {
-		tool_erase_hb->hide();
+		selection_tools_hb->hide();
+	}
+
+	if (tool_connect->is_pressed()) {
+		transition_tools_hb->show();
+	} else {
+		transition_tools_hb->hide();
 	}
 }
 
@@ -1930,35 +1939,51 @@ AnimationNodeStateMachineEditor::AnimationNodeStateMachineEditor() {
 	tool_connect->set_tooltip_text(TTR("Connect nodes."));
 	tool_connect->connect("pressed", callable_mp(this, &AnimationNodeStateMachineEditor::_update_mode), CONNECT_DEFERRED);
 
-	tool_erase_hb = memnew(HBoxContainer);
-	top_hb->add_child(tool_erase_hb);
-	tool_erase_hb->add_child(memnew(VSeparator));
+	// Context-sensitive selection tools:
+
+	selection_tools_hb = memnew(HBoxContainer);
+	top_hb->add_child(selection_tools_hb);
+	selection_tools_hb->add_child(memnew(VSeparator));
 
 	tool_group = memnew(Button);
 	tool_group->set_flat(true);
 	tool_group->set_tooltip_text(TTR("Group Selected Node(s)") + " (Ctrl+G)");
 	tool_group->connect("pressed", callable_mp(this, &AnimationNodeStateMachineEditor::_group_selected_nodes));
 	tool_group->set_disabled(true);
-	tool_erase_hb->add_child(tool_group);
+	selection_tools_hb->add_child(tool_group);
 
 	tool_ungroup = memnew(Button);
 	tool_ungroup->set_flat(true);
 	tool_ungroup->set_tooltip_text(TTR("Ungroup Selected Node") + " (Ctrl+Shift+G)");
 	tool_ungroup->connect("pressed", callable_mp(this, &AnimationNodeStateMachineEditor::_ungroup_selected_nodes));
 	tool_ungroup->set_visible(false);
-	tool_erase_hb->add_child(tool_ungroup);
+	selection_tools_hb->add_child(tool_ungroup);
 
 	tool_erase = memnew(Button);
 	tool_erase->set_flat(true);
 	tool_erase->set_tooltip_text(TTR("Remove selected node or transition."));
 	tool_erase->connect("pressed", callable_mp(this, &AnimationNodeStateMachineEditor::_erase_selected).bind(false));
 	tool_erase->set_disabled(true);
-	tool_erase_hb->add_child(tool_erase);
+	selection_tools_hb->add_child(tool_erase);
 
-	top_hb->add_child(memnew(VSeparator));
-	top_hb->add_child(memnew(Label(TTR("Transition:"))));
-	transition_mode = memnew(OptionButton);
-	top_hb->add_child(transition_mode);
+	// Context sensitive transition tools:
+
+	transition_tools_hb = memnew(HBoxContainer);
+	top_hb->add_child(transition_tools_hb);
+	transition_tools_hb->add_child(memnew(VSeparator));
+
+	transition_tools_hb->add_child(memnew(Label(TTR("Transition:"))));
+	switch_mode = memnew(OptionButton);
+	transition_tools_hb->add_child(switch_mode);
+
+	auto_advance = memnew(Button);
+	auto_advance->set_flat(true);
+	auto_advance->set_tooltip_text(TTR("New Transitions Should Auto Advance"));
+	auto_advance->set_toggle_mode(true);
+	auto_advance->set_pressed(true);
+	transition_tools_hb->add_child(auto_advance);
+
+	//
 
 	top_hb->add_spacer();
 
