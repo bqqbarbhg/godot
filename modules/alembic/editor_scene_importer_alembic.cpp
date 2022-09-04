@@ -21,7 +21,7 @@
 
 // -- Godot Engine <https://godotengine.org>
 
-#include "editor_scene_importer_asset_import.h"
+#include "editor_scene_importer_alembic.h"
 #include "core/bind/core_bind.h"
 #include "core/io/image_loader.h"
 #include "editor/editor_file_system.h"
