@@ -104,7 +104,7 @@ Node *EditorSceneImporterAlembic::import_scene(const String &p_path, uint32_t p_
 	}
 }
 
-void EditorSceneImporterAlembic::_insert_pivot_anim_track(const Vector<MeshInstance *> p_meshes, const String p_node_name, Vector<const aiNodeAnim *> F, AnimationPlayer *ap, Skeleton *sk, float &length, float ticks_per_second, Ref<Animation> animation, int p_bake_fps, const String &p_path, const Node *p_scene) {
+void EditorSceneImporterAlembic::_insert_pivot_anim_track(const Vector<MeshInstance3D *> p_meshes, const String p_node_name, Vector<const aiNodeAnim *> F, AnimationPlayer *ap, Skeleton3D *sk, float &length, float ticks_per_second, Ref<Animation> animation, int p_bake_fps, const String &p_path, const Node *p_scene) {
 	NodePath node_path;
 	if (sk != NULL) {
 		const String path = ap->get_owner()->get_path_to(sk);
@@ -116,13 +116,13 @@ void EditorSceneImporterAlembic::_insert_pivot_anim_track(const Vector<MeshInsta
 		}
 		node_path = path + ":" + p_node_name;
 		Node *node = sk->get_parent();
-		MeshInstance *mi = Object::cast_to<MeshInstance>(node);
+		MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(node);
 	} else {
 		Node *node = ap->get_owner()->find_node(p_node_name);
 		if (node == NULL) {
 			return;
 		}
-		MeshInstance *mi = Object::cast_to<MeshInstance>(node);
+		MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(node);
 		const String path = ap->get_owner()->get_path_to(node);
 		node_path = path;
 	}
@@ -245,7 +245,7 @@ void EditorSceneImporterAlembic::_insert_pivot_anim_track(const Vector<MeshInsta
 		Vector3 scale = Vector3(1.0f, 1.0f, 1.0f);
 		if (is_translation && pos_values.size()) {
 			pos = _interpolate_track<Vector3>(pos_times, pos_values, time, AssetImportAnimation::INTERP_LINEAR);
-			Transform anim_xform;
+			Transform3D anim_xform;
 			String ext = p_path.get_file().get_extension().to_lower();
 		}
 		if (is_rotation && rot_values.size()) {
@@ -268,7 +268,7 @@ void EditorSceneImporterAlembic::_insert_pivot_anim_track(const Vector<MeshInsta
 	}
 }
 
-void EditorSceneImporterAlembic::_add_mesh_to_mesh_instance(const aiNode *p_node, const Node *p_scene, Skeleton *s, const String &p_path, MeshInstance *p_mesh_instance, Node *p_owner, Set<String> &r_bone_name, int32_t &r_mesh_count, int32_t p_max_bone_weights) {
+void EditorSceneImporterAlembic::_add_mesh_to_mesh_instance(const aiNode *p_node, const Node *p_scene, Skeleton3D *s, const String &p_path, MeshInstance3D *p_mesh_instance, Node *p_owner, HashSet<String> &r_bone_name, int32_t &r_mesh_count, int32_t p_max_bone_weights) {
 	Ref<ArrayMesh> mesh;
 	mesh.instance();
 	bool has_uvs = false;
@@ -276,8 +276,8 @@ void EditorSceneImporterAlembic::_add_mesh_to_mesh_instance(const aiNode *p_node
 		const unsigned int mesh_idx = p_node->mMeshes[i];
 		const aiMesh *ai_mesh = p_scene->mMeshes[mesh_idx];
 
-		Map<uint32_t, Vector<float>> vertex_weight;
-		Map<uint32_t, Vector<String>> vertex_bone_name;
+		HashMap<uint32_t, Vector<float>> vertex_weight;
+		HashMap<uint32_t, Vector<String>> vertex_bone_name;
 
 		Ref<SurfaceTool> st;
 		st.instance();
@@ -311,7 +311,7 @@ void EditorSceneImporterAlembic::_add_mesh_to_mesh_instance(const aiNode *p_node
 			}
 
 			if (s != NULL && s->get_bone_count() > 0) {
-				Map<uint32_t, Vector<String>>::Element *I = vertex_bone_name.find(j);
+				HashMap<uint32_t, Vector<String>>::Element *I = vertex_bone_name.find(j);
 				Vector<int32_t> bones;
 				if (I != NULL) {
 					Vector<String> bone_names;
@@ -329,7 +329,7 @@ void EditorSceneImporterAlembic::_add_mesh_to_mesh_instance(const aiNode *p_node
 						}
 					}
 					st->add_bones(bones);
-					Map<uint32_t, Vector<float>>::Element *E = vertex_weight.find(j);
+					HashMap<uint32_t, Vector<float>>::Element *E = vertex_weight.find(j);
 					Vector<float> weights;
 					if (E != NULL) {
 						weights = E->value();
@@ -427,7 +427,7 @@ void EditorSceneImporterAlembic::_add_mesh_to_mesh_instance(const aiNode *p_node
 		Array morphs;
 		morphs.resize(ai_mesh->mNumAnimMeshes);
 		Mesh::PrimitiveType primitive = Mesh::PRIMITIVE_TRIANGLES;
-		Map<uint32_t, String> morph_mesh_idx_names;
+		HashMap<uint32_t, String> morph_mesh_idx_names;
 		for (int i = 0; i < ai_mesh->mNumAnimMeshes; i++) {
 			String ai_anim_mesh_name = _ai_string_to_string(ai_mesh->mAnimMeshes[i]->mName);
 			mesh->set_blend_shape_mode(Mesh::BLEND_SHAPE_MODE_NORMALIZED);
@@ -786,7 +786,7 @@ void EditorSceneImporterAlembic::tree(AbcG::IObject iObj, Node *p_root, Node *cu
 					continue;
 				}
 				ERR_CONTINUE(prop_name.split("*").size() != 2);
-				const MeshInstance *mesh_instance = Object::cast_to<MeshInstance>(ap->get_owner()->find_node(mesh_name));
+				const MeshInstance3D *mesh_instance = Object::cast_to<MeshInstance3D>(ap->get_owner()->find_node(mesh_name));
 				ERR_CONTINUE(mesh_instance == NULL);
 				if (ap->get_owner()->find_node(mesh_instance->get_name()) == NULL) {
 					print_verbose("Can't find mesh in scene: " + mesh_instance->get_name());
@@ -805,7 +805,7 @@ void EditorSceneImporterAlembic::tree(AbcG::IObject iObj, Node *p_root, Node *cu
 						aiString name = current->mName;
 						name.Append("*");
 						name.length = 1 + ASSIMP_itoa10(name.data + name.length, MAXLEN - 1, morphs.size());
-						meshMorphAnim->mName.Set(name.C_Str());
+						meshMorphAnim->mName.HashSet(name.C_Str());
 						meshMorphAnim->mNumKeys = keys;
 						meshMorphAnim->mKeys = new aiMeshMorphKey[keys];
 
@@ -866,7 +866,7 @@ void EditorSceneImporterAlembic::tree(AbcG::IObject iObj, Node *p_root, Node *cu
 				ERR_CONTINUE(E == NULL);
 				for (size_t k = 0; k < anim_mesh->mNumKeys; k++) {
 					for (size_t j = 0; j < anim_mesh->mKeys[k].mNumValuesAndWeights; j++) {
-						const Map<uint32_t, String>::Element *F = E->get().find(anim_mesh->mKeys[k].mValues[j]);
+						const HashMap<uint32_t, String>::Element *F = E->get().find(anim_mesh->mKeys[k].mValues[j]);
 						ERR_CONTINUE(F == NULL);
 						const String prop = "blend_shapes/" + F->get();
 						const NodePath node_path = String(path) + ":" + prop;
