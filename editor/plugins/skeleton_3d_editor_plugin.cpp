@@ -176,6 +176,9 @@ void BoneTransformEditor::_update_properties() {
 	if (!skeleton) {
 		return;
 	}
+	if (!Skeleton3DEditor::get_singleton()) {
+		return;
+	}
 	int selected = Skeleton3DEditor::get_singleton()->get_selected_bone();
 	List<PropertyInfo> props;
 	skeleton->get_property_list(&props);
