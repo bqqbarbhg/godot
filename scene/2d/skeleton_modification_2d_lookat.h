@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  bone_attachment_3d.h                                                 */
+/*  skeleton_modification_2d_lookat.h                                    */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,67 +28,63 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef BONE_ATTACHMENT_3D_H
-#define BONE_ATTACHMENT_3D_H
+#ifndef SKELETON_MODIFICATION_2D_LOOKAT_H
+#define SKELETON_MODIFICATION_2D_LOOKAT_H
 
-#include "scene/3d/skeleton_3d.h"
-#ifdef TOOLS_ENABLED
-#include "scene/resources/bone_map.h"
-#endif // TOOLS_ENABLED
+#include "scene/2d/skeleton_2d.h"
+#include "scene/2d/skeleton_modification_2d.h"
 
-class BoneAttachment3D : public Node3D {
-	GDCLASS(BoneAttachment3D, Node3D);
+///////////////////////////////////////
+// SkeletonModification2DLookAt
+///////////////////////////////////////
 
-	bool bound = false;
-	String bone_name;
-	int bone_idx = -1;
+class SkeletonModification2DLookAt : public SkeletonModification2D {
+	GDCLASS(SkeletonModification2DLookAt, SkeletonModification2D);
 
-	bool override_pose = false;
-	bool _override_dirty = false;
+private:
+	NodePath bone_node;
+	mutable Variant bone_node_cache;
 
-	bool use_external_skeleton = false;
-	NodePath external_skeleton_node;
-	ObjectID external_skeleton_node_cache;
+	NodePath target_node;
+	mutable Variant target_node_cache;
 
-	void _check_bind();
-	void _check_unbind();
-
-	void _transform_changed();
-	void _update_external_skeleton_cache();
-	Skeleton3D *_get_skeleton3d();
+	float additional_rotation = 0;
+	bool enable_constraint = false;
+	float constraint_angle_min = 0;
+	float constraint_angle_max = (2.0 * Math_PI);
+	bool constraint_angle_invert = false;
+	bool constraint_in_localspace = true;
 
 protected:
-	void _validate_property(PropertyInfo &p_property) const;
-	bool _get(const StringName &p_path, Variant &r_ret) const;
-	bool _set(const StringName &p_path, const Variant &p_value);
-	void _get_property_list(List<PropertyInfo> *p_list) const;
-	void _notification(int p_what);
-
 	static void _bind_methods();
-#ifdef TOOLS_ENABLED
-	virtual void _notify_skeleton_bones_renamed(Node *p_base_scene, Skeleton3D *p_skeleton, Ref<BoneMap> p_bone_map);
-#endif // TOOLS_ENABLED
+	void execute(real_t delta) override;
+	void draw_editor_gizmo() override;
+	bool is_property_hidden(String property_name) const override;
+	TypedArray<String> get_configuration_warnings() const override;
 
 public:
-	virtual TypedArray<String> get_configuration_warnings() const override;
+	void set_bone_node(const NodePath &p_target_node);
+	NodePath get_bone_node() const;
 
-	void set_bone_name(const String &p_name);
-	String get_bone_name() const;
+	void set_target_node(const NodePath &p_target_node);
+	NodePath get_target_node() const;
 
-	void set_bone_idx(const int &p_idx);
-	int get_bone_idx() const;
+	void set_additional_rotation(float p_rotation);
+	float get_additional_rotation() const;
 
-	void set_override_pose(bool p_override);
-	bool get_override_pose() const;
+	void set_enable_constraint(bool p_constraint);
+	bool get_enable_constraint() const;
+	void set_constraint_angle_min(float p_angle_min);
+	float get_constraint_angle_min() const;
+	void set_constraint_angle_max(float p_angle_max);
+	float get_constraint_angle_max() const;
+	void set_constraint_angle_invert(bool p_invert);
+	bool get_constraint_angle_invert() const;
+	void set_constraint_in_localspace(bool p_constraint_in_localspace);
+	bool get_constraint_in_localspace() const;
 
-	void set_use_external_skeleton(bool p_external_skeleton);
-	bool get_use_external_skeleton() const;
-	void set_external_skeleton(NodePath p_skeleton);
-	NodePath get_external_skeleton() const;
-
-	virtual void on_bone_pose_update(int p_bone_index);
-
-	BoneAttachment3D();
+	SkeletonModification2DLookAt();
+	~SkeletonModification2DLookAt();
 };
 
-#endif // BONE_ATTACHMENT_3D_H
+#endif // SKELETON_MODIFICATION_2D_LOOKAT_H
