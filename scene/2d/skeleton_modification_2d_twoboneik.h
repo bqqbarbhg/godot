@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  bone_attachment_3d.h                                                 */
+/*  skeleton_modification_2d_twoboneik.h                                 */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,67 +28,57 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef BONE_ATTACHMENT_3D_H
-#define BONE_ATTACHMENT_3D_H
+#ifndef SKELETON_MODIFICATION_2D_TWOBONEIK_H
+#define SKELETON_MODIFICATION_2D_TWOBONEIK_H
 
-#include "scene/3d/skeleton_3d.h"
-#ifdef TOOLS_ENABLED
-#include "scene/resources/bone_map.h"
-#endif // TOOLS_ENABLED
+#include "scene/2d/skeleton_2d.h"
+#include "scene/2d/skeleton_modification_2d.h"
 
-class BoneAttachment3D : public Node3D {
-	GDCLASS(BoneAttachment3D, Node3D);
+///////////////////////////////////////
+// SkeletonModification2DJIGGLE
+///////////////////////////////////////
 
-	bool bound = false;
-	String bone_name;
-	int bone_idx = -1;
+class SkeletonModification2DTwoBoneIK : public SkeletonModification2D {
+	GDCLASS(SkeletonModification2DTwoBoneIK, SkeletonModification2D);
 
-	bool override_pose = false;
-	bool _override_dirty = false;
+private:
+	NodePath target_node;
+	mutable Variant target_node_cache;
+	float target_minimum_distance = 0;
+	float target_maximum_distance = 0;
+	bool flip_bend_direction = false;
 
-	bool use_external_skeleton = false;
-	NodePath external_skeleton_node;
-	ObjectID external_skeleton_node_cache;
+	NodePath joint_one_bone_node;
+	mutable Variant joint_one_bone_node_cache;
 
-	void _check_bind();
-	void _check_unbind();
-
-	void _transform_changed();
-	void _update_external_skeleton_cache();
-	Skeleton3D *_get_skeleton3d();
+	NodePath joint_two_bone_node;
+	mutable Variant joint_two_bone_node_cache;
 
 protected:
-	void _validate_property(PropertyInfo &p_property) const;
-	bool _get(const StringName &p_path, Variant &r_ret) const;
-	bool _set(const StringName &p_path, const Variant &p_value);
-	void _get_property_list(List<PropertyInfo> *p_list) const;
-	void _notification(int p_what);
-
 	static void _bind_methods();
-#ifdef TOOLS_ENABLED
-	virtual void _notify_skeleton_bones_renamed(Node *p_base_scene, Skeleton3D *p_skeleton, Ref<BoneMap> p_bone_map);
-#endif // TOOLS_ENABLED
+	void execute(real_t delta) override;
+	TypedArray<String> get_configuration_warnings() const override;
+	void draw_editor_gizmo() override;
 
 public:
-	virtual TypedArray<String> get_configuration_warnings() const override;
+	void set_target_node(const NodePath &p_target_node);
+	NodePath get_target_node() const;
 
-	void set_bone_name(const String &p_name);
-	String get_bone_name() const;
+	void set_target_minimum_distance(float p_minimum_distance);
+	float get_target_minimum_distance() const;
+	void set_target_maximum_distance(float p_maximum_distance);
+	float get_target_maximum_distance() const;
+	void set_flip_bend_direction(bool p_flip_direction);
+	bool get_flip_bend_direction() const;
 
-	void set_bone_idx(const int &p_idx);
-	int get_bone_idx() const;
+	void set_joint_one_bone_node(const NodePath &p_node);
+	NodePath get_joint_one_bone_node() const;
 
-	void set_override_pose(bool p_override);
-	bool get_override_pose() const;
+	void set_joint_two_bone_node(const NodePath &p_node);
+	NodePath get_joint_two_bone_node() const;
 
-	void set_use_external_skeleton(bool p_external_skeleton);
-	bool get_use_external_skeleton() const;
-	void set_external_skeleton(NodePath p_skeleton);
-	NodePath get_external_skeleton() const;
-
-	virtual void on_bone_pose_update(int p_bone_index);
-
-	BoneAttachment3D();
+	SkeletonModification2DTwoBoneIK();
+	~SkeletonModification2DTwoBoneIK();
 };
 
-#endif // BONE_ATTACHMENT_3D_H
+#endif // SKELETON_MODIFICATION_2D_TWOBONEIK_H

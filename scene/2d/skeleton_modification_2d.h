@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  bone_attachment_3d.h                                                 */
+/*  skeleton_modification_2d.h                                           */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,67 +28,67 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef BONE_ATTACHMENT_3D_H
-#define BONE_ATTACHMENT_3D_H
+#ifndef SKELETON_MODIFICATION_2D_H
+#define SKELETON_MODIFICATION_2D_H
 
-#include "scene/3d/skeleton_3d.h"
-#ifdef TOOLS_ENABLED
-#include "scene/resources/bone_map.h"
-#endif // TOOLS_ENABLED
+#include "scene/2d/skeleton_2d.h"
 
-class BoneAttachment3D : public Node3D {
-	GDCLASS(BoneAttachment3D, Node3D);
+///////////////////////////////////////
+// SkeletonModification2D
+///////////////////////////////////////
 
-	bool bound = false;
-	String bone_name;
-	int bone_idx = -1;
+class Bone2D;
 
-	bool override_pose = false;
-	bool _override_dirty = false;
+class SkeletonModification2D : public Node {
+	GDCLASS(SkeletonModification2D, Node);
 
-	bool use_external_skeleton = false;
-	NodePath external_skeleton_node;
-	ObjectID external_skeleton_node_cache;
+private:
+	static void _bind_methods();
 
-	void _check_bind();
-	void _check_unbind();
+	bool editor_gizmo_dirty = false;
+	bool enabled = true;
+	bool skeleton_change_queued = true;
+	mutable Variant cached_skeleton;
+	NodePath skeleton_path = NodePath("..");
 
-	void _transform_changed();
-	void _update_external_skeleton_cache();
-	Skeleton3D *_get_skeleton3d();
+	void _do_gizmo_draw();
 
 protected:
-	void _validate_property(PropertyInfo &p_property) const;
-	bool _get(const StringName &p_path, Variant &r_ret) const;
-	bool _set(const StringName &p_path, const Variant &p_value);
-	void _get_property_list(List<PropertyInfo> *p_list) const;
-	void _notification(int p_what);
-
-	static void _bind_methods();
-#ifdef TOOLS_ENABLED
-	virtual void _notify_skeleton_bones_renamed(Node *p_base_scene, Skeleton3D *p_skeleton, Ref<BoneMap> p_bone_map);
-#endif // TOOLS_ENABLED
+	bool _cache_node(Variant &cache, const NodePath &target_node_path) const;
+	Bone2D *_cache_bone(Variant &cache, const NodePath &target_node_path) const;
+	TypedArray<String> get_configuration_warnings() const override;
 
 public:
-	virtual TypedArray<String> get_configuration_warnings() const override;
+	enum { UNCACHED_BONE_IDX = -2 };
 
-	void set_bone_name(const String &p_name);
-	String get_bone_name() const;
+	void set_enabled(bool p_enabled);
+	bool get_enabled();
 
-	void set_bone_idx(const int &p_idx);
-	int get_bone_idx() const;
+	NodePath get_skeleton_path() const;
+	void set_skeleton_path(NodePath p_path);
+	Skeleton2D *get_skeleton() const;
 
-	void set_override_pose(bool p_override);
-	bool get_override_pose() const;
+	void _validate_property(PropertyInfo &p_property) const;
+	void _notification(int32_t p_what);
 
-	void set_use_external_skeleton(bool p_external_skeleton);
-	bool get_use_external_skeleton() const;
-	void set_external_skeleton(NodePath p_skeleton);
-	NodePath get_external_skeleton() const;
+	virtual void execute(real_t delta);
+	GDVIRTUAL1(_execute, real_t);
+	virtual void draw_editor_gizmo();
+	GDVIRTUAL0(_draw_editor_gizmo);
+	virtual bool is_property_hidden(String property_name) const;
+	GDVIRTUAL1R(bool, _is_property_hidden, String);
+	void set_editor_gizmo_dirty(bool p_dirty);
 
-	virtual void on_bone_pose_update(int p_bone_index);
+	Variant resolve_node(const NodePath &target_node_path) const;
+	Variant resolve_bone(const NodePath &target_node_path) const;
+	Transform2D get_target_transform(Variant resolved_target) const;
+	real_t get_target_rotation(Variant resolved_target) const;
+	Vector2 get_target_position(Variant resolved_target) const;
 
-	BoneAttachment3D();
+	float clamp_angle(float p_angle, float p_min_bound, float p_max_bound, bool p_invert);
+	void editor_draw_angle_constraints(Bone2D *p_operation_bone, float p_min_bound, float p_max_bound, bool p_constraint_enabled, bool p_constraint_in_localspace, bool p_constraint_inverted);
+
+	SkeletonModification2D() {}
 };
 
-#endif // BONE_ATTACHMENT_3D_H
+#endif // SKELETON_MODIFICATION_2D_H
