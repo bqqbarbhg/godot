@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+
+Import("env")
+Import("env_modules")
+
+env_soft_body_conditioner = env_modules.Clone()
+
+# Thirdparty source files
+
+thirdparty_obj = []
+
+thirdparty_dir = "#thirdparty/preconditioner-for-cloth-and-deformable-body-simulation/"
+thirdparty_sources = [
+    "SeOmp.cpp",
+    "SeSchwarzPreconditioner.cpp",
+]
+thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
+
+env_soft_body_conditioner.Prepend(CPPPATH=[thirdparty_dir])
+
+if not env_soft_body_conditioner.msvc:
+    env_soft_body_conditioner.Prepend(CXXFLAGS=["-mavx", "-mfma"])
+
+env_thirdparty = env_soft_body_conditioner.Clone()
+env_thirdparty.disable_warnings()
+env_thirdparty.add_source_files(thirdparty_obj, thirdparty_sources)
+env.modules_sources += thirdparty_obj
+
+
+# Godot source files
+
+module_obj = []
+
+env_soft_body_conditioner.add_source_files(module_obj, "*.cpp")
+env.modules_sources += module_obj
+
+# Needed to force rebuilding the module files when the thirdparty library is updated.
+env.Depends(module_obj, thirdparty_obj)
