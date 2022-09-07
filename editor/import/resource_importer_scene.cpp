@@ -1891,6 +1891,161 @@ void ResourceImporterScene::_replace_owner(Node *p_node, Node *p_scene, Node *p_
 	}
 }
 
+#define VERTEX_SKIN_FUNC(bone_count, vert_idx, cur_vert, transform_array, result) \
+	for (int weight_idx = 0; weight_idx < bone_count; weight_idx++) {             \
+		int bone_idx = bo[vert_idx * bone_count + weight_idx];                    \
+		float w = we[vert_idx * bone_count + weight_idx];                         \
+		if (w < FLT_EPSILON) {                                                    \
+			continue;                                                             \
+		}                                                                         \
+		ERR_FAIL_INDEX(bone_idx, transform_array.size());                         \
+		result += transform_array[bone_idx].xform(cur_vert) * w;                  \
+	}
+
+void ResourceImporterScene::_apply_bind_pose_to_mesh(ImporterMeshInstance3D *p_src_mesh_node) {
+	Vector<Transform3D> bone_transforms;
+
+	// Get an array of bone transforms to be used to rescale the actual mesh.
+	Ref<Skin> skin = p_src_mesh_node->get_skin();
+	if (skin.is_valid()) {
+		NodePath skeleton_path = p_src_mesh_node->get_skeleton_path();
+		Node *node = p_src_mesh_node->get_node_or_null(skeleton_path);
+		Skeleton3D *skeleton = Object::cast_to<Skeleton3D>(node);
+		if (skeleton) {
+			int bone_count = skeleton->get_bone_count();
+			int bind_count = skin->get_bind_count();
+
+			if (bone_count == bind_count) {
+				for (int i = 0; i < bind_count; i++) {
+					Transform3D bind_pose = skin->get_bind_pose(i);
+					String bind_name = skin->get_bind_name(i);
+
+					int bone_idx = skeleton->find_bone(bind_name);
+					Transform3D bp_global_rest;
+					if (bone_idx >= 0) {
+						bp_global_rest = skeleton->get_bone_global_rest(bone_idx);
+					} else {
+						bp_global_rest = skeleton->get_bone_global_rest(i);
+					}
+					bone_transforms.push_back(bp_global_rest * bind_pose);
+					skin->set_bind_pose(i, bp_global_rest.inverse());
+				}
+			}
+		}
+	}
+
+	// Only need to run this if we actually have bone transforms.
+	if (bone_transforms.size() > 0) {
+		// Gather the data from the original mesh.
+		int bs_count = p_src_mesh_node->get_mesh()->get_blend_shape_count();
+
+		Vector<Array> surfaces;
+		Vector<Array> surfaces_bs;
+		Vector<Ref<Material>> materials;
+		Vector<String> names;
+		Vector<int> formats;
+		Vector<Mesh::PrimitiveType> primitive_types;
+		Vector<Dictionary> lods;
+
+		Vector<String> bs_names;
+		Mesh::BlendShapeMode bs_mode;
+
+		for (int i = 0; i < p_src_mesh_node->get_mesh()->get_surface_count(); i++) {
+			surfaces.push_back(p_src_mesh_node->get_mesh()->get_surface_arrays(i));
+			Array bs;
+			for (int j = 0; j < bs_count; j++) {
+				bs.push_back(p_src_mesh_node->get_mesh()->get_surface_blend_shape_arrays(i, j));
+			}
+			surfaces_bs.push_back(bs);
+			materials.push_back(p_src_mesh_node->get_mesh()->get_surface_material(i));
+			names.push_back(p_src_mesh_node->get_mesh()->get_surface_name(i));
+			formats.push_back(p_src_mesh_node->get_mesh()->get_surface_format(i));
+			primitive_types.push_back(p_src_mesh_node->get_mesh()->get_surface_primitive_type(i));
+
+			Dictionary lod_dictionary;
+			int lod_count = p_src_mesh_node->get_mesh()->get_surface_lod_count(i);
+			for (int j = 0; j < lod_count; j++) {
+				Vector<int> lod_indicies = p_src_mesh_node->get_mesh()->get_surface_lod_indices(i, j);
+				float lod_size = p_src_mesh_node->get_mesh()->get_surface_lod_size(i, j);
+				lod_dictionary[lod_size] = lod_indicies;
+			}
+			lods.push_back(lod_dictionary);
+		}
+
+		for (int i = 0; i < bs_count; i++) {
+			bs_names.push_back(p_src_mesh_node->get_mesh()->get_blend_shape_name(i));
+		}
+
+		bs_mode = p_src_mesh_node->get_mesh()->get_blend_shape_mode();
+
+		// We have all the data, so clear the original mesh.
+		p_src_mesh_node->get_mesh()->clear();
+
+		// Assign the blend shape mode and names.
+		for (int i = 0; i < bs_count; i++) {
+			p_src_mesh_node->get_mesh()->add_blend_shape(bs_names[i]);
+		}
+		p_src_mesh_node->get_mesh()->set_blend_shape_mode(bs_mode);
+
+		for (int i = 0; i < surfaces.size(); i++) {
+			Array surface = surfaces[i];
+			Array surface_bss = surfaces_bs[i];
+
+			// Only need to update this surface if the primitive type is triangles.
+			if (primitive_types[i] == Mesh::PRIMITIVE_TRIANGLES) {
+				Vector<Vector3> vertices = surface[RS::ARRAY_VERTEX];
+				int vertex_count = vertices.size();
+
+				Vector<int> bones = surface[RS::ARRAY_BONES];
+				Vector<float> weights = surface[RS::ARRAY_WEIGHTS];
+
+				if (bones.size() > 0 && weights.size() && bone_transforms.size() > 0) {
+					// Apply bone transforms to regular surface.
+					int bone_weight_length = formats[i] & Mesh::ARRAY_FLAG_USE_8_BONE_WEIGHTS ? 8 : 4;
+
+					const int *bo = bones.ptr();
+					const float *we = weights.ptr();
+
+					for (int j = 0; j < vertex_count; j++) {
+						Vector3 transformed_vert = Vector3();
+
+						VERTEX_SKIN_FUNC(bone_weight_length, j, vertices[j], bone_transforms, transformed_vert)
+
+						vertices.set(j, transformed_vert);
+					}
+					surface[RS::ARRAY_VERTEX] = vertices;
+
+					// Apply bone transforms to blendshapes.
+					for (int blend_idx = 0; blend_idx < bs_count; blend_idx++) {
+						Array surface_bs = surface_bss[blend_idx];
+						Vector<Vector3> bs_vertices = surface_bs[RS::ARRAY_VERTEX];
+
+						int bs_vertex_count = bs_vertices.size();
+
+						{
+							// Reset the pointers.
+							bo = bones.ptr();
+							we = weights.ptr();
+
+							for (int j = 0; j < bs_vertex_count; j++) {
+								Vector3 transformed_vert = Vector3();
+
+								VERTEX_SKIN_FUNC(bone_weight_length, j, bs_vertices[j], bone_transforms, transformed_vert)
+
+								bs_vertices.set(j, transformed_vert);
+							}
+							surface_bs[RS::ARRAY_VERTEX] = bs_vertices;
+						}
+						surface_bss[blend_idx] = surface_bs;
+					}
+				}
+			}
+
+			p_src_mesh_node->get_mesh()->add_surface(primitive_types[i], surface, surface_bss, Dictionary(), materials[i], names[i], formats[i]);
+		}
+	}
+}
+
 void ResourceImporterScene::_generate_meshes(Node *p_node, const Dictionary &p_mesh_data, bool p_generate_lods, bool p_create_shadow_meshes, LightBakeMode p_light_bake_mode, float p_lightmap_texel_size, const Vector<uint8_t> &p_src_lightmap_cache, Vector<Vector<uint8_t>> &r_lightmap_caches) {
 	ImporterMeshInstance3D *src_mesh_node = Object::cast_to<ImporterMeshInstance3D>(p_node);
 	if (src_mesh_node) {
@@ -1973,6 +2128,8 @@ void ResourceImporterScene::_generate_meshes(Node *p_node, const Dictionary &p_m
 						post_importer_plugins.write[i]->internal_process(EditorScenePostImportPlugin::INTERNAL_IMPORT_CATEGORY_MESH, nullptr, src_mesh_node, src_mesh_node->get_mesh(), mesh_settings);
 					}
 				}
+
+				_apply_bind_pose_to_mesh(src_mesh_node);
 
 				if (bake_lightmaps) {
 					Transform3D xf;
