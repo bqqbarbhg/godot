@@ -65,6 +65,7 @@ Ref<Material> ImporterMeshInstance3D::get_surface_material(int p_idx) const {
 void ImporterMeshInstance3D::set_skeleton_path(const NodePath &p_path) {
 	skeleton_path = p_path;
 }
+
 NodePath ImporterMeshInstance3D::get_skeleton_path() const {
 	return skeleton_path;
 }
@@ -82,4 +83,10 @@ void ImporterMeshInstance3D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, "ImporterMesh"), "set_mesh", "get_mesh");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "skin", PROPERTY_HINT_RESOURCE_TYPE, "Skin"), "set_skin", "get_skin");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "skeleton_path", PROPERTY_HINT_NODE_PATH_VALID_TYPES, "Skeleton"), "set_skeleton_path", "get_skeleton_path");
+
+	GDVIRTUAL_BIND("_set_mesh", "mesh");
+	GDVIRTUAL_BIND("_get_mesh");
+	GDVIRTUAL_BIND("_set_skin", "skin");
+	GDVIRTUAL_BIND("_set_skeleton_path", "skeleton_path");
+	GDVIRTUAL_BIND("_get_skeleton_path");
 }

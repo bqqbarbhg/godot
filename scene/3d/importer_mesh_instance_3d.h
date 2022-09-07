@@ -31,11 +31,11 @@
 #ifndef IMPORTER_MESH_INSTANCE_3D_H
 #define IMPORTER_MESH_INSTANCE_3D_H
 
+#include "core/object/gdvirtual.gen.inc"
 #include "scene/3d/node_3d.h"
 #include "scene/resources/immediate_mesh.h"
+#include "scene/resources/importer_mesh.h"
 #include "scene/resources/skin.h"
-
-class ImporterMesh;
 
 class ImporterMeshInstance3D : public Node3D {
 	GDCLASS(ImporterMeshInstance3D, Node3D)
@@ -49,17 +49,17 @@ protected:
 	static void _bind_methods();
 
 public:
-	void set_mesh(const Ref<ImporterMesh> &p_mesh);
-	Ref<ImporterMesh> get_mesh() const;
+	virtual void set_mesh(const Ref<ImporterMesh> &p_mesh);
+	virtual Ref<ImporterMesh> get_mesh() const;
 
-	void set_skin(const Ref<Skin> &p_skin);
-	Ref<Skin> get_skin() const;
+	virtual void set_skin(const Ref<Skin> &p_skin);
+	virtual Ref<Skin> get_skin() const;
 
-	void set_surface_material(int p_idx, const Ref<Material> &p_material);
-	Ref<Material> get_surface_material(int p_idx) const;
+	virtual void set_surface_material(int p_idx, const Ref<Material> &p_material);
+	virtual Ref<Material> get_surface_material(int p_idx) const;
 
-	void set_skeleton_path(const NodePath &p_path);
-	NodePath get_skeleton_path() const;
+	virtual void set_skeleton_path(const NodePath &p_path);
+	virtual NodePath get_skeleton_path() const;
 };
 
 #endif // IMPORTER_MESH_INSTANCE_3D_H

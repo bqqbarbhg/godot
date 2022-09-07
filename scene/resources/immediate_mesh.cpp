@@ -400,6 +400,17 @@ void ImmediateMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("surface_end"), &ImmediateMesh::surface_end);
 
 	ClassDB::bind_method(D_METHOD("clear_surfaces"), &ImmediateMesh::clear_surfaces);
+
+	GDVIRTUAL_BIND("_surface_begin", "primitive", "material");
+	GDVIRTUAL_BIND("_surface_set_color", "color");
+	GDVIRTUAL_BIND("_surface_set_normal", "normal");
+	GDVIRTUAL_BIND("_surface_set_tangent", "tangent");
+	GDVIRTUAL_BIND("_surface_set_uv", "uv");
+	GDVIRTUAL_BIND("_surface_set_uv2", "uv2");
+	GDVIRTUAL_BIND("_surface_add_vertex", "vertex");
+	GDVIRTUAL_BIND("_surface_add_vertex_2d", "vertex");
+	GDVIRTUAL_BIND("_surface_end");
+	GDVIRTUAL_BIND("_clear_surfaces");
 }
 
 RID ImmediateMesh::get_rid() const {

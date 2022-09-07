@@ -502,6 +502,23 @@ void MeshInstance3D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "skin", PROPERTY_HINT_RESOURCE_TYPE, "Skin"), "set_skin", "get_skin");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "skeleton", PROPERTY_HINT_NODE_PATH_VALID_TYPES, "Skeleton3D"), "set_skeleton_path", "get_skeleton_path");
 	ADD_GROUP("", "");
+
+	GDVIRTUAL_BIND("_set_mesh", "mesh");
+	GDVIRTUAL_BIND("_get_mesh");
+	GDVIRTUAL_BIND("_set_skin", "skin");
+	GDVIRTUAL_BIND("_set_skeleton_path", "skeleton_path");
+	GDVIRTUAL_BIND("_get_skeleton_path");
+	GDVIRTUAL_BIND("_get_surface_override_material_count");
+	GDVIRTUAL_BIND("_set_surface_override_material", "surface", "material");
+	GDVIRTUAL_BIND("_get_surface_override_material", "surface");	
+	GDVIRTUAL_BIND("_get_active_material", "surface");
+	GDVIRTUAL_BIND("_create_convex_collision", "clean", "simplify");	
+	GDVIRTUAL_BIND("_create_multiple_convex_collisions");
+	GDVIRTUAL_BIND("_get_blend_shape_count");	
+	GDVIRTUAL_BIND("_find_blend_shape_by_name");
+	GDVIRTUAL_BIND("_get_blend_shape_value", "blend_shape_idx");	
+	GDVIRTUAL_BIND("_set_blend_shape_value", "blend_shape_idx", "value");
+	GDVIRTUAL_BIND("_create_debug_tangents");
 }
 
 MeshInstance3D::MeshInstance3D() {

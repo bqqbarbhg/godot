@@ -33,7 +33,8 @@
 
 #include "core/templates/local_vector.h"
 #include "scene/3d/visual_instance_3d.h"
-class Skin;
+#include "scene/resources/skin.h"
+
 class SkinReference;
 
 class MeshInstance3D : public GeometryInstance3D {
@@ -60,39 +61,39 @@ protected:
 
 	void _notification(int p_what);
 	static void _bind_methods();
-
+	
 public:
-	void set_mesh(const Ref<Mesh> &p_mesh);
-	Ref<Mesh> get_mesh() const;
+	virtual void set_mesh(const Ref<Mesh> &p_mesh);
+	virtual Ref<Mesh> get_mesh() const;
 
-	void set_skin(const Ref<Skin> &p_skin);
-	Ref<Skin> get_skin() const;
+	virtual void set_skin(const Ref<Skin> &p_skin);
+	virtual Ref<Skin> get_skin() const;
 
-	void set_skeleton_path(const NodePath &p_skeleton);
-	NodePath get_skeleton_path();
+	virtual void set_skeleton_path(const NodePath &p_skeleton);
+	virtual NodePath get_skeleton_path();
 
-	int get_blend_shape_count() const;
-	int find_blend_shape_by_name(const StringName &p_name);
-	float get_blend_shape_value(int p_blend_shape) const;
-	void set_blend_shape_value(int p_blend_shape, float p_value);
+	virtual int get_blend_shape_count() const;
+	virtual int find_blend_shape_by_name(const StringName &p_name);
+	virtual float get_blend_shape_value(int p_blend_shape) const;
+	virtual void set_blend_shape_value(int p_blend_shape, float p_value);
 
-	int get_surface_override_material_count() const;
-	void set_surface_override_material(int p_surface, const Ref<Material> &p_material);
-	Ref<Material> get_surface_override_material(int p_surface) const;
-	Ref<Material> get_active_material(int p_surface) const;
+	virtual int get_surface_override_material_count() const;
+	virtual void set_surface_override_material(int p_surface, const Ref<Material> &p_material);
+	virtual Ref<Material> get_surface_override_material(int p_surface) const;
+	virtual Ref<Material> get_active_material(int p_surface) const;
 
-	Node *create_trimesh_collision_node();
-	void create_trimesh_collision();
+	virtual Node *create_trimesh_collision_node();
+	virtual void create_trimesh_collision();
 
-	Node *create_convex_collision_node(bool p_clean = true, bool p_simplify = false);
-	void create_convex_collision(bool p_clean = true, bool p_simplify = false);
+	virtual Node *create_convex_collision_node(bool p_clean = true, bool p_simplify = false);
+	virtual void create_convex_collision(bool p_clean = true, bool p_simplify = false);
 
-	Node *create_multiple_convex_collisions_node();
-	void create_multiple_convex_collisions();
+	virtual Node *create_multiple_convex_collisions_node();
+	virtual void create_multiple_convex_collisions();
 
-	void create_debug_tangents();
+	virtual void create_debug_tangents();
 
-	virtual AABB get_aabb() const override;
+	virtual virtual AABB get_aabb() const override;
 
 	MeshInstance3D();
 	~MeshInstance3D();
