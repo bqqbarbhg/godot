@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  bone_attachment_3d.h                                                 */
+/*  skeleton_modification_2d_physicalbones.h                             */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,67 +28,48 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef BONE_ATTACHMENT_3D_H
-#define BONE_ATTACHMENT_3D_H
+#ifndef SKELETON_MODIFICATION_2D_PHYSICALBONES_H
+#define SKELETON_MODIFICATION_2D_PHYSICALBONES_H
 
-#include "scene/3d/skeleton_3d.h"
+#include "scene/2d/physical_bone_2d.h"
+#include "scene/2d/skeleton_2d.h"
+#include "scene/2d/skeleton_modification_2d.h"
+
+///////////////////////////////////////
+// SkeletonModification2DJIGGLE
+///////////////////////////////////////
+
+class SkeletonModification2DPhysicalBones : public SkeletonModification2D {
+	GDCLASS(SkeletonModification2DPhysicalBones, SkeletonModification2D);
+
+private:
+	struct PhysicalBone_Data2D {
+		NodePath physical_bone_node;
+		mutable Variant physical_bone_node_cache;
+	};
+	Vector<PhysicalBone_Data2D> physical_bone_chain;
+
 #ifdef TOOLS_ENABLED
-#include "scene/resources/bone_map.h"
-#endif // TOOLS_ENABLED
-
-class BoneAttachment3D : public Node3D {
-	GDCLASS(BoneAttachment3D, Node3D);
-
-	bool bound = false;
-	String bone_name;
-	int bone_idx = -1;
-
-	bool override_pose = false;
-	bool _override_dirty = false;
-
-	bool use_external_skeleton = false;
-	NodePath external_skeleton_node;
-	ObjectID external_skeleton_node_cache;
-
-	void _check_bind();
-	void _check_unbind();
-
-	void _transform_changed();
-	void _update_external_skeleton_cache();
-	Skeleton3D *_get_skeleton3d();
+	void _fetch_physical_bones();
+#endif
 
 protected:
-	void _validate_property(PropertyInfo &p_property) const;
+	static void _bind_methods();
 	bool _get(const StringName &p_path, Variant &r_ret) const;
 	bool _set(const StringName &p_path, const Variant &p_value);
 	void _get_property_list(List<PropertyInfo> *p_list) const;
-	void _notification(int p_what);
-
-	static void _bind_methods();
-#ifdef TOOLS_ENABLED
-	virtual void _notify_skeleton_bones_renamed(Node *p_base_scene, Skeleton3D *p_skeleton, Ref<BoneMap> p_bone_map);
-#endif // TOOLS_ENABLED
+	void execute(real_t p_delta) override;
+	TypedArray<String> get_configuration_warnings() const override;
 
 public:
-	virtual TypedArray<String> get_configuration_warnings() const override;
+	int get_joint_count();
+	void set_joint_count(int p_new_length);
 
-	void set_bone_name(const String &p_name);
-	String get_bone_name() const;
+	void set_physical_bone_node(int p_joint_idx, const NodePath &p_path);
+	NodePath get_physical_bone_node(int p_joint_idx) const;
 
-	void set_bone_idx(const int &p_idx);
-	int get_bone_idx() const;
-
-	void set_override_pose(bool p_override);
-	bool get_override_pose() const;
-
-	void set_use_external_skeleton(bool p_external_skeleton);
-	bool get_use_external_skeleton() const;
-	void set_external_skeleton(NodePath p_skeleton);
-	NodePath get_external_skeleton() const;
-
-	virtual void on_bone_pose_update(int p_bone_index);
-
-	BoneAttachment3D();
+	SkeletonModification2DPhysicalBones();
+	~SkeletonModification2DPhysicalBones();
 };
 
-#endif // BONE_ATTACHMENT_3D_H
+#endif // SKELETON_MODIFICATION_2D_PHYSICALBONES_H
