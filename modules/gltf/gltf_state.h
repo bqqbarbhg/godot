@@ -79,6 +79,8 @@ class GLTFState : public Resource {
 	Vector<int> root_nodes;
 	Vector<Ref<GLTFTexture>> textures;
 	Vector<Ref<Texture2D>> images;
+	TypedArray<String> extensions_used;
+	TypedArray<String> extensions_required;
 
 	Vector<Ref<GLTFSkin>> skins;
 	Vector<Ref<GLTFCamera>> cameras;
@@ -98,6 +100,8 @@ protected:
 	static void _bind_methods();
 
 public:
+	void set_extension_as_used(const String &p_extension, bool p_required = false);
+
 	Dictionary get_json();
 	void set_json(Dictionary p_json);
 
