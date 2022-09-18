@@ -192,6 +192,10 @@
 		</method>
 	</methods>
 	<members>
+		<member name="additional_data" type="Dictionary" setter="set_additional_data" getter="get_additional_data" default="{}">
+			A dictionary of extra data that can be used to keep state data in GLTFDocumentExtension classes (this is important because they are stateless).
+			[b]Note:[/b] This dictionary is used by multiple extensions, so do not manually erase it.
+		</member>
 		<member name="base_path" type="String" setter="set_base_path" getter="get_base_path" default="&quot;&quot;">
 		</member>
 		<member name="buffers" type="PackedByteArray[]" setter="set_buffers" getter="get_buffers" default="[]">
