@@ -171,6 +171,7 @@ opts.Add(EnumVariable("float", "Floating-point precision", "32", ("32", "64")))
 opts.Add(EnumVariable("optimize", "Optimization type", "speed", ("speed", "size", "none")))
 opts.Add(BoolVariable("production", "Set defaults to build Godot for use in production", False))
 opts.Add(EnumVariable("lto", "Link-time optimization (for production buids)", "none", ("none", "thin", "full")))
+opts.Add("ccache_bin", "Path to ccache, set empty to disable", "ccache")
 
 # Components
 opts.Add(BoolVariable("deprecated", "Enable compatibility code for deprecated and removed features", True))
@@ -306,6 +307,10 @@ if selected_platform in platform_opts:
 # Update the environment to take platform-specific options into account.
 opts.Update(env_base)
 env_base["platform"] = selected_platform  # Must always be re-set after calling opts.Update().
+
+ccache = Tool("ccache", toolpath=["misc/scons/site_tools"])
+if ccache.exists(env_base):
+    ccache.generate(env_base)
 
 # Detect modules.
 modules_detected = OrderedDict()
