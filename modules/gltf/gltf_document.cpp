@@ -6916,9 +6916,20 @@ Error GLTFDocument::_parse_gltf_extensions(Ref<GLTFState> state) {
 		Array ext_array = state->json["extensionsRequired"];
 		state->extensions_required = ext_array;
 	}
-	if (state->extensions_required.find("KHR_draco_mesh_compression") != -1) {
-		ERR_PRINT("glTF2 extension KHR_draco_mesh_compression is not supported.");
-		return ERR_UNAVAILABLE;
+	Array supported_extensions;
+	supported_extensions.push_back("KHR_lights_punctual");
+	supported_extensions.push_back("KHR_materials_pbrSpecularGlossiness");
+	supported_extensions.push_back("KHR_texture_transform");
+	for (Ref<GLTFDocumentExtension> ext : document_extensions) {
+		ERR_CONTINUE(ext.is_null());
+		supported_extensions.append_array(ext->get_supported_extensions());
 	}
-	return OK;
+	Error ret = Error::OK;
+	for (int i = 0; i < state->extensions_required.size(); i++) {
+		if (!supported_extensions.has(state->extensions_required[i])) {
+			ERR_PRINT("GLTF: Can't import file '" + state->filename + "', required extension '" + String(state->extensions_required[i]) + "' is not supported. Are you missing a GLTF extension?");
+			ret = ERR_UNAVAILABLE;
+		}
+	}
+	return ret;
 }
