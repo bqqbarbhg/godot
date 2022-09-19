@@ -124,6 +124,14 @@
 			<description>
 			</description>
 		</method>
+		<method name="set_extension_as_used">
+			<return type="void" />
+			<param index="0" name="extension_name" type="String" />
+			<param index="1" name="required" type="bool" />
+			<description>
+				Appends an extension to the list of extensions used by this GLTF file. If [param required] is true, the extension will also be added to the list of required extensions.
+			</description>
+		</method>
 		<method name="set_images">
 			<return type="void" />
 			<param index="0" name="images" type="Texture2D[]" />
@@ -192,6 +200,10 @@
 		</method>
 	</methods>
 	<members>
+		<member name="additional_data" type="Dictionary" setter="set_additional_data" getter="get_additional_data" default="{}">
+			A dictionary of extra data that can be used to keep state data in GLTFDocumentExtension classes (this is important because they are stateless).
+			[b]Note:[/b] This dictionary is used by multiple extensions, so do not manually erase it.
+		</member>
 		<member name="base_path" type="String" setter="set_base_path" getter="get_base_path" default="&quot;&quot;">
 		</member>
 		<member name="buffers" type="PackedByteArray[]" setter="set_buffers" getter="get_buffers" default="[]">

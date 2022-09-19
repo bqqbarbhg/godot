@@ -57,6 +57,7 @@ class GLTFState : public Resource {
 	int major_version = 0;
 	int minor_version = 0;
 	Vector<uint8_t> glb_data;
+	Dictionary additional_data;
 
 	bool use_named_skin_binds = false;
 	bool use_khr_texture_transform = false;
@@ -78,6 +79,8 @@ class GLTFState : public Resource {
 	Vector<int> root_nodes;
 	Vector<Ref<GLTFTexture>> textures;
 	Vector<Ref<Texture2D>> images;
+	TypedArray<String> extensions_used;
+	TypedArray<String> extensions_required;
 
 	Vector<Ref<GLTFSkin>> skins;
 	Vector<Ref<GLTFCamera>> cameras;
@@ -97,6 +100,8 @@ protected:
 	static void _bind_methods();
 
 public:
+	void set_extension_as_used(const String &p_extension, bool p_required = false);
+
 	Dictionary get_json();
 	void set_json(Dictionary p_json);
 
@@ -108,6 +113,9 @@ public:
 
 	Vector<uint8_t> get_glb_data();
 	void set_glb_data(Vector<uint8_t> p_glb_data);
+
+	Dictionary get_additional_data();
+	void set_additional_data(Dictionary p_additional_data);
 
 	bool get_use_named_skin_binds();
 	void set_use_named_skin_binds(bool p_use_named_skin_binds);

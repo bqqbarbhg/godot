@@ -1,12 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="GLTFNode" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		GLTF node class.
 	</brief_description>
 	<description>
+		Represents a GLTF node. GLTF nodes may have names, transforms, children (other GLTF nodes), and more specialized properties (represented by their own classes).
 	</description>
 	<tutorials>
+		<link title="GLTF scene and node spec">https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_004_ScenesNodes.md"</link>
 	</tutorials>
 	<members>
+		<member name="additional_data" type="Dictionary" setter="set_additional_data" getter="get_additional_data" default="{}">
+			A dictionary of extra data that can be used to keep state data in GLTFDocumentExtension classes (this is important because they are stateless).
+			[b]Note:[/b] This dictionary is used by multiple extensions, so do not manually erase it.
+		</member>
 		<member name="camera" type="int" setter="set_camera" getter="get_camera" default="-1">
 		</member>
 		<member name="children" type="PackedInt32Array" setter="set_children" getter="get_children" default="PackedInt32Array()">

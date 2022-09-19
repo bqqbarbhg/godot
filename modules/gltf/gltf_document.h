@@ -32,6 +32,7 @@
 #define GLTF_DOCUMENT_H
 
 #include "gltf_defines.h"
+#include "gltf_document_extension.h"
 #include "structures/gltf_animation.h"
 
 #include "scene/3d/bone_attachment_3d.h"
@@ -44,13 +45,13 @@
 
 class GLTFDocument : public Resource {
 	GDCLASS(GLTFDocument, Resource);
-	TypedArray<GLTFDocumentExtension> document_extensions;
+	static Vector<Ref<GLTFDocumentExtension>> all_document_extensions;
+	Vector<Ref<GLTFDocumentExtension>> document_extensions;
 
 private:
 	const float BAKE_FPS = 30.0f;
 
 public:
-	GLTFDocument();
 	const int32_t JOINT_GROUP_SIZE = 4;
 
 	enum {
@@ -76,8 +77,8 @@ protected:
 	static void _bind_methods();
 
 public:
-	void set_extensions(TypedArray<GLTFDocumentExtension> p_extensions);
-	TypedArray<GLTFDocumentExtension> get_extensions() const;
+	static void register_gltf_document_extension(Ref<GLTFDocumentExtension> p_extension, bool p_first_priority = false);
+	static void unregister_all_gltf_document_extensions();
 
 private:
 	void _build_parent_hierachy(Ref<GLTFState> state);
@@ -188,7 +189,7 @@ private:
 			const GLTFNodeIndex bone_index);
 	ImporterMeshInstance3D *_generate_mesh_instance(Ref<GLTFState> state, const GLTFNodeIndex node_index);
 	Camera3D *_generate_camera(Ref<GLTFState> state, const GLTFNodeIndex node_index);
-	Node3D *_generate_light(Ref<GLTFState> state, const GLTFNodeIndex node_index);
+	Light3D *_generate_light(Ref<GLTFState> state, const GLTFNodeIndex node_index);
 	Node3D *_generate_spatial(Ref<GLTFState> state, const GLTFNodeIndex node_index);
 	void _assign_scene_names(Ref<GLTFState> state);
 	template <class T>
@@ -265,7 +266,7 @@ private:
 	Dictionary _serialize_texture_transform_uv2(Ref<BaseMaterial3D> p_material);
 	Error _serialize_version(Ref<GLTFState> state);
 	Error _serialize_file(Ref<GLTFState> state, const String p_path);
-	Error _serialize_extensions(Ref<GLTFState> state) const;
+	Error _serialize_gltf_extensions(Ref<GLTFState> state) const;
 
 public:
 	// https://www.itu.int/rec/R-REC-BT.601

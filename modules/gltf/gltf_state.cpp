@@ -31,6 +31,7 @@
 #include "gltf_state.h"
 
 void GLTFState::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_extension_as_used", "extension_name", "required"), &GLTFState::set_extension_as_used);
 	ClassDB::bind_method(D_METHOD("get_json"), &GLTFState::get_json);
 	ClassDB::bind_method(D_METHOD("set_json", "json"), &GLTFState::set_json);
 	ClassDB::bind_method(D_METHOD("get_major_version"), &GLTFState::get_major_version);
@@ -39,6 +40,8 @@ void GLTFState::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_minor_version", "minor_version"), &GLTFState::set_minor_version);
 	ClassDB::bind_method(D_METHOD("get_glb_data"), &GLTFState::get_glb_data);
 	ClassDB::bind_method(D_METHOD("set_glb_data", "glb_data"), &GLTFState::set_glb_data);
+	ClassDB::bind_method(D_METHOD("get_additional_data"), &GLTFState::get_additional_data);
+	ClassDB::bind_method(D_METHOD("set_additional_data", "additional_data"), &GLTFState::set_additional_data);
 	ClassDB::bind_method(D_METHOD("get_use_named_skin_binds"), &GLTFState::get_use_named_skin_binds);
 	ClassDB::bind_method(D_METHOD("set_use_named_skin_binds", "use_named_skin_binds"), &GLTFState::set_use_named_skin_binds);
 	ClassDB::bind_method(D_METHOD("get_nodes"), &GLTFState::get_nodes);
@@ -89,6 +92,7 @@ void GLTFState::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "major_version"), "set_major_version", "get_major_version"); // int
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "minor_version"), "set_minor_version", "get_minor_version"); // int
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_BYTE_ARRAY, "glb_data"), "set_glb_data", "get_glb_data"); // Vector<uint8_t>
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "additional_data"), "set_additional_data", "get_additional_data"); // Dictionary
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_named_skin_binds"), "set_use_named_skin_binds", "get_use_named_skin_binds"); // bool
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "nodes", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_nodes", "get_nodes"); // Vector<Ref<GLTFNode>>
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "buffers"), "set_buffers", "get_buffers"); // Vector<Vector<uint8_t>
@@ -110,6 +114,17 @@ void GLTFState::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "skeleton_to_node", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_skeleton_to_node", "get_skeleton_to_node"); // RBMap<GLTFSkeletonIndex,
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "create_animations"), "set_create_animations", "get_create_animations"); // bool
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "animations", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_animations", "get_animations"); // Vector<Ref<GLTFAnimation>>
+}
+
+void GLTFState::set_extension_as_used(const String &p_extension_name, bool p_required) {
+	if (!extensions_used.has(p_extension_name)) {
+		extensions_used.push_back(p_extension_name);
+	}
+	if (p_required) {
+		if (!extensions_required.has(p_extension_name)) {
+			extensions_required.push_back(p_extension_name);
+		}
+	}
 }
 
 Dictionary GLTFState::get_json() {
@@ -142,6 +157,14 @@ Vector<uint8_t> GLTFState::get_glb_data() {
 
 void GLTFState::set_glb_data(Vector<uint8_t> p_glb_data) {
 	glb_data = p_glb_data;
+}
+
+Dictionary GLTFState::get_additional_data() {
+	return additional_data;
+}
+
+void GLTFState::set_additional_data(Dictionary p_additional_data) {
+	additional_data = p_additional_data;
 }
 
 bool GLTFState::get_use_named_skin_binds() {

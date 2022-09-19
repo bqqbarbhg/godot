@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="GLTFDocumentExtension" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		[GLTFDocument] extension class.
 	</brief_description>
 	<description>
+		Extends the functionality of the [GLTFDocument] class by allowing you to run arbitrary code at various stages of GLTF import or export.
+		To use, make a new class extending GLTFDocumentExtension, override any methods you need, make an instance of your class, and register it using [method GLTFDocument.register_gltf_document_extension].
+		[b]Note:[/b] Like GLTFDocument itself, all GLTFDocumentExtension classes must be stateless in order to function properly. If you need to store data, use [member GLTFState.additional_data] or [member GLTFNode.additional_data].
 	</description>
 	<tutorials>
 	</tutorials>
@@ -26,6 +30,12 @@
 			<return type="int" />
 			<param index="0" name="root" type="Node" />
 			<description>
+			</description>
+		</method>
+		<method name="_get_supported_extensions" qualifiers="virtual">
+			<return type="Array" />
+			<description>
+				Returns an array of the GLTF extensions supported by this GLTFDocumentExtension class. This is used to validate if a GLTF file can be loaded.
 			</description>
 		</method>
 		<method name="_import_node" qualifiers="virtual">
@@ -53,6 +63,7 @@
 		<method name="_import_preflight" qualifiers="virtual">
 			<return type="int" />
 			<param index="0" name="state" type="GLTFState" />
+			<param index="1" name="extensions" type="Array" />
 			<description>
 			</description>
 		</method>
