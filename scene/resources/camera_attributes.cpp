@@ -135,7 +135,9 @@ CameraAttributes::CameraAttributes() {
 }
 
 CameraAttributes::~CameraAttributes() {
-	RS::get_singleton()->free(camera_attributes);
+	if (RS::get_singleton()) {
+		RS::get_singleton()->free(camera_attributes);
+	}
 }
 
 //////////////////////////////////////////////////////
