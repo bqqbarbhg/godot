@@ -32,7 +32,7 @@
 
 void GLTFDocumentExtension::_bind_methods() {
 	GDVIRTUAL_BIND(_get_supported_extensions);
-	GDVIRTUAL_BIND(_import_preflight, "state");
+	GDVIRTUAL_BIND(_import_preflight, "state", "extensions");
 	GDVIRTUAL_BIND(_import_post_parse, "state");
 	GDVIRTUAL_BIND(_import_node, "state", "gltf_node", "json", "node");
 	GDVIRTUAL_BIND(_import_post, "state", "root");
@@ -57,10 +57,10 @@ Error GLTFDocumentExtension::import_post(Ref<GLTFState> p_state, Node *p_root) {
 	return OK;
 }
 
-Error GLTFDocumentExtension::import_preflight(Ref<GLTFState> p_state) {
+Error GLTFDocumentExtension::import_preflight(Ref<GLTFState> p_state, Vector<String> p_extensions) {
 	ERR_FAIL_NULL_V(p_state, ERR_INVALID_PARAMETER);
 	int err = OK;
-	if (GDVIRTUAL_CALL(_import_preflight, p_state, err)) {
+	if (GDVIRTUAL_CALL(_import_preflight, p_state, p_extensions, err)) {
 		return Error(err);
 	}
 	return OK;
