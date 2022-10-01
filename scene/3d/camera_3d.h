@@ -81,7 +81,7 @@ private:
 	uint32_t layers = 0xfffff;
 
 	Ref<Environment> environment;
-	Ref<CameraAttributes> attributes;
+	Ref<CameraAttributes> attributes = memnew(CameraAttributesPhysical);
 	void _attributes_changed();
 
 	// void _camera_make_current(Node *p_camera);
