@@ -122,6 +122,9 @@ void XRInterface::set_primary(bool p_primary) {
 XRInterface::XRInterface() {}
 
 XRInterface::~XRInterface() {
+	// Are we destroying our interface too late?
+	ERR_FAIL_NULL(RS::get_singleton());
+
 	if (vrs.vrs_texture.is_valid()) {
 		RS::get_singleton()->free(vrs.vrs_texture);
 		vrs.vrs_texture = RID();
