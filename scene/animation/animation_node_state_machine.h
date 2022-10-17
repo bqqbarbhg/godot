@@ -42,10 +42,13 @@ public:
 		SWITCH_MODE_IMMEDIATE,
 		SWITCH_MODE_SYNC,
 		SWITCH_MODE_AT_END,
+		SWITCH_MODE_AT_TIME
 	};
 
 private:
 	SwitchMode switch_mode = SWITCH_MODE_IMMEDIATE;
+	float switch_time = 0.0;
+	float switch_target_offset = 0.0;
 	bool auto_advance = false;
 	StringName advance_condition;
 	StringName advance_condition_name;
@@ -64,6 +67,12 @@ protected:
 public:
 	void set_switch_mode(SwitchMode p_mode);
 	SwitchMode get_switch_mode() const;
+
+	void set_switch_time(float p_time);
+	float get_switch_time() const;
+
+	void set_switch_target_offset(float p_time);
+	float get_switch_target_offset() const;
 
 	void set_auto_advance(bool p_enable);
 	bool has_auto_advance() const;
@@ -112,7 +121,9 @@ class AnimationNodeStateMachinePlayback : public Resource {
 	};
 
 	float len_current = 0.0;
+	float pos_previous = 0.0;
 	float pos_current = 0.0;
+	int cycle_count = 0; // The amount of times an animation has looped.
 	bool end_loop = false;
 
 	StringName current;
@@ -135,6 +146,7 @@ class AnimationNodeStateMachinePlayback : public Resource {
 
 	double process(AnimationNodeStateMachine *p_state_machine, double p_time, bool p_seek, bool p_is_external_seeking);
 
+	bool _check_transition_time_is_valid(const Ref<AnimationNodeStateMachine> p_state_machine, const Ref<AnimationNodeStateMachineTransition> transition, float p_pos_current, float p_len_current, int p_cycle_count) const;
 	bool _check_advance_condition(const Ref<AnimationNodeStateMachine> p_state_machine, const Ref<AnimationNodeStateMachineTransition> p_transition) const;
 
 protected:
