@@ -9,7 +9,7 @@
 	</tutorials>
 	<members>
 		<member name="advance_condition" type="StringName" setter="set_advance_condition" getter="get_advance_condition" default="&amp;&quot;&quot;">
-			Turn on auto advance when this condition is set. The provided name will become a boolean parameter on the [AnimationTree] that can be controlled from code (see [url=$DOCS_URL/tutorials/animation/animation_tree.html#controlling-from-code]Using AnimationTree[/url]). For example, if [member AnimationTree.tree_root] is an [AnimationNodeStateMachine] and [member advance_condition] is set to [code]"idle"[/code]:
+			Will advance to the next state if [member auto_advance] is true and the condition is set. The provided name will become a boolean parameter on the [AnimationTree] that can be controlled from code (see [url=$DOCS_URL/tutorials/animation/animation_tree.html#controlling-from-code]Using AnimationTree[/url]). For example, if [member AnimationTree.tree_root] is an [AnimationNodeStateMachine] and [member advance_condition] is set to [code]"idle"[/code]:
 			[codeblocks]
 			[gdscript]
 			$animation_tree.set("parameters/conditions/idle", is_on_floor and (linear_velocity.x == 0))
@@ -23,7 +23,7 @@
 			Use an expression as a condition for state machine transitions. It is possible to create complex animation advance conditions for switching between states and gives much greater flexibility for creating complex state machines by directly interfacing with the script code.
 		</member>
 		<member name="auto_advance" type="bool" setter="set_auto_advance" getter="has_auto_advance" default="false">
-			Turn on the transition automatically when this state is reached. This works best with [constant SWITCH_MODE_AT_END].
+			Turn on the transition automatically when this state is reached and [member advance_condition] and [member advance_expression] are true (if assigned). This works best with [constant SWITCH_MODE_AT_END].
 		</member>
 		<member name="disabled" type="bool" setter="set_disabled" getter="is_disabled" default="false">
 			Don't use this transition during [method AnimationNodeStateMachinePlayback.travel] or [member auto_advance].
