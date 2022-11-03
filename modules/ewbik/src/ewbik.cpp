@@ -432,10 +432,7 @@ void SkeletonModification3DEWBIK::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_kusudama_flip_handedness", "enable"), &SkeletonModification3DEWBIK::get_kusudama_flip_handedness);
 	ClassDB::bind_method(D_METHOD("get_pin_nodepath"), &SkeletonModification3DEWBIK::get_pin_nodepath);
 	ClassDB::bind_method(D_METHOD("set_pin_nodepath", "index", "nodepath"), &SkeletonModification3DEWBIK::set_pin_nodepath);
-	ClassDB::bind_method(D_METHOD("get_skeleton_node_path"), &SkeletonModification3DEWBIK::get_skeleton_node_path);
-	ClassDB::bind_method(D_METHOD("set_skeleton_node_path", "node_path"), &SkeletonModification3DEWBIK::set_skeleton_node_path);
-
-	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "skeleton_node_path"), "set_skeleton_node_path", "get_skeleton_node_path");
+	
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "root_bone", PROPERTY_HINT_ENUM_SUGGESTION), "set_root_bone", "get_root_bone");
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "tip_bone", PROPERTY_HINT_ENUM_SUGGESTION), "set_tip_bone", "get_tip_bone");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "max_ik_iterations", PROPERTY_HINT_RANGE, "1,150,1,or_greater"), "set_max_ik_iterations", "get_max_ik_iterations");

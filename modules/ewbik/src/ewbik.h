@@ -75,17 +75,6 @@ protected:
 	virtual void execute(real_t delta) override;
 
 public:
-	void set_skeleton_node_path(NodePath p_skeleton_node_path) {
-		is_dirty = true;
-		skeleton_node_path = p_skeleton_node_path;
-	}
-	NodePath get_skeleton_node_path() {
-		return skeleton_node_path;
-	}
-	Skeleton3D *get_skeleton() const {
-		Node *node = get_node_or_null(skeleton_node_path);
-		return cast_to<Skeleton3D>(node);
-	}
 	StringName get_root_bone() const;
 	void set_root_bone(const StringName &p_root_bone);
 	StringName get_tip_bone() const;
