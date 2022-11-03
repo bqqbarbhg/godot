@@ -65,16 +65,10 @@ protected:
 	static void _bind_methods();
 
 public:
-	void set_weight(real_t p_weight) {
-		weight = p_weight;
-	}
-	real_t get_weight() const {
-		return weight;
-	}
-	void set_direction_priorities(Vector3 p_direction_priorities) { direction_priorities = p_direction_priorities; }
-	Vector3 get_direction_priorities() const {
-		return direction_priorities;
-	}
+	void set_weight(real_t p_weight);
+	real_t get_weight() const;
+	void set_direction_priorities(Vector3 p_direction_priorities);
+	Vector3 get_direction_priorities() const;
 	void update_target_global_transform(Skeleton3D *p_skeleton, SkeletonModification3DEWBIK *p_modification = nullptr);
 	const float MAX_KUSUDAMA_LIMIT_CONES = 30;
 	float get_depth_falloff() const;
@@ -85,13 +79,10 @@ public:
 	void set_target_node_rotation(bool p_use);
 	bool get_target_node_rotation() const;
 	Ref<IKBone3D> get_shadow_bone() const;
-	void create_weights(Vector<real_t> &p_weights, real_t p_falloff) const;
 	bool is_following_translation_only() const;
 	int32_t update_effector_target_headings(PackedVector3Array *p_headings, int32_t p_index, Ref<IKBone3D> p_for_bone, const Vector<real_t> *p_weights) const;
 	int32_t update_effector_tip_headings(PackedVector3Array *p_headings, int32_t p_index, Ref<IKBone3D> p_for_bone) const;
 	IKEffector3D(const Ref<IKBone3D> &p_current_bone);
-	IKEffector3D() {}
-	~IKEffector3D() {}
 };
 
 #endif // ik_effector_3d_H

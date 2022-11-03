@@ -57,6 +57,12 @@ bool IKEffector3D::is_following_translation_only() const {
 	return false;
 }
 
+void IKEffector3D::set_direction_priorities(Vector3 p_direction_priorities) { direction_priorities = p_direction_priorities; }
+
+Vector3 IKEffector3D::get_direction_priorities() const {
+	return direction_priorities;
+}
+
 void IKEffector3D::update_target_global_transform(Skeleton3D *p_skeleton, SkeletonModification3DEWBIK *p_ewbik) {
 	ERR_FAIL_NULL(p_skeleton);
 	ERR_FAIL_NULL(for_bone);
@@ -204,6 +210,14 @@ void IKEffector3D::_bind_methods() {
 			&IKEffector3D::get_depth_falloff);
 
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "depth_falloff"), "set_depth_falloff", "get_depth_falloff");
+}
+
+void IKEffector3D::set_weight(real_t p_weight) {
+	weight = p_weight;
+}
+
+real_t IKEffector3D::get_weight() const {
+	return weight;
 }
 
 IKEffector3D::IKEffector3D(const Ref<IKBone3D> &p_current_bone) {

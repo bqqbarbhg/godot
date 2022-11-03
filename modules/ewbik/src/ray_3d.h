@@ -27,8 +27,8 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
-#ifndef ray_3d_h
-#define ray_3d_h
+#ifndef ik_ray_3d_h
+#define ik_ray_3d_h
 
 #include "core/io/resource.h"
 #include "core/math/vector3.h"
