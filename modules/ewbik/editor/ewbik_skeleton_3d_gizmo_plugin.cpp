@@ -306,9 +306,9 @@ void fragment() {
 					continue;
 				}
 				int out_idx = 0;
-				const Vector<Ref<LimitCone>> &limit_cones = kusudama->get_limit_cones();
+				const Vector<Ref<IKLimitCone>> &limit_cones = kusudama->get_limit_cones();
 				for (int32_t cone_i = 0; cone_i < limit_cones.size(); cone_i++) {
-					Ref<LimitCone> limit_cone = limit_cones[cone_i];
+					Ref<IKLimitCone> limit_cone = limit_cones[cone_i];
 					Vector3 control_point = limit_cone->get_control_point();
 					control_point.normalize();
 					kusudama_limit_cones.write[out_idx + 0] = control_point.x;

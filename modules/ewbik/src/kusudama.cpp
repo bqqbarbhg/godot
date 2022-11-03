@@ -48,8 +48,8 @@ void IKKusudama::_update_constraint() {
 
 void IKKusudama::update_tangent_radii() {
 	for (int i = 0; i < limit_cones.size(); i++) {
-		Ref<LimitCone> current = limit_cones[i];
-		Ref<LimitCone> next;
+		Ref<IKLimitCone> current = limit_cones[i];
+		Ref<IKLimitCone> next;
 		if (i < limit_cones.size() - 1) {
 			next = limit_cones.write[i + 1];
 		}
@@ -174,7 +174,7 @@ Ref<IKBone3D> IKKusudama::attached_to() {
 	return this->_attached_to;
 }
 
-void IKKusudama::add_limit_cone(Vector3 new_cone_local_point, double radius, Ref<LimitCone> previous, Ref<LimitCone> next) {
+void IKKusudama::add_limit_cone(Vector3 new_cone_local_point, double radius, Ref<IKLimitCone> previous, Ref<IKLimitCone> next) {
 	Vector3 localized_point = new_cone_local_point;
 	if (_attached_to.is_valid() && _attached_to->get_parent().is_valid()) {
 		Vector3 globalized_point = _attached_to->get_parent()->get_ik_transform()->get_global_transform().xform(new_cone_local_point);
@@ -196,12 +196,12 @@ void IKKusudama::add_limit_cone(Vector3 new_cone_local_point, double radius, Ref
 	add_limit_cone_at_index(insert_at, localized_point, radius);
 }
 
-void IKKusudama::remove_limit_cone(Ref<LimitCone> limitCone) {
+void IKKusudama::remove_limit_cone(Ref<IKLimitCone> limitCone) {
 	this->limit_cones.erase(limitCone);
 }
 
 void IKKusudama::add_limit_cone_at_index(int insert_at, Vector3 new_cone_local_point, double radius) {
-	Ref<LimitCone> newCone = memnew(LimitCone(new_cone_local_point, radius, Ref<IKKusudama>(this)));
+	Ref<IKLimitCone> newCone = memnew(IKLimitCone(new_cone_local_point, radius, Ref<IKKusudama>(this)));
 	limit_cones.insert(insert_at, newCone);
 }
 
@@ -294,7 +294,7 @@ void IKKusudama::update_rotational_freedom() {
 	double axial_constrained_hyper_area = is_axially_constrained() ? (range / Math_TAU) : 1;
 	// quick and dirty solution (should revisit);
 	double total_limit_cone_surface_area_ratio = 0;
-	for (Ref<LimitCone> l : limit_cones) {
+	for (Ref<IKLimitCone> l : limit_cones) {
 		total_limit_cone_surface_area_ratio += (l->get_radius() * 2) / Math_TAU;
 	}
 	rotational_freedom = axial_constrained_hyper_area * (is_orientationally_constrained() ? MIN(total_limit_cone_surface_area_ratio, 1) : 1);
@@ -308,7 +308,7 @@ double IKKusudama::get_strength() const {
 	return this->strength;
 }
 
-Vector<Ref<LimitCone>> IKKusudama::get_limit_cones() const {
+Vector<Ref<IKLimitCone>> IKKusudama::get_limit_cones() const {
 	return limit_cones;
 }
 
@@ -322,7 +322,7 @@ Vector3 IKKusudama::local_point_on_path_sequence(Vector3 in_point, Ref<IKTransfo
 		result = limit_cones[0]->get_control_point();
 	} else {
 		for (int i = 0; i < limit_cones.size() - 1; i++) {
-			Ref<LimitCone> next_cone = limit_cones[i + 1];
+			Ref<IKLimitCone> next_cone = limit_cones[i + 1];
 			Vector3 closestPathPoint = limit_cones[i]->get_closest_path_point(next_cone, point);
 			double closeDot = closestPathPoint.dot(point);
 			if (closeDot > closest_point_dot) {
@@ -354,8 +354,8 @@ Vector3 IKKusudama::_local_point_in_limits(Vector3 in_point, Vector<double> &in_
 	Vector3 closest_collision_point = Vector3(NAN, NAN, NAN);
 	// This is an exact check for being inside the bounds.
 	for (int i = 0; i < limit_cones.size(); i++) {
-		Ref<LimitCone> cone = limit_cones[i];
-		Ref<LimitCone> cone_next;
+		Ref<IKLimitCone> cone = limit_cones[i];
+		Ref<IKLimitCone> cone_next;
 		if (i - 1 > -1) {
 			cone_next = limit_cones[i - 1];
 		}
@@ -378,8 +378,8 @@ Vector3 IKKusudama::_local_point_in_limits(Vector3 in_point, Vector<double> &in_
 	// Case where there are multiple cones and we're out of bounds of all cones.
 	// Are we in the paths between the cones.
 	for (int i = 0; i < limit_cones.size() - 1; i++) {
-		Ref<LimitCone> currCone = limit_cones[i];
-		Ref<LimitCone> nextCone = limit_cones[i + 1];
+		Ref<IKLimitCone> currCone = limit_cones[i];
+		Ref<IKLimitCone> nextCone = limit_cones[i + 1];
 		Vector3 collision_point = currCone->get_on_great_tangent_triangle(nextCone, point);
 		if (!Math::is_nan(collision_point.x)) {
 			continue;

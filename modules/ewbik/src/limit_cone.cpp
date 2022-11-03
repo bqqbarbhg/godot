@@ -35,16 +35,16 @@
 
 #include "kusudama.h"
 
-LimitCone::LimitCone() {
+IKLimitCone::IKLimitCone() {
 }
 
-void LimitCone::update_tangent_handles(Ref<LimitCone> next) {
+void IKLimitCone::update_tangent_handles(Ref<IKLimitCone> next) {
 	this->control_point.normalize();
 	update_tangent_and_cushion_handles(next, BOUNDARY);
 	update_tangent_and_cushion_handles(next, CUSHION);
 }
 
-void LimitCone::update_tangent_and_cushion_handles(Ref<LimitCone> p_next, int p_mode) {
+void IKLimitCone::update_tangent_and_cushion_handles(Ref<IKLimitCone> p_next, int p_mode) {
 	if (p_next.is_valid()) {
 		double radA = this->_get_radius(p_mode);
 		double radB = p_next->_get_radius(p_mode);
@@ -131,7 +131,7 @@ void LimitCone::update_tangent_and_cushion_handles(Ref<LimitCone> p_next, int p_
 	}
 }
 
-void LimitCone::set_tangent_circle_radius_next(double rad, int mode) {
+void IKLimitCone::set_tangent_circle_radius_next(double rad, int mode) {
 	if (mode == CUSHION) {
 		this->cushion_tangent_circle_radius_next = rad;
 		this->cushion_tangent_circle_radius_next = cos(cushion_tangent_circle_radius_next_cos);
@@ -140,49 +140,49 @@ void LimitCone::set_tangent_circle_radius_next(double rad, int mode) {
 	this->tangent_circle_radius_next_cos = cos(tangent_circle_radius_next);
 }
 
-Vector3 LimitCone::get_tangent_circle_center_next_1(int mode) {
+Vector3 IKLimitCone::get_tangent_circle_center_next_1(int mode) {
 	if (mode == CUSHION) {
 		return cushion_tangent_circle_center_next_1;
 	}
 	return tangent_circle_center_next_1;
 }
 
-double LimitCone::get_tangent_circle_radius_next(int mode) {
+double IKLimitCone::get_tangent_circle_radius_next(int mode) {
 	if (mode == CUSHION) {
 		return cushion_tangent_circle_radius_next;
 	}
 	return tangent_circle_radius_next;
 }
 
-double LimitCone::get_tangent_circle_radius_next_cos(int mode) {
+double IKLimitCone::get_tangent_circle_radius_next_cos(int mode) {
 	if (mode == CUSHION) {
 		return cushion_tangent_circle_radius_next_cos;
 	}
 	return tangent_circle_radius_next_cos;
 }
 
-Vector3 LimitCone::get_tangent_circle_center_next_2(int mode) {
+Vector3 IKLimitCone::get_tangent_circle_center_next_2(int mode) {
 	if (mode == CUSHION) {
 		return cushion_tangent_circle_center_next_2;
 	}
 	return tangent_circle_center_next_2;
 }
 
-double LimitCone::_get_radius(int mode) {
+double IKLimitCone::_get_radius(int mode) {
 	if (mode == CUSHION) {
 		return cushion_radius;
 	}
 	return radius;
 }
 
-double LimitCone::_get_radius_cosine(int mode) {
+double IKLimitCone::_get_radius_cosine(int mode) {
 	if (mode == CUSHION) {
 		return cushion_cosine;
 	}
 	return radius_cosine;
 }
 
-void LimitCone::compute_triangles(Ref<LimitCone> p_next) {
+void IKLimitCone::compute_triangles(Ref<IKLimitCone> p_next) {
 	first_triangle_next.write[1] = this->tangent_circle_center_next_1.normalized();
 	first_triangle_next.write[0] = this->get_control_point().normalized();
 	first_triangle_next.write[2] = p_next->get_control_point().normalized();
@@ -192,48 +192,48 @@ void LimitCone::compute_triangles(Ref<LimitCone> p_next) {
 	second_triangle_next.write[2] = p_next->get_control_point().normalized();
 }
 
-Vector3 LimitCone::get_control_point() const {
+Vector3 IKLimitCone::get_control_point() const {
 	return control_point;
 }
 
-inline void LimitCone::set_control_point(Vector3 p_control_point) {
+inline void IKLimitCone::set_control_point(Vector3 p_control_point) {
 	this->control_point = p_control_point;
 	this->control_point.normalize();
 }
 
-double LimitCone::get_radius() const {
+double IKLimitCone::get_radius() const {
 	return this->radius;
 }
 
-double LimitCone::get_radius_cosine() const {
+double IKLimitCone::get_radius_cosine() const {
 	return this->radius_cosine;
 }
 
-void LimitCone::set_radius(double p_radius) {
+void IKLimitCone::set_radius(double p_radius) {
 	this->radius = p_radius;
 	this->radius_cosine = cos(p_radius);
 }
 
-double LimitCone::get_cushion_radius() {
+double IKLimitCone::get_cushion_radius() {
 	return this->cushion_radius;
 }
 
-double LimitCone::get_cushion_cosine() {
+double IKLimitCone::get_cushion_cosine() {
 	return this->cushion_cosine;
 }
 
-void LimitCone::set_cushion_boundary(double p_cushion) {
+void IKLimitCone::set_cushion_boundary(double p_cushion) {
 	// Todo: fire 2022-08-31 Pending work.
 	double adjustedCushion = MIN(1, MAX(0.001, p_cushion));
 	this->cushion_radius = this->radius * adjustedCushion;
 	this->cushion_cosine = cos(cushion_radius);
 }
 
-Ref<IKKusudama> LimitCone::get_parent_kusudama() {
+Ref<IKKusudama> IKLimitCone::get_parent_kusudama() {
 	return parent_kusudama;
 }
 
-bool LimitCone::determine_if_in_bounds(Ref<LimitCone> next, Vector3 input) const {
+bool IKLimitCone::determine_if_in_bounds(Ref<IKLimitCone> next, Vector3 input) const {
 	/**
 	 * Procedure : Check if input is contained in this cone, or the next cone
 	 * 	if it is, then we're finished and in bounds. otherwise,
@@ -287,7 +287,7 @@ bool LimitCone::determine_if_in_bounds(Ref<LimitCone> next, Vector3 input) const
 	}
 }
 
-Vector3 LimitCone::get_closest_path_point(Ref<LimitCone> next, Vector3 input) const {
+Vector3 IKLimitCone::get_closest_path_point(Ref<IKLimitCone> next, Vector3 input) const {
 	Vector3 result = get_on_path_sequence(next, input);
 	bool is_number = !(Math::is_nan(result.x) && Math::is_nan(result.y) && Math::is_nan(result.z));
 	if (!is_number) {
@@ -296,7 +296,7 @@ Vector3 LimitCone::get_closest_path_point(Ref<LimitCone> next, Vector3 input) co
 	return result;
 }
 
-Vector3 LimitCone::get_closest_collision(Ref<LimitCone> next, Vector3 input) const {
+Vector3 IKLimitCone::get_closest_collision(Ref<IKLimitCone> next, Vector3 input) const {
 	Vector3 result = get_on_great_tangent_triangle(next, input);
 
 	bool is_number = !(Math::is_nan(result.x) && Math::is_nan(result.y) && Math::is_nan(result.z));
@@ -307,7 +307,7 @@ Vector3 LimitCone::get_closest_collision(Ref<LimitCone> next, Vector3 input) con
 	return result;
 }
 
-bool LimitCone::in_bounds_from_this_to_next(Ref<LimitCone> next, Vector3 input, Vector3 collision_point) const {
+bool IKLimitCone::in_bounds_from_this_to_next(Ref<IKLimitCone> next, Vector3 input, Vector3 collision_point) const {
 	bool isInBounds = false;
 	Vector3 closestCollision = get_closest_collision(next, input);
 	bool is_number = !(Math::is_nan(closestCollision.x) && Math::is_nan(closestCollision.y) && Math::is_nan(closestCollision.z));
@@ -328,7 +328,7 @@ bool LimitCone::in_bounds_from_this_to_next(Ref<LimitCone> next, Vector3 input, 
 	return isInBounds;
 }
 
-Vector3 LimitCone::get_orthogonal(Vector3 p_in) {
+Vector3 IKLimitCone::get_orthogonal(Vector3 p_in) {
 	Vector3 result;
 	float threshold = p_in.length() * 0.6f;
 	if (threshold > 0.f) {
@@ -346,9 +346,9 @@ Vector3 LimitCone::get_orthogonal(Vector3 p_in) {
 	return result;
 }
 
-LimitCone::LimitCone(Vector3 direction, double rad, double cushion, Ref<IKKusudama> attached_to) {
+IKLimitCone::IKLimitCone(Vector3 direction, double rad, double cushion, Ref<IKKusudama> attached_to) {
 	parent_kusudama = attached_to;
-	tangent_circle_center_next_1 = LimitCone::get_orthogonal(direction);
+	tangent_circle_center_next_1 = IKLimitCone::get_orthogonal(direction);
 	tangent_circle_center_next_2 = (tangent_circle_center_next_1 * -1);
 
 	this->radius = MAX(DBL_TRUE_MIN, rad);
@@ -360,7 +360,7 @@ LimitCone::LimitCone(Vector3 direction, double rad, double cushion, Ref<IKKusuda
 	this->control_point.normalize();
 }
 
-LimitCone::LimitCone(Vector3 &direction, double rad, Ref<IKKusudama> attached_to) {
+IKLimitCone::IKLimitCone(Vector3 &direction, double rad, Ref<IKKusudama> attached_to) {
 	parent_kusudama = attached_to;
 	tangent_circle_center_next_1 = direction.normalized();
 	tangent_circle_center_next_2 = (tangent_circle_center_next_1 * -1);
@@ -372,7 +372,7 @@ LimitCone::LimitCone(Vector3 &direction, double rad, Ref<IKKusudama> attached_to
 	this->control_point.normalize();
 }
 
-Vector3 LimitCone::get_on_great_tangent_triangle(Ref<LimitCone> next, Vector3 input) const {
+Vector3 IKLimitCone::get_on_great_tangent_triangle(Ref<IKLimitCone> next, Vector3 input) const {
 	Vector3 c1xc2 = control_point.cross(next->control_point);
 	double c1c2dir = input.dot(c1xc2);
 	if (c1c2dir < 0.0) {
@@ -409,7 +409,7 @@ Vector3 LimitCone::get_on_great_tangent_triangle(Ref<LimitCone> next, Vector3 in
 	}
 }
 
-Vector3 LimitCone::closest_cone(Ref<LimitCone> next, Vector3 input) const {
+Vector3 IKLimitCone::closest_cone(Ref<IKLimitCone> next, Vector3 input) const {
 	if (input.dot(control_point) > input.dot(next->control_point)) {
 		return this->control_point;
 	} else {
@@ -417,7 +417,7 @@ Vector3 LimitCone::closest_cone(Ref<LimitCone> next, Vector3 input) const {
 	}
 }
 
-Vector3 LimitCone::closest_point_on_closest_cone(Ref<LimitCone> next, Vector3 input, Vector<double> &in_bounds) const {
+Vector3 IKLimitCone::closest_point_on_closest_cone(Ref<IKLimitCone> next, Vector3 input, Vector<double> &in_bounds) const {
 	Vector3 closestToFirst = this->closest_to_cone(input, in_bounds);
 	if (in_bounds[0] > 0.0) {
 		return closestToFirst;
@@ -436,7 +436,7 @@ Vector3 LimitCone::closest_point_on_closest_cone(Ref<LimitCone> next, Vector3 in
 	}
 }
 
-Vector3 LimitCone::closest_to_cone(Vector3 input, Vector<double> &in_bounds) const {
+Vector3 IKLimitCone::closest_to_cone(Vector3 input, Vector<double> &in_bounds) const {
 	if (input.dot(this->get_control_point()) > this->get_radius_cosine()) {
 		in_bounds.write[0] = 1.0;
 		return input;
@@ -452,7 +452,7 @@ Vector3 LimitCone::closest_to_cone(Vector3 input, Vector<double> &in_bounds) con
 	return result;
 }
 
-void LimitCone::set_tangent_circle_center_next_1(Vector3 point, int mode) {
+void IKLimitCone::set_tangent_circle_center_next_1(Vector3 point, int mode) {
 	if (mode == CUSHION) {
 		this->cushion_tangent_circle_center_next_1 = point;
 	} else {
@@ -460,7 +460,7 @@ void LimitCone::set_tangent_circle_center_next_1(Vector3 point, int mode) {
 	}
 }
 
-void LimitCone::set_tangent_circle_center_next_2(Vector3 point, int mode) {
+void IKLimitCone::set_tangent_circle_center_next_2(Vector3 point, int mode) {
 	if (mode == CUSHION) {
 		this->cushion_tangent_circle_center_next_2 = point;
 	} else {
@@ -468,7 +468,7 @@ void LimitCone::set_tangent_circle_center_next_2(Vector3 point, int mode) {
 	}
 }
 
-Vector3 LimitCone::get_on_path_sequence(Ref<LimitCone> next, Vector3 input) const {
+Vector3 IKLimitCone::get_on_path_sequence(Ref<IKLimitCone> next, Vector3 input) const {
 	Vector3 c1xc2 = get_control_point().cross(next->control_point);
 	double c1c2dir = input.dot(c1xc2);
 	if (c1c2dir < 0.0) {

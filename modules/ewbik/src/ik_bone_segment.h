@@ -42,7 +42,7 @@
 
 class IKEffector3D;
 class IKBone3D;
-class LimitCone;
+class IKLimitCone;
 
 class IKBoneSegment : public Resource {
 	GDCLASS(IKBoneSegment, Resource);

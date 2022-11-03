@@ -45,7 +45,7 @@
 #include "ray_3d.h"
 
 class IKBone3D;
-class LimitCone;
+class IKLimitCone;
 class IKKusudama : public Resource {
 	GDCLASS(IKKusudama, Resource);
 
@@ -58,7 +58,7 @@ protected:
 	 * with the expectation that any limitCone in the array is connected to the cone at the previous element in the array,
 	 * and the cone at the next element in the array.
 	 */
-	Vector<Ref<LimitCone>> limit_cones;
+	Vector<Ref<IKLimitCone>> limit_cones;
 
 	/**
 	 * Defined as some Angle in radians about the limiting_axes Y axis, 0 being equivalent to the
@@ -172,21 +172,21 @@ public:
 	virtual Ref<IKBone3D> attached_to();
 
 	/**
-	 * Add a LimitCone to the Kusudama.
+	 * Add a IKLimitCone to the Kusudama.
 	 * @param new_point where on the Kusudama to add the LimitCone (in Kusudama's local coordinate frame defined by its bone's majorRotationAxes))
 	 * @param radius the radius of the limitCone
 	 * @param previous the LimitCone adjacent to this one (may be null if LimitCone is not supposed to be between two existing LimitCones)
 	 * @param next the other LimitCone adjacent to this one (may be null if LimitCone is not supposed to be between two existing LimitCones)
 	 */
-	virtual void add_limit_cone(Vector3 new_point, double radius, Ref<LimitCone> previous = Ref<LimitCone>(), Ref<LimitCone> next = Ref<LimitCone>());
+	virtual void add_limit_cone(Vector3 new_point, double radius, Ref<IKLimitCone> previous = Ref<IKLimitCone>(), Ref<IKLimitCone> next = Ref<IKLimitCone>());
 
-	virtual void remove_limit_cone(Ref<LimitCone> limitCone);
+	virtual void remove_limit_cone(Ref<IKLimitCone> limitCone);
 
 	/**
-	 * Adds a LimitCone to the Kusudama. LimitCones are reach cones which can be arranged sequentially. The Kusudama will infer
-	 * a smooth path leading from one LimitCone to the next.
+	 * Adds a IKLimitCone to the Kusudama. LimitCones are reach cones which can be arranged sequentially. The Kusudama will infer
+	 * a smooth path leading from one IKLimitCone to the next.
 	 *
-	 * Using a single LimitCone is functionally equivalent to a classic reachCone constraint.
+	 * Using a single IKLimitCone is functionally equivalent to a classic reachCone constraint.
 	 *
 	 * @param insert_at the intended index for this LimitCone in the sequence of LimitCones from which the Kusudama will infer a path. @see IK.IKKusudama.limit_cones limit_cones array.
 	 * @param new_point where on the Kusudama to add the LimitCone (in Kusudama's local coordinate frame defined by its bone's majorRotationAxes))
@@ -284,9 +284,9 @@ public:
 	 per iteration. This should help stabilize solutions somewhat by allowing for soft constraint violations.**/
 	virtual double get_strength() const;
 
-	virtual Vector<Ref<LimitCone>> get_limit_cones() const;
+	virtual Vector<Ref<IKLimitCone>> get_limit_cones() const;
 
-	virtual void set_limit_cones(Vector<Ref<LimitCone>> p_cones) {
+	virtual void set_limit_cones(Vector<Ref<IKLimitCone>> p_cones) {
 		limit_cones = p_cones;
 	}
 

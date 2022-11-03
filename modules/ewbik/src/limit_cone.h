@@ -40,8 +40,8 @@
 #include "ray_3d.h"
 
 class IKKusudama;
-class LimitCone : public Resource {
-	GDCLASS(LimitCone, Resource);
+class IKLimitCone : public Resource {
+	GDCLASS(IKLimitCone, Resource);
 
 public:
 	Vector3 control_point;
@@ -81,18 +81,18 @@ public:
 
 	/**
 	 * A triangle where the [1] is the tangent_circle_next_n, and [0] and [2]
-	 * are the points at which the tangent circle intersects this LimitCone and the
-	 * next LimitCone.
+	 * are the points at which the tangent circle intersects this IKLimitCone and the
+	 * next IKLimitCone.
 	 */
 	Vector<Vector3> first_triangle_next = { Vector3(), Vector3(), Vector3() };
 	Vector<Vector3> second_triangle_next = { Vector3(), Vector3(), Vector3() };
 
-	virtual ~LimitCone() {
+	virtual ~IKLimitCone() {
 	}
 
-	LimitCone();
+	IKLimitCone();
 
-	LimitCone(Vector3 &direction, double rad, Ref<IKKusudama> attached_to);
+	IKLimitCone(Vector3 &direction, double rad, Ref<IKKusudama> attached_to);
 
 	/**
 	 *
@@ -103,7 +103,7 @@ public:
 	 * is to the boundary, the more any further rotation in the direction of that boundary will be avoided.
 	 * @param attached_to
 	 */
-	LimitCone(Vector3 direction, double rad, double cushion, Ref<IKKusudama> attached_to);
+	IKLimitCone(Vector3 direction, double rad, double cushion, Ref<IKKusudama> attached_to);
 
 	static Vector3 get_orthogonal(Vector3 p_in);
 
@@ -114,7 +114,7 @@ public:
 	 * @param collision_point will be set to the rectified (if necessary) position of the input after accounting for collisions
 	 * @return
 	 */
-	bool in_bounds_from_this_to_next(Ref<LimitCone> next, Vector3 input, Vector3 collision_point) const;
+	bool in_bounds_from_this_to_next(Ref<IKLimitCone> next, Vector3 input, Vector3 collision_point) const;
 
 	/**
 	 *
@@ -123,9 +123,9 @@ public:
 	 * @return null if the input point is already in bounds, or the point's rectified position
 	 * if the point was out of bounds.
 	 */
-	Vector3 get_closest_collision(Ref<LimitCone> next, Vector3 input) const;
+	Vector3 get_closest_collision(Ref<IKLimitCone> next, Vector3 input) const;
 
-	Vector3 get_closest_path_point(Ref<LimitCone> next, Vector3 input) const;
+	Vector3 get_closest_path_point(Ref<IKLimitCone> next, Vector3 input) const;
 
 	/**
 	 * Determines if a ray emanating from the origin to given point in local space
@@ -137,9 +137,9 @@ public:
 	 * @param input
 	 * @return
 	 */
-	bool determine_if_in_bounds(Ref<LimitCone> next, Vector3 input) const;
+	bool determine_if_in_bounds(Ref<IKLimitCone> next, Vector3 input) const;
 
-	Vector3 get_on_path_sequence(Ref<LimitCone> next, Vector3 input) const;
+	Vector3 get_on_path_sequence(Ref<IKLimitCone> next, Vector3 input) const;
 
 	/**
 	 * returns null if no rectification is required.
@@ -148,9 +148,9 @@ public:
 	 * @param in_bounds
 	 * @return
 	 */
-	Vector3 closest_point_on_closest_cone(Ref<LimitCone> next, Vector3 input, Vector<double> &in_bounds) const;
+	Vector3 closest_point_on_closest_cone(Ref<IKLimitCone> next, Vector3 input, Vector<double> &in_bounds) const;
 
-	virtual void update_tangent_handles(Ref<LimitCone> next);
+	virtual void update_tangent_handles(Ref<IKLimitCone> next);
 
 	/**
 	 * returns null if no rectification is required.
@@ -167,12 +167,12 @@ public:
 	 * @return null if inapplicable for rectification. the original point if in bounds, or the point rectified to the closest boundary on the path sequence
 	 * between two cones if the point is out of bounds and applicable for rectification.
 	 */
-	Vector3 get_on_great_tangent_triangle(Ref<LimitCone> next, Vector3 input) const;
+	Vector3 get_on_great_tangent_triangle(Ref<IKLimitCone> next, Vector3 input) const;
 
 private:
-	Vector3 closest_cone(Ref<LimitCone> next, Vector3 input) const;
+	Vector3 closest_cone(Ref<IKLimitCone> next, Vector3 input) const;
 
-	void update_tangent_and_cushion_handles(Ref<LimitCone> p_next, int p_mode);
+	void update_tangent_and_cushion_handles(Ref<IKLimitCone> p_next, int p_mode);
 
 	void set_tangent_circle_center_next_1(Vector3 point, int mode);
 	void set_tangent_circle_center_next_2(Vector3 point, int mode);
@@ -194,7 +194,7 @@ protected:
 	virtual double _get_radius_cosine(int mode);
 
 private:
-	void compute_triangles(Ref<LimitCone> p_next);
+	void compute_triangles(Ref<IKLimitCone> p_next);
 
 public:
 	static Quaternion quaternion_set_axis_angle(Vector3 axis, real_t angle) {
