@@ -42,6 +42,13 @@
 
 void initialize_ewbik_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+	}
+#ifdef TOOLS_ENABLED
+	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		EditorPlugins::add_by_type<EditorPluginEWBIK>();
+	}
+#endif
+	if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS) {
 		GDREGISTER_CLASS(IKEffectorTemplate);
 		GDREGISTER_CLASS(SkeletonModification3DEWBIK);
 		GDREGISTER_CLASS(IKBone3D);
@@ -49,11 +56,6 @@ void initialize_ewbik_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(IKBoneSegment);
 		GDREGISTER_CLASS(IKKusudama);
 	}
-#ifdef TOOLS_ENABLED
-	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
-		EditorPlugins::add_by_type<EditorPluginEWBIK>();
-	}
-#endif
 }
 
 void uninitialize_ewbik_module(ModuleInitializationLevel p_level) {
