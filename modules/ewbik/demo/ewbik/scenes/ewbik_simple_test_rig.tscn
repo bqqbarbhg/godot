@@ -5,18 +5,19 @@
 [node name="ewbik_simple_test_rig" instance=ExtResource("1_rap5b")]
 
 [node name="Skeleton3D" parent="Simple_Test_Rig_Armature" index="0"]
-bones/0/position = Vector3(-0.166667, 0, 0)
-bones/0/rotation = Quaternion(6.3392e-08, 7.57478e-09, 5.08869e-16, 1)
-bones/1/position = Vector3(0, 0.6, 5.10703e-15)
-bones/1/rotation = Quaternion(-1.10394e-06, 3.3887e-06, 0.383798, 0.923417)
-bones/2/position = Vector3(1.04308e-06, 0.600004, 2.27374e-13)
-bones/2/rotation = Quaternion(1.38447e-06, -1.80467e-06, -0.364792, 0.931089)
+bones/0/position = Vector3(-0.166667, -5.0677e-16, 0)
+bones/0/rotation = Quaternion(6.3392e-08, 7.5748e-09, 5.9333e-16, 1)
+bones/1/position = Vector3(5.96046e-07, 0.60001, 4.25455e-11)
+bones/1/rotation = Quaternion(-1.32718e-06, 3.5385e-06, 0.383942, 0.923357)
+bones/1/scale = Vector3(1, 1, 1)
+bones/2/position = Vector3(9.0003e-06, 0.60013, 4.5693e-09)
+bones/2/rotation = Quaternion(-6.24537e-05, -0.000165817, -0.364936, 0.931033)
 bones/2/scale = Vector3(1, 1, 1)
-bones/3/position = Vector3(-5.96046e-08, 0.600009, -1.53477e-12)
-bones/3/rotation = Quaternion(7.21942e-07, -1.48539e-06, -0.296098, 0.955158)
+bones/3/position = Vector3(-3.20077e-05, 0.600184, -2.11294e-08)
+bones/3/rotation = Quaternion(-5.86084e-05, 0.000143683, -0.2962, 0.955126)
 bones/3/scale = Vector3(1, 1, 1)
-bones/4/position = Vector3(3.69549e-06, 0.600002, 1.22213e-12)
-bones/4/rotation = Quaternion(8.40256e-08, 2.76971e-08, 0.386204, 0.922413)
+bones/4/position = Vector3(6.91414e-05, 0.600145, -8.82574e-09)
+bones/4/rotation = Quaternion(9.29528e-06, 2.2071e-05, 0.386235, 0.9224)
 bones/4/scale = Vector3(1, 1, 1)
 
 [node name="Simple_Test_Rig" parent="Simple_Test_Rig_Armature/Skeleton3D" index="0"]
@@ -24,7 +25,7 @@ visible = false
 
 [node name="SkeletonModification3DEWBIK" type="SkeletonModification3DEWBIK" parent="Simple_Test_Rig_Armature/Skeleton3D" index="1"]
 root_bone = &"Bone_01"
-pin_count = 2
+pin_count = 3
 pins/0/name = "Bone_05"
 pins/0/target_node = NodePath("../2")
 pins/0/depth_falloff = 0.0
@@ -35,6 +36,11 @@ pins/1/target_node = NodePath("../1")
 pins/1/depth_falloff = 0.0
 pins/1/weight = 1.0
 pins/1/direction_priorities = Vector3(0.5, 0, 0.5)
+pins/2/name = ""
+pins/2/target_node = NodePath("")
+pins/2/depth_falloff = 57.2958
+pins/2/weight = 1.0
+pins/2/direction_priorities = Vector3(1, 0, 1)
 
 [node name="1" type="Marker3D" parent="Simple_Test_Rig_Armature/Skeleton3D" index="2"]
 transform = Transform3D(1, -5.73772e-17, 1.51496e-08, 1.9781e-15, 1, -1.26784e-07, -1.51496e-08, 1.26784e-07, 1, 0, 0, 0)

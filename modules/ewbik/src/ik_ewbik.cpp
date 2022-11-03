@@ -670,6 +670,9 @@ NodePath SkeletonModification3DEWBIK::get_pin_nodepath(int32_t p_effector_index)
 }
 
 void SkeletonModification3DEWBIK::execute(real_t delta) {
+	if (pin_count == 0) {
+		return;
+	}
 	if (segmented_skeleton.is_null() || is_dirty) {
 		skeleton_changed(get_skeleton());
 	}
