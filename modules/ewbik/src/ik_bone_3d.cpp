@@ -93,7 +93,7 @@ void IKBone3D::set_initial_pose(Skeleton3D *p_skeleton) {
 	set_global_pose(xform);
 }
 
-void IKBone3D::set_skeleton_bone_pose(Skeleton3D *p_skeleton, real_t p_strength) {
+void IKBone3D::set_skeleton_bone_pose(Skeleton3D *p_skeleton) {
 	ERR_FAIL_NULL(p_skeleton);
 	Transform3D custom = get_global_pose();
 	custom = p_skeleton->get_global_transform().affine_inverse() * custom;
