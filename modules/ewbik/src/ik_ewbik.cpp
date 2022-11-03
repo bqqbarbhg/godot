@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "ewbik.h"
+#include "ik_ewbik.h"
 #include "core/core_string_names.h"
 #include "ik_bone_3d.h"
 

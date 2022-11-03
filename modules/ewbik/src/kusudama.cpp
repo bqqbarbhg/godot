@@ -57,24 +57,24 @@ void IKKusudama::update_tangent_radii() {
 	}
 }
 
+/**
+ * Basic idea:
+ * We treat our hard and soft boundaries as if they were two seperate kusudamas.
+ * First we check if we have exceeded our soft boundaries, if so,
+ * we find the closest point on the soft boundary and the closest point on the same segment
+ * of the hard boundary.
+ * let d be our orientation between these two points, represented as a ratio with 0 being right on the soft boundary
+ * and 1 being right on the hard boundary.
+ *
+ * On every kusudama call, we store the previous value of d.
+ * If the new d is  greater than the old d, our result is the weighted average of these
+ * (with the weight determining the resistance of the boundary). This result is stored for reference by future calls.
+ * If the new d is less than the old d, we return the input orientation, and set the new d to this lower value for reference by future calls.
+ *
+ * Because we can expect rotations to be fairly small, we use nlerp instead of slerp for efficiency when averaging.
+ */
 IKKusudama::IKKusudama(Ref<IKTransform3D> to_set, Ref<IKTransform3D> bone_direction, Ref<IKTransform3D> limiting_axes, double cos_half_angle_dampen) {
 	Vector<double> in_bounds = { 1 };
-	/**
-	 * Basic idea:
-	 * We treat our hard and soft boundaries as if they were two seperate kusudamas.
-	 * First we check if we have exceeded our soft boundaries, if so,
-	 * we find the closest point on the soft boundary and the closest point on the same segment
-	 * of the hard boundary.
-	 * let d be our orientation between these two points, represented as a ratio with 0 being right on the soft boundary
-	 * and 1 being right on the hard boundary.
-	 *
-	 * On every kusudama call, we store the previous value of d.
-	 * If the new d is  greater than the old d, our result is the weighted average of these
-	 * (with the weight determining the resistance of the boundary). This result is stored for reference by future calls.
-	 * If the new d is less than the old d, we return the input orientation, and set the new d to this lower value for reference by future calls.
-	 *
-	 * Because we can expect rotations to be fairly small, we use nlerp instead of slerp for efficiency when averaging.
-	 */
 }
 
 bool IKKusudama::is_in_global_pose_orientation_limits(Ref<IKTransform3D> p_global_axes, Ref<IKTransform3D> p_limiting_axes) {

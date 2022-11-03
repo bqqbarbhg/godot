@@ -30,7 +30,7 @@
 
 #include "register_types.h"
 
-#include "src/ewbik.h"
+#include "src/ik_ewbik.h"
 #include "src/ik_bone_3d.h"
 #include "src/ik_effector_3d.h"
 #include "src/ik_effector_template.h"

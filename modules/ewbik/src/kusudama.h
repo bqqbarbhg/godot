@@ -292,31 +292,20 @@ public:
 
 public:
 	/**
-	 * Get the swing rotation and twist rotation for the specified axis. The twist
-	 * rotation represents the rotation around the
-	 * specified axis. The swing rotation represents the rotation of the specified
-	 * axis itself, which is the rotation around an
-	 * axis perpendicular to the specified axis. The swing and twist rotation can be
-	 * used to reconstruct the original
-	 * quaternion: this = swing * twist
+	 * Get the swing rotation and twist rotation for the specified axis. The twist rotation represents the rotation around the specified axis. The swing rotation represents the rotation of the specified
+	 * axis itself, which is the rotation around an axis perpendicular to the specified axis. The swing and twist rotation can be
+	 * used to reconstruct the original quaternion: this = swing * twist
 	 *
-	 * @param axisX the X component of the normalized axis for which to get the
-	 *              swing and twist rotation
-	 * @param axisY the Y component of the normalized axis for which to get the
-	 *              swing and twist rotation
-	 * @param axisZ the Z component of the normalized axis for which to get the
-	 *              swing and twist rotation
-	 * @return an Array of Quaternion objects. With the first element representing
-	 *         the
-	 *         swing, and the second representing the twist
-	 * @see <a href=
-	 *      "http://www.euclideanspace.com/maths/geometry/rotations/for/decomposition">calculation</a>
+	 * @param p_axis the X, Y, Z component of the normalized axis for which to get the swing and twist rotation
+	 * @return twist represent the rotational twist
+	 * @return swing represent the rotational swing
+	 * @see <a href="http://www.euclideanspace.com/maths/geometry/rotations/for/decomposition">calculation</a>
 	 */
 	static void get_swing_twist(
 			Quaternion p_rotation,
 			Vector3 p_axis,
-			Quaternion &swing,
-			Quaternion &twist) {
+			Quaternion &r_swing,
+			Quaternion &r_twist) {
 		Quaternion rotation = p_rotation;
 		rotation.x *= -1;
 		rotation.y *= -1;
@@ -326,22 +315,22 @@ public:
 		quaternion_axis.y = rotation.y;
 		quaternion_axis.z = rotation.z;
 		const float d = quaternion_axis.dot(p_axis);
-		twist = Quaternion(p_axis.x * d, p_axis.y * d, p_axis.z * d, rotation.w).normalized();
+		r_twist = Quaternion(p_axis.x * d, p_axis.y * d, p_axis.z * d, rotation.w).normalized();
 		if (d < 0) {
-			twist *= -1.0f;
+			r_twist *= -1.0f;
 		}
-		swing = twist;
-		swing.x *= -1;
-		swing.y *= -1;
-		swing.z *= -1;
-		swing = twist * p_rotation;
-		swing.normalize();
-		swing.x *= -1;
-		swing.y *= -1;
-		swing.z *= -1;
-		twist.x *= -1;
-		twist.y *= -1;
-		twist.z *= -1;
+		r_swing = r_twist;
+		r_swing.x *= -1;
+		r_swing.y *= -1;
+		r_swing.z *= -1;
+		r_swing = r_twist * p_rotation;
+		r_swing.normalize();
+		r_swing.x *= -1;
+		r_swing.y *= -1;
+		r_swing.z *= -1;
+		r_twist.x *= -1;
+		r_twist.y *= -1;
+		r_twist.z *= -1;
 	}
 };
 #endif

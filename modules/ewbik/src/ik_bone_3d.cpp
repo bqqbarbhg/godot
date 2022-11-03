@@ -30,7 +30,7 @@
 
 #include "ik_bone_3d.h"
 
-#include "ewbik.h"
+#include "ik_ewbik.h"
 #include "math/ik_transform.h"
 
 void IKBone3D::set_bone_id(BoneId p_bone_id, Skeleton3D *p_skeleton) {
