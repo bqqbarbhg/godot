@@ -440,8 +440,8 @@ bool SkeletonModification3DCCDIK::is_bone_property(String p_property_name) const
 	return SkeletonModification3D::is_bone_property(p_property_name);
 }
 
-TypedArray<String> SkeletonModification3DCCDIK::get_configuration_warnings() const {
-	TypedArray<String> ret = SkeletonModification3D::get_configuration_warnings();
+PackedStringArray SkeletonModification3DCCDIK::get_configuration_warnings() const {
+	PackedStringArray ret = SkeletonModification3D::get_configuration_warnings();
 	if (!get_skeleton()) {
 		return ret;
 	}

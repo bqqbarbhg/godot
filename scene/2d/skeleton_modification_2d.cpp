@@ -359,8 +359,8 @@ bool SkeletonModification2D::is_property_hidden(String p_property_name) const {
 	return ret;
 }
 
-TypedArray<String> SkeletonModification2D::get_configuration_warnings() const {
-	TypedArray<String> ret = Node::get_configuration_warnings();
+PackedStringArray SkeletonModification2D::get_configuration_warnings() const {
+	PackedStringArray ret = Node::get_configuration_warnings();
 	if (!get_skeleton()) {
 		ret.push_back("Modification skeleton_path must point to a Skeleton2D node.");
 	}

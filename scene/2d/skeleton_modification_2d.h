@@ -57,7 +57,7 @@ private:
 protected:
 	bool _cache_node(Variant &cache, const NodePath &target_node_path) const;
 	Bone2D *_cache_bone(Variant &cache, const NodePath &target_node_path) const;
-	PackedByteArray get_configuration_warnings() const override;
+	PackedStringArray get_configuration_warnings() const override;
 
 public:
 	enum { UNCACHED_BONE_IDX = -2 };

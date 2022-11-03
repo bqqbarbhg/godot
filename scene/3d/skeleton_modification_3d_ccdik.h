@@ -78,7 +78,7 @@ protected:
 	void execute(real_t p_delta) override;
 	bool is_property_hidden(String property_name) const override;
 	bool is_bone_property(String property_name) const override;
-	TypedArray<String> get_configuration_warnings() const override;
+	PackedStringArray get_configuration_warnings() const override;
 
 public:
 	void set_target_node(const NodePath &p_target_node);

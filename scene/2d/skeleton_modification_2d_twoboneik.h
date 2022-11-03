@@ -57,7 +57,7 @@ private:
 protected:
 	static void _bind_methods();
 	void execute(real_t delta) override;
-	TypedArray<String> get_configuration_warnings() const override;
+	PackedStringArray get_configuration_warnings() const override;
 	void draw_editor_gizmo() override;
 
 public:

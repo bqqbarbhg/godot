@@ -70,7 +70,7 @@ protected:
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 	void execute(real_t p_delta) override;
 	void draw_editor_gizmo() override;
-	TypedArray<String> get_configuration_warnings() const override;
+	PackedStringArray get_configuration_warnings() const override;
 
 public:
 	void set_target_node(const NodePath &p_target_node);

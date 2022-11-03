@@ -60,7 +60,7 @@ protected:
 	void execute(real_t delta) override;
 	void draw_editor_gizmo() override;
 	bool is_property_hidden(String property_name) const override;
-	TypedArray<String> get_configuration_warnings() const override;
+	PackedStringArray get_configuration_warnings() const override;
 
 public:
 	void set_bone_node(const NodePath &p_target_node);

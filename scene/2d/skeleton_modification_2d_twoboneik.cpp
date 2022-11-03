@@ -215,8 +215,8 @@ void SkeletonModification2DTwoBoneIK::execute(real_t p_delta) {
 	}
 }
 
-TypedArray<String> SkeletonModification2DTwoBoneIK::get_configuration_warnings() const {
-	TypedArray<String> ret = SkeletonModification2D::get_configuration_warnings();
+PackedStringArray SkeletonModification2DTwoBoneIK::get_configuration_warnings() const {
+	PackedStringArray ret = SkeletonModification2D::get_configuration_warnings();
 	if (!get_skeleton()) {
 		return ret;
 	}

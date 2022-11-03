@@ -99,7 +99,7 @@ public:
 	GDVIRTUAL1R(bool, _is_bone_property, String);
 	virtual bool is_property_hidden(String property_name) const;
 	GDVIRTUAL1R(bool, _is_property_hidden, String);
-	PackedByteArray get_configuration_warnings() const override;
+	PackedStringArray get_configuration_warnings() const override;
 
 	int resolve_bone(const String &target_bone_name) const;
 	Variant resolve_target(const NodePath &target_node_path, const String &target_bone_name) const;

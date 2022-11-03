@@ -195,8 +195,8 @@ void SkeletonModification2DLookAt::execute(real_t delta) {
 	operation_bone->set_transform(operation_transform);
 }
 
-TypedArray<String> SkeletonModification2DLookAt::get_configuration_warnings() const {
-	TypedArray<String> ret = SkeletonModification2D::get_configuration_warnings();
+PackedStringArray SkeletonModification2DLookAt::get_configuration_warnings() const {
+	PackedStringArray ret = SkeletonModification2D::get_configuration_warnings();
 	if (!get_skeleton()) {
 		return ret;
 	}

@@ -188,8 +188,8 @@ void SkeletonModification2DPhysicalBones::execute(real_t delta) {
 	}
 }
 
-TypedArray<String> SkeletonModification2DPhysicalBones::get_configuration_warnings() const {
-	TypedArray<String> ret = SkeletonModification2D::get_configuration_warnings();
+PackedStringArray SkeletonModification2DPhysicalBones::get_configuration_warnings() const {
+	PackedStringArray ret = SkeletonModification2D::get_configuration_warnings();
 	if (!get_skeleton()) {
 		return ret;
 	}

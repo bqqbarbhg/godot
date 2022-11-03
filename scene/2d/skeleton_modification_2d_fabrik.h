@@ -76,7 +76,7 @@ protected:
 	bool _get(const StringName &p_path, Variant &r_ret) const;
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 	void execute(real_t delta) override;
-	TypedArray<String> get_configuration_warnings() const override;
+	PackedStringArray get_configuration_warnings() const override;
 
 public:
 	void set_target_node(const NodePath &p_target_node);

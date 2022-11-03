@@ -596,8 +596,8 @@ bool SkeletonModification3DFABRIK::is_property_hidden(String p_property_name) co
 	return SkeletonModification3D::is_property_hidden(p_property_name);
 }
 
-TypedArray<String> SkeletonModification3DFABRIK::get_configuration_warnings() const {
-	TypedArray<String> ret = SkeletonModification3D::get_configuration_warnings();
+PackedStringArray SkeletonModification3DFABRIK::get_configuration_warnings() const {
+	PackedStringArray ret = SkeletonModification3D::get_configuration_warnings();
 	if (!get_skeleton()) {
 		return ret;
 	}

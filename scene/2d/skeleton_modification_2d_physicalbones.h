@@ -59,7 +59,7 @@ protected:
 	bool _set(const StringName &p_path, const Variant &p_value);
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 	void execute(real_t p_delta) override;
-	TypedArray<String> get_configuration_warnings() const override;
+	PackedStringArray get_configuration_warnings() const override;
 
 public:
 	int get_joint_count();

@@ -454,8 +454,8 @@ void SkeletonModification2DJiggle::_notification(int p_what) {
 	}
 }
 
-TypedArray<String> SkeletonModification2DJiggle::get_configuration_warnings() const {
-	TypedArray<String> ret = SkeletonModification2D::get_configuration_warnings();
+PackedStringArray SkeletonModification2DJiggle::get_configuration_warnings() const {
+	PackedStringArray ret = SkeletonModification2D::get_configuration_warnings();
 	if (!get_skeleton()) {
 		return ret;
 	}

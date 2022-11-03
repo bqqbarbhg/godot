@@ -62,7 +62,7 @@ protected:
 	void skeleton_changed(Skeleton3D *skeleton) override;
 	bool is_property_hidden(String property_name) const override;
 	bool is_bone_property(String property_name) const override;
-	TypedArray<String> get_configuration_warnings() const override;
+	PackedStringArray get_configuration_warnings() const override;
 
 public:
 	void set_bone(const String &p_name);
