@@ -36,10 +36,11 @@
 #include "ik_bone_3d.h"
 #include "ik_effector_template.h"
 #include "math/ik_transform.h"
+#include "scene/3d/skeleton_modification_3d.h"
 
 class IKBoneSegment;
-class EWBIK : public Node {
-	GDCLASS(EWBIK, Node);
+class EWBIK : public SkeletonModification3D {
+	GDCLASS(EWBIK, SkeletonModification3D);
 	StringName root_bone;
 	StringName tip_bone;
 	NodePath skeleton_path;
@@ -71,25 +72,8 @@ protected:
 	bool _get(const StringName &p_name, Variant &r_ret) const;
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 	static void _bind_methods();
-	virtual void skeleton_changed(Skeleton3D *skeleton);
-	virtual void execute(real_t delta);
-	void _notification(int p_what) {
-		switch (p_what) {
-			case NOTIFICATION_READY: {
-				set_process_internal(true);
-			} break;
-			case NOTIFICATION_INTERNAL_PROCESS: {
-				if (!is_enabled) {
-					return;
-				}
-				if (is_dirty) {
-					skeleton_changed(get_skeleton());
-					is_dirty = false;
-				}
-				execute(get_process_delta_time());
-			} break;
-		}
-	}
+	virtual void skeleton_changed(Skeleton3D *skeleton) override;
+	virtual void execute(real_t delta) override;
 
 public:
 	void set_enabled(bool p_enabled) {
