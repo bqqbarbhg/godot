@@ -35,10 +35,6 @@
 #include "scene/2d/skeleton_2d.h"
 #include "scene/2d/skeleton_modification_2d.h"
 
-///////////////////////////////////////
-// SkeletonModification2DJIGGLE
-///////////////////////////////////////
-
 class SkeletonModification2DPhysicalBones : public SkeletonModification2D {
 	GDCLASS(SkeletonModification2DPhysicalBones, SkeletonModification2D);
 

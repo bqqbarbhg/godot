@@ -68,8 +68,6 @@
 #include "scene/2d/skeleton_2d.h"
 #include "scene/2d/skeleton_modification_2d.h"
 #include "scene/2d/skeleton_modification_2d_ccdik.h"
-#include "scene/2d/skeleton_modification_2d_fabrik.h"
-#include "scene/2d/skeleton_modification_2d_jiggle.h"
 #include "scene/2d/skeleton_modification_2d_lookat.h"
 #include "scene/2d/skeleton_modification_2d_physicalbones.h"
 #include "scene/2d/skeleton_modification_2d_twoboneik.h"
@@ -245,8 +243,6 @@
 #include "scene/3d/skeleton_3d.h"
 #include "scene/3d/skeleton_modification_3d.h"
 #include "scene/3d/skeleton_modification_3d_ccdik.h"
-#include "scene/3d/skeleton_modification_3d_fabrik.h"
-#include "scene/3d/skeleton_modification_3d_jiggle.h"
 #include "scene/3d/skeleton_modification_3d_lookat.h"
 #include "scene/3d/skeleton_modification_3d_twoboneik.h"
 #include "scene/3d/soft_body_3d.h"
@@ -755,8 +751,6 @@ void register_scene_types() {
 	GDREGISTER_CLASS(SkeletonModification2D);
 	GDREGISTER_CLASS(SkeletonModification2DLookAt);
 	GDREGISTER_CLASS(SkeletonModification2DCCDIK);
-	GDREGISTER_CLASS(SkeletonModification2DFABRIK);
-	GDREGISTER_CLASS(SkeletonModification2DJiggle);
 	GDREGISTER_CLASS(SkeletonModification2DTwoBoneIK);
 
 	GDREGISTER_CLASS(PhysicalBone2D);
@@ -822,8 +816,6 @@ void register_scene_types() {
 	ClassDB::register_class<SkeletonModification3D>();
 	ClassDB::register_class<SkeletonModification3DLookAt>();
 	ClassDB::register_class<SkeletonModification3DCCDIK>();
-	ClassDB::register_class<SkeletonModification3DFABRIK>();
-	ClassDB::register_class<SkeletonModification3DJiggle>();
 	ClassDB::register_class<SkeletonModification3DTwoBoneIK>();
 
 	OS::get_singleton()->yield(); // may take time to init
