@@ -65,14 +65,6 @@ Ref<IKEffector3D> IKBone3D::get_pin() const {
 	return pin;
 }
 
-void IKBone3D::set_pose(const Transform3D &p_transform) {
-	transform->set_transform(p_transform);
-}
-
-Transform3D IKBone3D::get_pose() const {
-	return transform->get_transform();
-}
-
 void IKBone3D::set_global_pose(const Transform3D &p_transform) {
 	transform->set_global_transform(p_transform);
 	constraint_transform->local_transform.origin = transform->local_transform.origin;
@@ -182,4 +174,10 @@ void IKBone3D::set_bone_direction_transform(Ref<IKTransform3D> p_bone_direction)
 
 Ref<IKTransform3D> IKBone3D::get_bone_direction_transform() {
 	return bone_direction_transform;
+}
+void IKBone3D::set_stiffness(float p_stiffness) {
+	stiffness = p_stiffness;
+}
+float IKBone3D::get_stiffness() const {
+	return stiffness;
 }

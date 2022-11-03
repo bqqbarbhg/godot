@@ -3,3 +3,10 @@
 [ext_resource type="PackedScene" uid="uid://e75mks7p47hj" path="res://ewbik/art/ewbik_simple_test_rig.glb" id="1_rap5b"]
 
 [node name="ewbik_simple_test_rig" instance=ExtResource("1_rap5b")]
+
+[node name="Marker3D" type="Marker3D" parent="Simple_Test_Rig_Armature/Skeleton3D" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.365226, -0.378466, 0)
+
+[node name="SkeletonModification3DEWBIK" type="SkeletonModification3DEWBIK" parent="Simple_Test_Rig_Armature/Skeleton3D" index="2"]
+enabled = false
+root_bone = &"Bone_01"

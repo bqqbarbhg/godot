@@ -60,7 +60,7 @@ public:
 	Ray3D(Vector3 p1, Vector3 p2);
 
 	/**
-	 * returns the point on this sgRay which is closest to the input point
+	 * returns the point on this ray which is closest to the input point
 	 *
 	 * @param p_point
 	 * @return

@@ -75,21 +75,14 @@ public:
 	Ref<IKTransform3D> get_constraint_transform();
 	void add_constraint(Ref<IKKusudama> p_constraint);
 	Ref<IKKusudama> get_constraint() const;
-	void set_stiffness(float p_stiffness) {
-		stiffness = p_stiffness;
-	}
-	float get_stiffness() const {
-		return stiffness;
-	}
-
+	void set_stiffness(float p_stiffness);
+	float get_stiffness() const;
 	void set_bone_id(BoneId p_bone_id, Skeleton3D *p_skeleton = nullptr);
 	BoneId get_bone_id() const;
 	void set_parent(const Ref<IKBone3D> &p_parent);
 	Ref<IKBone3D> get_parent() const;
 	void set_pin(const Ref<IKEffector3D> &p_pin);
 	Ref<IKEffector3D> get_pin() const;
-	void set_pose(const Transform3D &p_transform);
-	Transform3D get_pose() const;
 	void set_global_pose(const Transform3D &p_transform);
 	Transform3D get_global_pose() const;
 	void set_initial_pose(Skeleton3D *p_skeleton);
