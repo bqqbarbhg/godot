@@ -65,6 +65,7 @@ protected:
 	static void _bind_methods();
 
 public:
+	IKEffector3D() = default;
 	void set_weight(real_t p_weight);
 	real_t get_weight() const;
 	void set_direction_priorities(Vector3 p_direction_priorities);
