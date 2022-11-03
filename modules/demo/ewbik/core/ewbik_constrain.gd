@@ -7,13 +7,13 @@ func _run():
 	queue.push_back(root)
 	var string_builder : Array
 	var skeleton : Skeleton3D
-	var ewbik : EWBIK = null
+	var ewbik : SkeletonModification3DEWBIK = null
 	while not queue.is_empty():
 		var front = queue.front()
 		var node : Node = front
 		if node is Skeleton3D:
 			skeleton = node
-		if node is EWBIK:
+		if node is SkeletonModification3DEWBIK:
 			ewbik = node
 		var child_count : int = node.get_child_count()
 		for i in child_count:
@@ -24,7 +24,7 @@ func _run():
 	if skeleton == null:
 		return
 	skeleton.reset_bone_poses()
-	ewbik = EWBIK.new()
+	ewbik = SkeletonModification3DEWBIK.new()
 	skeleton.add_child(ewbik, true)
 	ewbik.owner = root
 	var godot_to_vrm : Dictionary
