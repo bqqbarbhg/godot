@@ -33,8 +33,8 @@
 #include "core/io/resource.h"
 #include "core/math/vector3.h"
 
-class Ray3D : public RefCounted {
-	GDCLASS(Ray3D, RefCounted);
+class IKRay3D : public RefCounted {
+	GDCLASS(IKRay3D, RefCounted);
 
 public:
 	static constexpr int X = 0;
@@ -42,9 +42,9 @@ public:
 	static constexpr int Z = 2;
 
 protected:
-	Vector3 _p1;
-	Vector3 _p2;
-	Vector3 workingVector;
+	Vector3 point_1;
+	Vector3 point_2;
+	Vector3 working_vector;
 
 public:
 	Vector3 tta, ttb, ttc;
@@ -53,11 +53,11 @@ public:
 	Vector3 m, at, bt, ct, pt;
 	Vector3 bc, ca, ac;
 
-	virtual ~Ray3D() {}
+	virtual ~IKRay3D() {}
 
-	Ray3D();
+	IKRay3D();
 
-	Ray3D(Vector3 p1, Vector3 p2);
+	IKRay3D(Vector3 p_p1, Vector3 p_p2);
 
 	/**
 	 * returns the point on this ray which is closest to the input point
@@ -79,21 +79,21 @@ public:
 	 *
 	 * @param p_target
 	 */
-	virtual void set_align_to(Ref<Ray3D> p_target);
+	virtual void set_align_to(Ref<IKRay3D> p_target);
 
 	virtual void set_heading(Vector3 &p_new_head);
 
 	/**
 	 * sets the input vector equal to this sgRay's heading.
 	 *
-	 * @param r_set_to
+	 * @param p_set_to
 	 */
-	virtual Vector3 get_heading(const Vector3 &r_set_to) const;
+	virtual Vector3 get_heading(const Vector3 &p_set_to) const;
 
 	/**
 	 * @return a copy of this ray with its z-component set to 0;
 	 */
-	virtual Ref<Ray3D> get_2d_copy();
+	virtual Ref<IKRay3D> get_2d_copy();
 
 	/**
 	 * gets a copy of this ray, with the component specified by
@@ -102,7 +102,7 @@ public:
 	 * @param p_collapse_on_axis the axis on which to collapse the ray.
 	 * @return
 	 */
-	virtual Ref<Ray3D> get_2d_copy(const int &p_collapse_on_axis);
+	virtual Ref<IKRay3D> get_2d_copy(const int &p_collapse_on_axis);
 
 	virtual Vector3 get_origin();
 
@@ -189,24 +189,24 @@ public:
 	 */
 	virtual void elongate(real_t amt);
 
-	virtual Ref<Ray3D> copy();
+	virtual Ref<IKRay3D> copy();
 
 	virtual void reverse();
 
-	virtual Ref<Ray3D> getReversed();
+	virtual Ref<IKRay3D> getReversed();
 
-	virtual Ref<Ray3D> get_ray_scaled_to(real_t scalar);
+	virtual Ref<IKRay3D> get_ray_scaled_to(real_t scalar);
 
 	/*
 	 * reverses this ray's direction so that it
 	 * has a positive dot product with the heading of r
 	 * if dot product is already positive, does nothing.
 	 */
-	virtual void pointWith(Ref<Ray3D> r);
+	virtual void pointWith(Ref<IKRay3D> r);
 
 	virtual void pointWith(Vector3 heading);
 
-	virtual Ref<Ray3D> getRayScaledBy(real_t scalar);
+	virtual Ref<IKRay3D> getRayScaledBy(real_t scalar);
 
 	/**
 	 * sets the values of the given vector to where the
@@ -233,7 +233,7 @@ public:
 
 	virtual void normalize();
 
-	virtual Vector3 intercepts2D(Ref<Ray3D> r);
+	virtual Vector3 intercepts2D(Ref<IKRay3D> r);
 
 	/**
 	 * If the closest point to this sgRay on the input sgRay lies
@@ -243,7 +243,7 @@ public:
 	 * @param r
 	 * @return
 	 */
-	virtual Vector3 closestPointToSegment3D(Ref<Ray3D> r);
+	virtual Vector3 closestPointToSegment3D(Ref<IKRay3D> r);
 
 	/**
 	 * returns the point on this ray which is closest to the input ray
@@ -252,12 +252,12 @@ public:
 	 * @return
 	 */
 
-	virtual Vector3 closestPointToRay3D(Ref<Ray3D> r);
+	virtual Vector3 closestPointToRay3D(Ref<IKRay3D> r);
 
-	virtual Vector3 closestPointToRay3DStrict(Ref<Ray3D> r);
+	virtual Vector3 closestPointToRay3DStrict(Ref<IKRay3D> r);
 
 	// returns a ray perpendicular to this ray on the XY plane;
-	virtual Ref<Ray3D> getPerpendicular2D();
+	virtual Ref<IKRay3D> getPerpendicular2D();
 
 	/**
 	 * @param ta the first vertex of a triangle on the plane
@@ -363,7 +363,7 @@ public:
 	}
 
 	operator String() const {
-		return String(L"(") + this->_p1.x + L" ->  " + this->_p2.x + L") \n " + L"(" + this->_p1.y + L" ->  " + this->_p2.y + L") \n " + L"(" + this->_p1.z + L" ->  " + this->_p2.z + L") \n ";
+		return String(L"(") + this->point_1.x + L" ->  " + this->point_2.x + L") \n " + L"(" + this->point_1.y + L" ->  " + this->point_2.y + L") \n " + L"(" + this->point_1.z + L" ->  " + this->point_2.z + L") \n ";
 	}
 };
 

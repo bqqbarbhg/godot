@@ -32,244 +32,239 @@
 
 #include "core/math/vector3.h"
 
-Ray3D::Ray3D() {
+IKRay3D::IKRay3D() {
 }
 
-Ray3D::Ray3D(Vector3 p_p1, Vector3 p_p2) {
-	this->workingVector = p_p1;
-	this->_p1 = p_p1;
-	this->_p2 = p_p2;
+IKRay3D::IKRay3D(Vector3 p_p1, Vector3 p_p2) {
+	working_vector = p_p1;
+	point_1 = p_p1;
+	point_2 = p_p2;
 }
 
-Vector3 Ray3D::closest_point_to(const Vector3 p_point) {
-	workingVector = p_point;
-	workingVector = workingVector - this->_p1;
+Vector3 IKRay3D::closest_point_to(const Vector3 p_point) {
+	working_vector = p_point;
+	working_vector = working_vector - this->point_1;
 	Vector3 heading = this->heading();
-	heading.length();
-	workingVector.length();
-	// workingVector.normalize();
 	heading.normalize();
-	real_t scale = workingVector.dot(heading);
-
-	return static_cast<Vector3>(get_scaled_to(scale));
+	const real_t scale = working_vector.dot(heading);
+	return get_scaled_to(scale);
 }
 
-Vector3 Ray3D::closest_point_to_strict(const Vector3 &p_point) {
+Vector3 IKRay3D::closest_point_to_strict(const Vector3 &p_point) {
 	Vector3 in_point = p_point;
-	in_point = in_point - this->_p1;
-	Vector3 heading = this->heading();
-	real_t scale = (in_point.dot(heading) / (heading.length() * in_point.length())) * (in_point.length() / heading.length());
+	in_point = in_point - point_1;
+	const Vector3 new_heading = heading();
+	const real_t scale = (in_point.dot(new_heading) / (new_heading.length() * in_point.length())) * (in_point.length() / new_heading.length());
 
 	if (scale <= 0) {
-		return this->_p1;
+		return this->point_1;
 	} else if (scale >= 1) {
-		return this->_p2;
+		return this->point_2;
 	}
-	return this->get_multipled_by(scale);
+	return get_multipled_by(scale);
 }
 
-Vector3 Ray3D::heading() {
-	workingVector = _p2;
-	return workingVector - _p1;
+Vector3 IKRay3D::heading() {
+	working_vector = point_2;
+	return working_vector - point_1;
 }
 
-void Ray3D::set_align_to(Ref<Ray3D> p_target) {
-	_p1 = p_target->_p1;
-	_p2 = p_target->_p2;
+void IKRay3D::set_align_to(Ref<IKRay3D> p_target) {
+	point_1 = p_target->point_1;
+	point_2 = p_target->point_2;
 }
 
-void Ray3D::set_heading(Vector3 &p_new_head) {
-	_p2 = _p1;
-	_p2 = p_new_head;
+void IKRay3D::set_heading(Vector3 &p_new_head) {
+	point_2 = point_1;
+	point_2 = p_new_head;
 }
 
-Vector3 Ray3D::get_heading(const Vector3 &r_set_to) const {
-	Vector3 set_to;
-	set_to = _p2;
-	set_to -= this->_p1;
+Vector3 IKRay3D::get_heading(const Vector3 &p_set_to) const {
+	Vector3 set_to = point_2;
+	set_to -= this->point_1;
 	return set_to;
 }
 
-Ref<Ray3D> Ray3D::get_2d_copy() {
-	return get_2d_copy(Ray3D::Z);
+Ref<IKRay3D> IKRay3D::get_2d_copy() {
+	return get_2d_copy(IKRay3D::Z);
 }
 
-Ref<Ray3D> Ray3D::get_2d_copy(const int &p_collapse_on_axis) {
-	Ref<Ray3D> result = this;
-	if (p_collapse_on_axis == Ray3D::X) {
-		result->_p1.x = 0.0f;
-		result->_p2.x = 0.0f;
+Ref<IKRay3D> IKRay3D::get_2d_copy(const int &p_collapse_on_axis) {
+	Ref<IKRay3D> result = this;
+	if (p_collapse_on_axis == IKRay3D::X) {
+		result->point_1.x = 0.0f;
+		result->point_2.x = 0.0f;
 	}
-	if (p_collapse_on_axis == Ray3D::Y) {
-		result->_p1.y = 0.0f;
-		result->_p2.y = 0.0f;
+	if (p_collapse_on_axis == IKRay3D::Y) {
+		result->point_1.y = 0.0f;
+		result->point_2.y = 0.0f;
 	}
-	if (p_collapse_on_axis == Ray3D::Z) {
-		result->_p1.z = 0.0f;
-		result->_p2.z = 0.0f;
+	if (p_collapse_on_axis == IKRay3D::Z) {
+		result->point_1.z = 0.0f;
+		result->point_2.z = 0.0f;
 	}
 
 	return result;
 }
 
-Vector3 Ray3D::get_origin() {
-	return _p1;
+Vector3 IKRay3D::get_origin() {
+	return point_1;
 }
 
-real_t Ray3D::get_length() {
-	workingVector = _p2;
-	return (workingVector - _p1).length();
+real_t IKRay3D::get_length() {
+	working_vector = point_2;
+	return (working_vector - point_1).length();
 }
 
-void Ray3D::set_magnitude(const real_t &p_new_mag) {
-	workingVector = _p2;
-	Vector3 dir = workingVector - _p1;
+void IKRay3D::set_magnitude(const real_t &p_new_mag) {
+	working_vector = point_2;
+	Vector3 dir = working_vector - point_1;
 	dir = dir * p_new_mag;
 	this->set_heading(dir);
 }
 
-real_t Ray3D::scaled_projection(const Vector3 &p_input) {
-	workingVector = p_input;
-	workingVector = workingVector - this->_p1;
+real_t IKRay3D::scaled_projection(const Vector3 &p_input) {
+	working_vector = p_input;
+	working_vector = working_vector - this->point_1;
 	Vector3 heading = this->heading();
 	real_t headingMag = heading.length();
-	real_t workingVectorMag = workingVector.length();
+	real_t workingVectorMag = working_vector.length();
 	if (workingVectorMag == 0 || headingMag == 0) {
 		return 0;
 	}
-	return (workingVector.dot(heading) / (headingMag * workingVectorMag)) * (workingVectorMag / headingMag);
+	return (working_vector.dot(heading) / (headingMag * workingVectorMag)) * (workingVectorMag / headingMag);
 }
 
-void Ray3D::set_divide(const real_t &p_divisor) {
-	_p2 = _p2 - _p1;
-	_p2 = _p2 / p_divisor;
-	_p2 = _p2 + _p1;
+void IKRay3D::set_divide(const real_t &p_divisor) {
+	point_2 = point_2 - point_1;
+	point_2 = point_2 / p_divisor;
+	point_2 = point_2 + point_1;
 }
 
-void Ray3D::set_multiply(const real_t &p_scalar) {
-	_p2 = _p2 - _p1;
-	_p2 = _p2 * p_scalar;
-	_p2 = _p2 + _p1;
+void IKRay3D::set_multiply(const real_t &p_scalar) {
+	point_2 = point_2 - point_1;
+	point_2 = point_2 * p_scalar;
+	point_2 = point_2 + point_1;
 }
 
-Vector3 Ray3D::get_multipled_by(const real_t &p_scalar) {
+Vector3 IKRay3D::get_multipled_by(const real_t &p_scalar) {
 	Vector3 result = this->heading();
 	result = result * p_scalar;
-	result = result + _p1;
+	result = result + point_1;
 	return result;
 }
 
-Vector3 Ray3D::get_divided_by(const real_t &p_divisor) {
+Vector3 IKRay3D::get_divided_by(const real_t &p_divisor) {
 	Vector3 result = heading();
 	result = result * p_divisor;
-	result = result + _p1;
+	result = result + point_1;
 	return result;
 }
 
-Vector3 Ray3D::get_scaled_to(const real_t &scale) {
+Vector3 IKRay3D::get_scaled_to(const real_t &scale) {
 	Vector3 result = heading();
 	result.normalize();
 	result *= scale;
-	result += _p1;
+	result += point_1;
 	return result;
 }
 
-void Ray3D::elongate(real_t amt) {
-	Vector3 midPoint = (_p1 + _p2) * 0.5f;
-	Vector3 p1Heading = _p1 - midPoint;
-	Vector3 p2Heading = _p2 - midPoint;
+void IKRay3D::elongate(real_t amt) {
+	Vector3 midPoint = (point_1 + point_2) * 0.5f;
+	Vector3 p1Heading = point_1 - midPoint;
+	Vector3 p2Heading = point_2 - midPoint;
 	Vector3 p1Add = p1Heading.normalized() * amt;
 	Vector3 p2Add = p2Heading.normalized() * amt;
 
-	this->_p1 = p1Heading + p1Add + midPoint;
-	this->_p2 = p2Heading + p2Add + midPoint;
+	this->point_1 = p1Heading + p1Add + midPoint;
+	this->point_2 = p2Heading + p2Add + midPoint;
 }
 
-Ref<Ray3D> Ray3D::copy() {
-	return Ref<Ray3D>(memnew(Ray3D(this->_p1, this->_p2)));
+Ref<IKRay3D> IKRay3D::copy() {
+	return Ref<IKRay3D>(memnew(IKRay3D(this->point_1, this->point_2)));
 }
 
-void Ray3D::reverse() {
-	Vector3 temp = this->_p1;
-	this->_p1 = this->_p2;
-	this->_p2 = temp;
+void IKRay3D::reverse() {
+	Vector3 temp = this->point_1;
+	this->point_1 = this->point_2;
+	this->point_2 = temp;
 }
 
-Ref<Ray3D> Ray3D::getReversed() {
-	return memnew(Ray3D(this->_p2, this->_p1));
+Ref<IKRay3D> IKRay3D::getReversed() {
+	return memnew(IKRay3D(this->point_2, this->point_1));
 }
 
-Ref<Ray3D> Ray3D::get_ray_scaled_to(real_t scalar) {
-	return memnew(Ray3D(_p1, get_scaled_to(scalar)));
+Ref<IKRay3D> IKRay3D::get_ray_scaled_to(real_t scalar) {
+	return memnew(IKRay3D(point_1, get_scaled_to(scalar)));
 }
 
-void Ray3D::pointWith(Ref<Ray3D> r) {
+void IKRay3D::pointWith(Ref<IKRay3D> r) {
 	if (this->heading().dot(r->heading()) < 0) {
 		this->reverse();
 	}
 }
 
-void Ray3D::pointWith(Vector3 heading) {
+void IKRay3D::pointWith(Vector3 heading) {
 	if (this->heading().dot(heading) < 0) {
 		this->reverse();
 	}
 }
 
-Ref<Ray3D> Ray3D::getRayScaledBy(real_t scalar) {
-	return Ref<Ray3D>(memnew(Ray3D(_p1, get_multipled_by(scalar))));
+Ref<IKRay3D> IKRay3D::getRayScaledBy(real_t scalar) {
+	return Ref<IKRay3D>(memnew(IKRay3D(point_1, get_multipled_by(scalar))));
 }
 
-Vector3 Ray3D::setToInvertedTip(Vector3 vec) {
-	vec.x = (_p1.x - _p2.x) + _p1.x;
-	vec.y = (_p1.y - _p2.y) + _p1.y;
-	vec.z = (_p1.z - _p2.z) + _p1.z;
+Vector3 IKRay3D::setToInvertedTip(Vector3 vec) {
+	vec.x = (point_1.x - point_2.x) + point_1.x;
+	vec.y = (point_1.y - point_2.y) + point_1.y;
+	vec.z = (point_1.z - point_2.z) + point_1.z;
 	return vec;
 }
 
-void Ray3D::contractTo(real_t percent) {
+void IKRay3D::contractTo(real_t percent) {
 	// contracts both ends of a ray toward its center such that the total length of
 	// the ray is the percent % of its current length;
 	real_t halfPercent = 1 - ((1 - percent) / 2.0f);
 
-	_p1 = _p1.lerp(_p2, halfPercent);
-	_p2 = _p2.lerp(_p1, halfPercent);
+	point_1 = point_1.lerp(point_2, halfPercent);
+	point_2 = point_2.lerp(point_1, halfPercent);
 }
 
-void Ray3D::translateTo(Vector3 newLocation) {
-	workingVector = _p2;
-	workingVector = workingVector - _p1;
-	workingVector = workingVector + newLocation;
-	_p2 = workingVector;
-	_p1 = newLocation;
+void IKRay3D::translateTo(Vector3 newLocation) {
+	working_vector = point_2;
+	working_vector = working_vector - point_1;
+	working_vector = working_vector + newLocation;
+	point_2 = working_vector;
+	point_1 = newLocation;
 }
 
-void Ray3D::translateTipTo(Vector3 newLocation) {
-	workingVector = newLocation;
-	Vector3 transBy = workingVector - _p2;
+void IKRay3D::translateTipTo(Vector3 newLocation) {
+	working_vector = newLocation;
+	Vector3 transBy = working_vector - point_2;
 	this->translateBy(transBy);
 }
 
-void Ray3D::translateBy(Vector3 toAdd) {
-	_p1 += toAdd;
-	_p2 += toAdd;
+void IKRay3D::translateBy(Vector3 toAdd) {
+	point_1 += toAdd;
+	point_2 += toAdd;
 }
 
-void Ray3D::normalize() {
+void IKRay3D::normalize() {
 	this->set_magnitude(1);
 }
 
-Vector3 Ray3D::intercepts2D(Ref<Ray3D> r) {
-	Vector3 result = _p1;
+Vector3 IKRay3D::intercepts2D(Ref<IKRay3D> r) {
+	Vector3 result = point_1;
 
-	real_t p0_x = this->_p1.x;
-	real_t p0_y = this->_p1.y;
-	real_t p1_x = this->_p2.x;
-	real_t p1_y = this->_p2.y;
+	real_t p0_x = this->point_1.x;
+	real_t p0_y = this->point_1.y;
+	real_t p1_x = this->point_2.x;
+	real_t p1_y = this->point_2.y;
 
-	real_t p2_x = r->_p1.x;
-	real_t p2_y = r->_p1.y;
-	real_t p3_x = r->_p2.x;
-	real_t p3_y = r->_p2.y;
+	real_t p2_x = r->point_1.x;
+	real_t p2_y = r->point_1.y;
+	real_t p3_x = r->point_2.x;
+	real_t p3_y = r->point_2.y;
 
 	real_t s1_x, s1_y, s2_x, s2_y;
 	s1_x = p1_x - p0_x;
@@ -283,18 +278,18 @@ Vector3 Ray3D::intercepts2D(Ref<Ray3D> r) {
 	return result = Vector3(p0_x + (t * s1_x), p0_y + (t * s1_y), 0.0f);
 }
 
-Vector3 Ray3D::closestPointToSegment3D(Ref<Ray3D> r) {
+Vector3 IKRay3D::closestPointToSegment3D(Ref<IKRay3D> r) {
 	Vector3 closestToThis = r->closestPointToRay3DStrict(this);
 	return this->closest_point_to(closestToThis);
 }
 
-Vector3 Ray3D::closestPointToRay3D(Ref<Ray3D> r) {
-	workingVector = _p2;
-	Vector3 u = workingVector - this->_p1;
-	workingVector = r->_p2;
-	Vector3 v = workingVector - r->_p1;
-	workingVector = this->_p1;
-	Vector3 w = workingVector - r->_p1;
+Vector3 IKRay3D::closestPointToRay3D(Ref<IKRay3D> r) {
+	working_vector = point_2;
+	Vector3 u = working_vector - this->point_1;
+	working_vector = r->point_2;
+	Vector3 v = working_vector - r->point_1;
+	working_vector = this->point_1;
+	Vector3 w = working_vector - r->point_1;
 	real_t a = u.dot(u);
 	real_t b = u.dot(v);
 	real_t c = v.dot(v);
@@ -313,13 +308,13 @@ Vector3 Ray3D::closestPointToRay3D(Ref<Ray3D> r) {
 	return getRayScaledBy(sc)->p2();
 }
 
-Vector3 Ray3D::closestPointToRay3DStrict(Ref<Ray3D> r) {
-	workingVector = _p2;
-	Vector3 u = workingVector - this->_p1;
-	workingVector = r->_p2;
-	Vector3 v = workingVector - r->_p1;
-	workingVector = this->_p1;
-	Vector3 w = workingVector - r->_p1;
+Vector3 IKRay3D::closestPointToRay3DStrict(Ref<IKRay3D> r) {
+	working_vector = point_2;
+	Vector3 u = working_vector - this->point_1;
+	working_vector = r->point_2;
+	Vector3 v = working_vector - r->point_1;
+	working_vector = this->point_1;
+	Vector3 w = working_vector - r->point_1;
 	real_t a = u.dot(u); // always >= s0
 	real_t b = u.dot(v);
 	real_t c = v.dot(v); // always >= 0
@@ -337,9 +332,9 @@ Vector3 Ray3D::closestPointToRay3DStrict(Ref<Ray3D> r) {
 
 	Vector3 result;
 	if (sc < 0) {
-		result = this->_p1;
+		result = this->point_1;
 	} else if (sc > 1) {
-		result = this->_p2;
+		result = this->point_2;
 	} else {
 		result = this->getRayScaledBy(sc)->p2();
 	}
@@ -347,63 +342,63 @@ Vector3 Ray3D::closestPointToRay3DStrict(Ref<Ray3D> r) {
 	return result;
 }
 
-Ref<Ray3D> Ray3D::getPerpendicular2D() {
+Ref<IKRay3D> IKRay3D::getPerpendicular2D() {
 	Vector3 heading = this->heading();
-	workingVector = Vector3(heading.x - 1.0f, heading.x, 0.0f);
-	return Ref<Ray3D>(memnew(Ray3D(this->_p1, workingVector + this->_p1)));
+	working_vector = Vector3(heading.x - 1.0f, heading.x, 0.0f);
+	return Ref<IKRay3D>(memnew(IKRay3D(this->point_1, working_vector + this->point_1)));
 }
 
-Vector3 Ray3D::intersectsPlane(Vector3 ta, Vector3 tb, Vector3 tc) {
+Vector3 IKRay3D::intersectsPlane(Vector3 ta, Vector3 tb, Vector3 tc) {
 	Vector3 uvw;
 	tta = ta;
 	ttb = tb;
 	ttc = tc;
-	tta -= _p1;
-	ttb -= _p1;
-	ttc -= _p1;
+	tta -= point_1;
+	ttb -= point_1;
+	ttc -= point_1;
 
 	Vector3 result = planeIntersectTest(tta, ttb, ttc, uvw);
-	return result + _p1;
+	return result + point_1;
 }
 
-int Ray3D::intersectsSphere(Vector3 sphereCenter, real_t radius, Vector3 &S1, Vector3 &S2) {
-	Vector3 tp1 = _p1 - sphereCenter;
-	Vector3 tp2 = _p2 - sphereCenter;
+int IKRay3D::intersectsSphere(Vector3 sphereCenter, real_t radius, Vector3 &S1, Vector3 &S2) {
+	Vector3 tp1 = point_1 - sphereCenter;
+	Vector3 tp2 = point_2 - sphereCenter;
 	int result = intersectsSphere(tp1, tp2, radius, S1, S2);
 	S1 += sphereCenter;
 	S2 += sphereCenter;
 	return result;
 }
 
-void Ray3D::p1(Vector3 in) {
-	this->_p1 = in;
+void IKRay3D::p1(Vector3 in) {
+	this->point_1 = in;
 }
 
-void Ray3D::p2(Vector3 in) {
-	this->_p2 = in;
+void IKRay3D::p2(Vector3 in) {
+	this->point_2 = in;
 }
 
-Vector3 Ray3D::p2() {
-	return _p2;
+Vector3 IKRay3D::p2() {
+	return point_2;
 }
 
-void Ray3D::setP2(Vector3 p_p2) {
-	this->_p2 = p_p2;
+void IKRay3D::setP2(Vector3 p_p2) {
+	this->point_2 = p_p2;
 }
 
-Vector3 Ray3D::p1() {
-	return _p1;
+Vector3 IKRay3D::p1() {
+	return point_1;
 }
 
-void Ray3D::setP1(Vector3 p_p1) {
-	this->_p1 = p_p1;
+void IKRay3D::setP1(Vector3 p_p1) {
+	this->point_1 = p_p1;
 }
 
-int Ray3D::intersectsSphere(Vector3 rp1, Vector3 rp2, float radius, Vector3 &S1, Vector3 &S2) {
+int IKRay3D::intersectsSphere(Vector3 rp1, Vector3 rp2, float radius, Vector3 &S1, Vector3 &S2) {
 	Vector3 direction = rp2 - rp1;
 	Vector3 e = direction; // e=ray.dir
 	e.normalize(); // e=g/|g|
-	Vector3 h = _p1;
+	Vector3 h = point_1;
 	h = Vector3(0.0f, 0.0f, 0.0f);
 	h = h - rp1; // h=r.o-c.M
 	float lf = e.dot(h); // lf=e.h

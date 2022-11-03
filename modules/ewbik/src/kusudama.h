@@ -97,8 +97,8 @@ public:
 
 	virtual void update_tangent_radii();
 
-	Ref<Ray3D> bone_ray = Ref<Ray3D>(memnew(Ray3D()));
-	Ref<Ray3D> constrained_ray = Ref<Ray3D>(memnew(Ray3D()));
+	Ref<IKRay3D> bone_ray = Ref<IKRay3D>(memnew(IKRay3D()));
+	Ref<IKRay3D> constrained_ray = Ref<IKRay3D>(memnew(IKRay3D()));
 
 	/**
 	 * Presumes the input axes are the bone's localAxes, and rotates
