@@ -60,7 +60,6 @@ class SkeletonModification3DEWBIK : public SkeletonModification3D {
 	bool debug_skeleton = true;
 	Ref<IKTransform3D> root_transform = memnew(IKTransform3D);
 	bool is_dirty = true;
-	bool is_enabled = true;
 	NodePath skeleton_node_path = NodePath("..");
 	void update_shadow_bones_transform();
 	void update_skeleton_bones_transform();
@@ -76,12 +75,6 @@ protected:
 	virtual void execute(real_t delta) override;
 
 public:
-	void set_enabled(bool p_enabled) {
-		is_enabled = p_enabled;
-	}
-	bool get_enabled() const {
-		return is_enabled;
-	}
 	void set_skeleton_node_path(NodePath p_skeleton_node_path) {
 		is_dirty = true;
 		skeleton_node_path = p_skeleton_node_path;
