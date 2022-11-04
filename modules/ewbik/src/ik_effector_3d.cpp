@@ -66,16 +66,16 @@ Vector3 IKEffector3D::get_direction_priorities() const {
 void IKEffector3D::update_target_global_transform(Skeleton3D *p_skeleton, SkeletonModification3DEWBIK *p_ewbik) {
 	ERR_FAIL_NULL(p_skeleton);
 	ERR_FAIL_NULL(for_bone);
-	target_relative_to_global_origin = for_bone->get_ik_transform()->get_global_transform();
+	target_relative_to_skeleton_origin = p_skeleton->get_global_transform().affine_inverse() * for_bone->get_ik_transform()->get_global_transform();
 	Node3D *current_target_node = cast_to<Node3D>(p_ewbik->get_node_or_null(target_node_path));
 	if (!current_target_node) {
 		return;
 	}
-	target_relative_to_global_origin = current_target_node->get_global_transform();
+	target_relative_to_skeleton_origin = p_skeleton->get_global_transform().affine_inverse() *current_target_node->get_global_transform();
 }
 
 Transform3D IKEffector3D::get_target_global_transform() const {
-	return target_relative_to_global_origin;
+	return target_relative_to_skeleton_origin;
 }
 
 int32_t IKEffector3D::update_effector_target_headings(PackedVector3Array *p_headings, int32_t p_index, Ref<IKBone3D> p_for_bone, const Vector<real_t> *p_weights) const {
@@ -84,40 +84,40 @@ int32_t IKEffector3D::update_effector_target_headings(PackedVector3Array *p_head
 	ERR_FAIL_NULL_V(p_for_bone, -1);
 
 	int32_t index = p_index;
-	Vector3 bone_origin_relative_to_global_origin = p_for_bone->get_global_pose().origin;
-	p_headings->write[index] = target_relative_to_global_origin.origin - bone_origin_relative_to_global_origin;
+	Vector3 bone_origin_relative_to_skeleton_origin = p_for_bone->get_global_pose().origin;
+	p_headings->write[index] = target_relative_to_skeleton_origin.origin - bone_origin_relative_to_skeleton_origin;
 	index++;
 	Vector3 priority = get_direction_priorities();
 	if (priority.x > 0.0) {
 		real_t w = (*p_weights)[index];
 		w = MAX(w, 1.0f);
-		p_headings->write[index] = (target_relative_to_global_origin.basis.get_column(Vector3::AXIS_X) + target_relative_to_global_origin.origin) - bone_origin_relative_to_global_origin;
+		p_headings->write[index] = (target_relative_to_skeleton_origin.basis.get_column(Vector3::AXIS_X) + target_relative_to_skeleton_origin.origin) - bone_origin_relative_to_skeleton_origin;
 		p_headings->write[index] *= Vector3(w, w, w);
 		index++;
 
-		p_headings->write[index] = (target_relative_to_global_origin.origin - target_relative_to_global_origin.basis.get_column(Vector3::AXIS_X)) - bone_origin_relative_to_global_origin;
+		p_headings->write[index] = (target_relative_to_skeleton_origin.origin - target_relative_to_skeleton_origin.basis.get_column(Vector3::AXIS_X)) - bone_origin_relative_to_skeleton_origin;
 		p_headings->write[index] *= Vector3(w, w, w);
 		index++;
 	}
 	if (priority.y > 0.0) {
 		real_t w = (*p_weights)[index];
 		w = MAX(w, 1.0f);
-		p_headings->write[index] = (target_relative_to_global_origin.basis.get_column(Vector3::AXIS_Y) + target_relative_to_global_origin.origin) - bone_origin_relative_to_global_origin;
+		p_headings->write[index] = (target_relative_to_skeleton_origin.basis.get_column(Vector3::AXIS_Y) + target_relative_to_skeleton_origin.origin) - bone_origin_relative_to_skeleton_origin;
 		p_headings->write[index] *= Vector3(w, w, w);
 		index++;
 
-		p_headings->write[index] = (target_relative_to_global_origin.origin - target_relative_to_global_origin.basis.get_column(Vector3::AXIS_Y)) - bone_origin_relative_to_global_origin;
+		p_headings->write[index] = (target_relative_to_skeleton_origin.origin - target_relative_to_skeleton_origin.basis.get_column(Vector3::AXIS_Y)) - bone_origin_relative_to_skeleton_origin;
 		p_headings->write[index] *= Vector3(w, w, w);
 		index++;
 	}
 	if (priority.z > 0.0) {
 		real_t w = (*p_weights)[index];
 		w = MAX(w, 1.0f);
-		p_headings->write[index] = (target_relative_to_global_origin.basis.get_column(Vector3::AXIS_Z) + target_relative_to_global_origin.origin) - bone_origin_relative_to_global_origin;
+		p_headings->write[index] = (target_relative_to_skeleton_origin.basis.get_column(Vector3::AXIS_Z) + target_relative_to_skeleton_origin.origin) - bone_origin_relative_to_skeleton_origin;
 		p_headings->write[index] *= Vector3(w, w, w);
 		index++;
 
-		p_headings->write[index] = (target_relative_to_global_origin.origin - target_relative_to_global_origin.basis.get_column(Vector3::AXIS_Z)) - bone_origin_relative_to_global_origin;
+		p_headings->write[index] = (target_relative_to_skeleton_origin.origin - target_relative_to_skeleton_origin.basis.get_column(Vector3::AXIS_Z)) - bone_origin_relative_to_skeleton_origin;
 		p_headings->write[index] *= Vector3(w, w, w);
 		index++;
 	}
@@ -129,31 +129,31 @@ int32_t IKEffector3D::update_effector_tip_headings(PackedVector3Array *p_heading
 	ERR_FAIL_NULL_V(p_headings, -1);
 	ERR_FAIL_NULL_V(for_bone, -1);
 	ERR_FAIL_NULL_V(p_for_bone, -1);
-	Transform3D tip_xform_relative_to_global_origin = for_bone->get_global_pose();
-	Basis tip_basis = tip_xform_relative_to_global_origin.basis;
-	Vector3 bone_origin_relative_to_global_origin = p_for_bone->get_global_pose().origin;
+	Transform3D tip_xform_relative_to_skeleton_origin = for_bone->get_global_pose();
+	Basis tip_basis = tip_xform_relative_to_skeleton_origin.basis;
+	Vector3 bone_origin_relative_to_skeleton_origin = p_for_bone->get_global_pose().origin;
 	int32_t index = p_index;
-	p_headings->write[index] = tip_xform_relative_to_global_origin.origin - bone_origin_relative_to_global_origin;
+	p_headings->write[index] = tip_xform_relative_to_skeleton_origin.origin - bone_origin_relative_to_skeleton_origin;
 	index++;
-	double distance = target_relative_to_global_origin.origin.distance_to(bone_origin_relative_to_global_origin);
+	double distance = target_relative_to_skeleton_origin.origin.distance_to(bone_origin_relative_to_skeleton_origin);
 	double scale_by = MAX(1.0, distance);
 	const Vector3 priority = get_direction_priorities();
 	if (priority.x > 0.0) {
-		p_headings->write[index] = ((tip_basis.get_column(Vector3::AXIS_X) * scale_by) + tip_xform_relative_to_global_origin.origin) - bone_origin_relative_to_global_origin;
+		p_headings->write[index] = ((tip_basis.get_column(Vector3::AXIS_X) * scale_by) + tip_xform_relative_to_skeleton_origin.origin) - bone_origin_relative_to_skeleton_origin;
 		index++;
-		p_headings->write[index] = (tip_xform_relative_to_global_origin.origin - (tip_basis.get_column(Vector3::AXIS_X) * scale_by)) - bone_origin_relative_to_global_origin;
+		p_headings->write[index] = (tip_xform_relative_to_skeleton_origin.origin - (tip_basis.get_column(Vector3::AXIS_X) * scale_by)) - bone_origin_relative_to_skeleton_origin;
 		index++;
 	}
 	if (priority.y > 0.0) {
-		p_headings->write[index] = ((tip_basis.get_column(Vector3::AXIS_Y) * scale_by) + tip_xform_relative_to_global_origin.origin) - bone_origin_relative_to_global_origin;
+		p_headings->write[index] = ((tip_basis.get_column(Vector3::AXIS_Y) * scale_by) + tip_xform_relative_to_skeleton_origin.origin) - bone_origin_relative_to_skeleton_origin;
 		index++;
-		p_headings->write[index] = (tip_xform_relative_to_global_origin.origin - (tip_basis.get_column(Vector3::AXIS_Y) * scale_by)) - bone_origin_relative_to_global_origin;
+		p_headings->write[index] = (tip_xform_relative_to_skeleton_origin.origin - (tip_basis.get_column(Vector3::AXIS_Y) * scale_by)) - bone_origin_relative_to_skeleton_origin;
 		index++;
 	}
 	if (priority.z > 0.0) {
-		p_headings->write[index] = ((tip_basis.get_column(Vector3::AXIS_Z) * scale_by) + tip_xform_relative_to_global_origin.origin) - bone_origin_relative_to_global_origin;
+		p_headings->write[index] = ((tip_basis.get_column(Vector3::AXIS_Z) * scale_by) + tip_xform_relative_to_skeleton_origin.origin) - bone_origin_relative_to_skeleton_origin;
 		index++;
-		p_headings->write[index] = (tip_xform_relative_to_global_origin.origin - (tip_basis.get_column(Vector3::AXIS_Z) * scale_by)) - bone_origin_relative_to_global_origin;
+		p_headings->write[index] = (tip_xform_relative_to_skeleton_origin.origin - (tip_basis.get_column(Vector3::AXIS_Z) * scale_by)) - bone_origin_relative_to_skeleton_origin;
 		index++;
 	}
 	return index;

@@ -51,7 +51,7 @@ class IKEffector3D : public Resource {
 	ObjectID target_node_cache;
 	Node *target_node_reference = nullptr;
 
-	Transform3D target_relative_to_global_origin;
+	Transform3D target_relative_to_skeleton_origin;
 	int32_t num_headings = 7;
 	// See IKEffectorTemplate to change the defaults.
 	real_t weight = 0.0;
