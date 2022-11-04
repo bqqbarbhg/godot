@@ -77,25 +77,12 @@ class IKLimitCone : public Resource {
 
 	void set_tangent_circle_radius_next(double rad, int mode);
 
-protected:
-	virtual double _get_radius(int mode);
-
-	virtual double _get_radius_cosine(int mode);
-public:
 	Ref<IKKusudama> parent_kusudama;
 
 	Vector3 tangent_circle_center_next_1;
 	Vector3 tangent_circle_center_next_2;
 	double tangent_circle_radius_next = 0;
 	double tangent_circle_radius_next_cos = 0;
-
-	static const int BOUNDARY = 0;
-
-	// Any softness of 0.0f means completely hard.
-	// any softness higher than 0.0f means that
-	// as the softness value is increased the more penalty for moving
-	// further from the center of the channel.
-	double softness = 0;
 
 	/**
 	 * A triangle where the [1] is the tangent_circle_next_n, and [0] and [2]
@@ -105,13 +92,16 @@ public:
 	Vector<Vector3> first_triangle_next = { Vector3(), Vector3(), Vector3() };
 	Vector<Vector3> second_triangle_next = { Vector3(), Vector3(), Vector3() };
 
-	virtual ~IKLimitCone() {
-	}
+protected:
+	virtual double _get_radius(int mode);
 
+	virtual double _get_radius_cosine(int mode);
+public:
+	static const int BOUNDARY = 0;
+
+	virtual ~IKLimitCone() {}
 	IKLimitCone();
-
 	IKLimitCone(Vector3 &direction, double rad, Ref<IKKusudama> attached_to);
-
 	static Vector3 get_orthogonal(Vector3 p_in);
 
 	/**
@@ -131,7 +121,6 @@ public:
 	 * if the point was out of bounds.
 	 */
 	Vector3 get_closest_collision(Ref<IKLimitCone> next, Vector3 input) const;
-
 	Vector3 get_closest_path_point(Ref<IKLimitCone> next, Vector3 input) const;
 
 	/**
@@ -145,7 +134,6 @@ public:
 	 * @return
 	 */
 	bool determine_if_in_bounds(Ref<IKLimitCone> next, Vector3 input) const;
-
 	Vector3 get_on_path_sequence(Ref<IKLimitCone> next, Vector3 input) const;
 
 	/**
@@ -156,7 +144,6 @@ public:
 	 * @return
 	 */
 	Vector3 closest_point_on_closest_cone(Ref<IKLimitCone> next, Vector3 input, Vector<double> &in_bounds) const;
-
 	virtual void update_tangent_handles(Ref<IKLimitCone> next);
 
 	/**
@@ -175,15 +162,10 @@ public:
 	 * between two cones if the point is out of bounds and applicable for rectification.
 	 */
 	Vector3 get_on_great_tangent_triangle(Ref<IKLimitCone> next, Vector3 input) const;
-
 	virtual Vector3 get_tangent_circle_center_next_1(int mode);
-
 	virtual double get_tangent_circle_radius_next(int mode);
-
 	virtual double get_tangent_circle_radius_next_cos(int mode);
-
 	virtual Vector3 get_tangent_circle_center_next_2(int mode);
-
 	virtual Vector3 get_control_point() const;
 	virtual void set_control_point(Vector3 p_control_point);
 	virtual double get_radius() const;
