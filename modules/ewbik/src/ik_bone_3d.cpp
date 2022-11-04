@@ -31,7 +31,7 @@
 #include "ik_bone_3d.h"
 
 #include "ik_ewbik.h"
-#include "math/ik_transform.h"
+#include "math/ik_node_3d.h"
 
 void IKBone3D::set_bone_id(BoneId p_bone_id, Skeleton3D *p_skeleton) {
 	ERR_FAIL_NULL(p_skeleton);
@@ -158,23 +158,23 @@ void IKBone3D::add_constraint(Ref<IKKusudama> p_constraint) {
 	constraint = p_constraint;
 }
 
-Ref<IKTransform3D> IKBone3D::get_ik_transform() {
+Ref<IKNode3D> IKBone3D::get_ik_transform() {
 	return transform;
 }
 
-Ref<IKTransform3D> IKBone3D::get_constraint_transform() {
+Ref<IKNode3D> IKBone3D::get_constraint_transform() {
 	return constraint_transform;
 }
 
-void IKBone3D::set_constraint_transform(Ref<IKTransform3D> p_transform) {
+void IKBone3D::set_constraint_transform(Ref<IKNode3D> p_transform) {
 	constraint_transform = p_transform;
 }
 
-void IKBone3D::set_bone_direction_transform(Ref<IKTransform3D> p_bone_direction) {
+void IKBone3D::set_bone_direction_transform(Ref<IKNode3D> p_bone_direction) {
 	bone_direction_transform = p_bone_direction;
 }
 
-Ref<IKTransform3D> IKBone3D::get_bone_direction_transform() {
+Ref<IKNode3D> IKBone3D::get_bone_direction_transform() {
 	return bone_direction_transform;
 }
 void IKBone3D::set_stiffness(float p_stiffness) {

@@ -637,9 +637,9 @@ void SkeletonModification3DEWBIK::execute(real_t delta) {
 		skeleton_changed(get_skeleton());
 	}
 	if (bone_list.size()) {
-		Ref<IKTransform3D> root_ik_bone = bone_list.write[0]->get_ik_transform();
+		Ref<IKNode3D> root_ik_bone = bone_list.write[0]->get_ik_transform();
 		ERR_FAIL_NULL(root_ik_bone);
-		Ref<IKTransform3D> root_ik_parent_transform = root_ik_bone->get_parent();
+		Ref<IKNode3D> root_ik_parent_transform = root_ik_bone->get_parent();
 		ERR_FAIL_NULL(root_ik_parent_transform);
 		root_ik_parent_transform->set_transform(get_skeleton()->get_transform());
 	}
@@ -680,7 +680,7 @@ void SkeletonModification3DEWBIK::skeleton_changed(Skeleton3D *p_skeleton) {
 			if (ik_bone_3d->get_bone_id() != bone_id) {
 				continue;
 			}
-			Ref<IKTransform3D> bone_direction_transform;
+			Ref<IKNode3D> bone_direction_transform;
 			bone_direction_transform.instantiate();
 			bone_direction_transform->set_parent(ik_bone_3d->get_ik_transform());
 			bone_direction_transform->set_transform(Transform3D(Basis(), ik_bone_3d->get_bone_direction_transform()->get_transform().origin));

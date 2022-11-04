@@ -32,7 +32,7 @@
 
 #include "core/object/ref_counted.h"
 #include "ik_bone_3d.h"
-#include "math/ik_transform.h"
+#include "math/ik_node_3d.h"
 #include "scene/3d/skeleton_3d.h"
 
 #define MIN_SCALE 0.1

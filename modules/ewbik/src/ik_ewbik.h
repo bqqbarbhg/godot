@@ -35,7 +35,7 @@
 #include "core/os/memory.h"
 #include "ik_bone_3d.h"
 #include "ik_effector_template.h"
-#include "math/ik_transform.h"
+#include "math/ik_node_3d.h"
 #include "scene/3d/skeleton_modification_3d.h"
 
 class IKBoneSegment;
@@ -57,7 +57,7 @@ class SkeletonModification3DEWBIK : public SkeletonModification3D {
 	int32_t max_ik_iterations = 10;
 	float default_damp = Math::deg_to_rad(5.0f);
 	bool debug_skeleton = false;
-	Ref<IKTransform3D> root_transform = memnew(IKTransform3D);
+	Ref<IKNode3D> root_transform = memnew(IKNode3D);
 	bool is_dirty = true;
 	NodePath skeleton_node_path = NodePath("..");
 	void update_shadow_bones_transform();

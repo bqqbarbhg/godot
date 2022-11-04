@@ -30,7 +30,7 @@
 
 #include "ik_bone_segment.h"
 #include "ik_effector_3d.h"
-#include "math/ik_transform.h"
+#include "math/ik_node_3d.h"
 #include "scene/3d/skeleton_3d.h"
 
 Ref<IKBone3D> IKBoneSegment::get_root() const {

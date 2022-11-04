@@ -33,7 +33,7 @@
 
 #include "ik_effector_template.h"
 #include "ik_kusudama.h"
-#include "math/ik_transform.h"
+#include "math/ik_node_3d.h"
 
 #include "core/io/resource.h"
 #include "core/object/ref_counted.h"
@@ -62,17 +62,17 @@ class IKBone3D : public Resource {
 	// Can be independent and should be calculated
 	// to keep -y to be the opposite of its bone forward orientation
 	// To avoid singularity that is ambiguous.
-	Ref<IKTransform3D> constraint_transform = memnew(IKTransform3D());
-	Ref<IKTransform3D> transform = memnew(IKTransform3D()); // The bone's actual transform.
-	Ref<IKTransform3D> bone_direction_transform = memnew(IKTransform3D()); // Physical direction of the bone. Calculate Y is the bone up.
+	Ref<IKNode3D> constraint_transform = memnew(IKNode3D());
+	Ref<IKNode3D> transform = memnew(IKNode3D()); // The bone's actual transform.
+	Ref<IKNode3D> bone_direction_transform = memnew(IKNode3D()); // Physical direction of the bone. Calculate Y is the bone up.
 protected:
 	static void _bind_methods();
 
 public:
-	Ref<IKTransform3D> get_bone_direction_transform();
-	void set_bone_direction_transform(Ref<IKTransform3D> p_bone_direction);
-	void set_constraint_transform(Ref<IKTransform3D> p_transform);
-	Ref<IKTransform3D> get_constraint_transform();
+	Ref<IKNode3D> get_bone_direction_transform();
+	void set_bone_direction_transform(Ref<IKNode3D> p_bone_direction);
+	void set_constraint_transform(Ref<IKNode3D> p_transform);
+	Ref<IKNode3D> get_constraint_transform();
 	void add_constraint(Ref<IKKusudama> p_constraint);
 	Ref<IKKusudama> get_constraint() const;
 	void set_stiffness(float p_stiffness);
@@ -91,7 +91,7 @@ public:
 	void set_skeleton_bone_pose(Skeleton3D *p_skeleton);
 	void create_pin();
 	bool is_pinned() const;
-	Ref<IKTransform3D> get_ik_transform();
+	Ref<IKNode3D> get_ik_transform();
 	IKBone3D() {}
 	IKBone3D(StringName p_bone, Skeleton3D *p_skeleton, const Ref<IKBone3D> &p_parent, Vector<Ref<IKEffectorTemplate>> &p_pins, float p_default_dampening = IK_DEFAULT_DAMPENING);
 	~IKBone3D() {}

@@ -29,7 +29,7 @@
 /*************************************************************************/
 
 #include "ik_kusudama.h"
-#include "math/ik_transform.h"
+#include "math/ik_node_3d.h"
 
 IKKusudama::IKKusudama() {
 }
@@ -73,11 +73,11 @@ void IKKusudama::update_tangent_radii() {
  *
  * Because we can expect rotations to be fairly small, we use nlerp instead of slerp for efficiency when averaging.
  */
-IKKusudama::IKKusudama(Ref<IKTransform3D> to_set, Ref<IKTransform3D> bone_direction, Ref<IKTransform3D> limiting_axes, double cos_half_angle_dampen) {
+IKKusudama::IKKusudama(Ref<IKNode3D> to_set, Ref<IKNode3D> bone_direction, Ref<IKNode3D> limiting_axes, double cos_half_angle_dampen) {
 	Vector<double> in_bounds = { 1 };
 }
 
-bool IKKusudama::is_in_global_pose_orientation_limits(Ref<IKTransform3D> p_global_axes, Ref<IKTransform3D> p_limiting_axes) {
+bool IKKusudama::is_in_global_pose_orientation_limits(Ref<IKNode3D> p_global_axes, Ref<IKNode3D> p_limiting_axes) {
 	Vector<double> in_bounds = { 1 };
 	Vector3 global_y_heading = p_global_axes->get_global_transform().basis.get_column(Vector3::AXIS_Y);
 	global_y_heading = global_y_heading + p_global_axes->get_global_transform().origin;
@@ -96,7 +96,7 @@ void IKKusudama::set_axial_limits(double min_angle, double in_range) {
 	_update_constraint();
 }
 
-void IKKusudama::set_snap_to_twist_limit(Ref<IKTransform3D> to_set, Ref<IKTransform3D> limiting_axes, float p_dampening, float p_cos_half_dampen) {
+void IKKusudama::set_snap_to_twist_limit(Ref<IKNode3D> to_set, Ref<IKNode3D> limiting_axes, float p_dampening, float p_cos_half_dampen) {
 	Basis inv_rot = limiting_axes->get_global_transform().basis.get_quaternion().inverse();
 	Basis align_rot = inv_rot * to_set->get_global_transform().basis;
 	Quaternion swing;
@@ -121,7 +121,7 @@ void IKKusudama::set_snap_to_twist_limit(Ref<IKTransform3D> to_set, Ref<IKTransf
 	to_set->rotate_local_with_global(rot);
 }
 
-double IKKusudama::angle_to_twist_center(Ref<IKTransform3D> to_set, Ref<IKTransform3D> limiting_axes) {
+double IKKusudama::angle_to_twist_center(Ref<IKNode3D> to_set, Ref<IKNode3D> limiting_axes) {
 	if (!axially_constrained) {
 		return 0;
 	}
@@ -136,7 +136,7 @@ double IKKusudama::angle_to_twist_center(Ref<IKTransform3D> to_set, Ref<IKTransf
 	return dist_to_mid;
 }
 
-bool IKKusudama::in_twist_limits(Ref<IKTransform3D> bone_axes, Ref<IKTransform3D> limiting_axes) {
+bool IKKusudama::in_twist_limits(Ref<IKNode3D> bone_axes, Ref<IKNode3D> limiting_axes) {
 	Basis inv_rot = limiting_axes->get_global_transform().basis.inverse();
 	Basis align_rot = inv_rot * bone_axes->get_global_transform().basis;
 	Vector3 temp_var(0, 1, 0);
@@ -310,7 +310,7 @@ Vector<Ref<IKLimitCone>> IKKusudama::get_limit_cones() const {
 	return limit_cones;
 }
 
-Vector3 IKKusudama::local_point_on_path_sequence(Vector3 in_point, Ref<IKTransform3D> limiting_axes) {
+Vector3 IKKusudama::local_point_on_path_sequence(Vector3 in_point, Ref<IKNode3D> limiting_axes) {
 	double closest_point_dot = 0;
 	Vector3 point = limiting_axes->get_transform().xform(in_point);
 	point.normalize();
@@ -396,7 +396,7 @@ Vector3 IKKusudama::_local_point_in_limits(Vector3 in_point, Vector<double> &in_
 	return closest_collision_point;
 }
 
-void IKKusudama::set_axes_to_orientation_snap(Ref<IKTransform3D> to_set, Ref<IKTransform3D> limiting_axes, double p_dampening, double p_cos_half_angle_dampen) {
+void IKKusudama::set_axes_to_orientation_snap(Ref<IKNode3D> to_set, Ref<IKNode3D> limiting_axes, double p_dampening, double p_cos_half_angle_dampen) {
 	Vector<double> in_bounds = { 1.0 };
 	bone_ray->p1(limiting_axes->get_global_transform().origin);
 	bone_ray->p2(to_set->get_global_transform().basis.get_column(Vector3::AXIS_Y));
@@ -411,10 +411,10 @@ void IKKusudama::set_axes_to_orientation_snap(Ref<IKTransform3D> to_set, Ref<IKT
 	}
 }
 
-void IKKusudama::set_axes_to_soft_orientation_snap(Ref<IKTransform3D> to_set, Ref<IKTransform3D> bone_direction, Ref<IKTransform3D> limiting_axes, double cos_half_angle_dampen) {
+void IKKusudama::set_axes_to_soft_orientation_snap(Ref<IKNode3D> to_set, Ref<IKNode3D> bone_direction, Ref<IKNode3D> limiting_axes, double cos_half_angle_dampen) {
 }
 
-Ref<IKTransform3D> IKKusudama::limiting_axes() {
+Ref<IKNode3D> IKKusudama::limiting_axes() {
 	// if(inverted) return inverseLimitingAxes;
 	return _limiting_axes;
 }
