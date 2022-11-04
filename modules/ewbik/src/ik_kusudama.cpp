@@ -132,7 +132,7 @@ double IKKusudama::angle_to_twist_center(Ref<IKTransform3D> to_set, Ref<IKTransf
 	Quaternion swing;
 	Quaternion twist;
 	get_swing_twist(align_rot, temp_var, swing, twist);
-	double angle_delta_2 = twist.get_angle() * Basis(twist).get_euler().y * -1;
+	double angle_delta_2 = twist.get_angle() * Basis(twist).get_euler_normalized().y * -1;
 	angle_delta_2 = to_tau(angle_delta_2);
 	double dist_to_mid = signed_angle_difference(angle_delta_2, Math_TAU - (this->min_axial_angle() + (range / 2)));
 	return dist_to_mid;
