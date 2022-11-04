@@ -78,7 +78,6 @@ public:
 	Vector3 to_global(const Vector3 &p_local) const;
 	void rotate_local_with_global(Quaternion p_q);
 	void orthonormalize();
-	void set_identity();
 };
 
 #endif // IK_TRANSFORM_H

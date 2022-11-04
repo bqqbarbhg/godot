@@ -136,7 +136,3 @@ void IKNode3D::orthonormalize() {
 	t.orthonormalize();
 	set_transform(t);
 }
-
-void IKNode3D::set_identity() {
-	set_transform(Transform3D());
-}
