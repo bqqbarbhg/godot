@@ -39,10 +39,10 @@
 
 #include "ik_bone_3d.h"
 #include "ik_bone_segment.h"
-#include "kusudama.h"
-#include "limit_cone.h"
+#include "ik_kusudama.h"
+#include "ik_limit_cone.h"
 #include "math/ik_transform.h"
-#include "ray_3d.h"
+#include "ik_ray_3d.h"
 
 class IKBone3D;
 class IKLimitCone;

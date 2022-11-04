@@ -48,7 +48,7 @@
 #include "scene/resources/sphere_shape_3d.h"
 #include "scene/resources/surface_tool.h"
 
-#include "../src/kusudama.h"
+#include "../src/ik_kusudama.h"
 
 bool EWBIK3DGizmoPlugin::has_gizmo(Node3D *p_spatial) {
 	return p_spatial->is_class("SkeletonModification3DEWBIK");

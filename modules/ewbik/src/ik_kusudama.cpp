@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "kusudama.h"
+#include "ik_kusudama.h"
 #include "math/ik_transform.h"
 
 IKKusudama::IKKusudama() {

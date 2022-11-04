@@ -32,7 +32,7 @@
 #define EWBIK_SHADOW_BONE_3D_H
 
 #include "ik_effector_template.h"
-#include "kusudama.h"
+#include "ik_kusudama.h"
 #include "math/ik_transform.h"
 
 #include "core/io/resource.h"

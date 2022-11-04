@@ -36,8 +36,8 @@
 #include "core/object/ref_counted.h"
 
 #include "ik_bone_segment.h"
-#include "kusudama.h"
-#include "ray_3d.h"
+#include "ik_kusudama.h"
+#include "ik_ray_3d.h"
 
 class IKKusudama;
 class IKLimitCone : public Resource {

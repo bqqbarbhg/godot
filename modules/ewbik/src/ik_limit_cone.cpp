@@ -28,12 +28,12 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "limit_cone.h"
+#include "ik_limit_cone.h"
 
 #include "core/io/resource.h"
 #include "core/object/ref_counted.h"
 
-#include "kusudama.h"
+#include "ik_kusudama.h"
 
 IKLimitCone::IKLimitCone() {
 }
