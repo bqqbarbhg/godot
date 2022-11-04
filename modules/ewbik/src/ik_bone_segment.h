@@ -80,7 +80,6 @@ protected:
 
 public:
 	static Quaternion clamp_to_angle(Quaternion p_quat, real_t p_angle);
-#define EXTRA_PRECISION 1
 	static Quaternion clamp_to_quadrance_angle(Quaternion p_quat, real_t p_cos_half_angle);
 	_FORCE_INLINE_ static real_t cos(real_t p_angle) {
 		// https://stackoverflow.com/questions/18662261/fastest-implementation-of-sine-cosine-and-square-root-in-c-doesnt-need-to-b/28050328#28050328
@@ -89,9 +88,9 @@ public:
 		x *= tp;
 		x -= real_t(.25) + Math::floor(x + real_t(.25));
 		x *= real_t(16.) * (Math::abs(x) - real_t(.5));
-#if EXTRA_PRECISION
+		// BEGIN EXTRA_PRECISION
 		x += real_t(.225) * x * (Math::abs(x) - real_t(1.));
-#endif
+		// END EXTRA_PRECISION
 		return x;
 	}
 	static void recursive_create_headings_arrays_for(Ref<IKBoneSegment> p_bone_segment);
