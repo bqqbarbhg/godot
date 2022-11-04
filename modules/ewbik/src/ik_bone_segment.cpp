@@ -228,7 +228,7 @@ void IKBoneSegment::set_optimal_rotation(Ref<IKBone3D> p_for_bone, PackedVector3
 		QCP qcp = QCP(DBL_EPSILON, DBL_EPSILON);
 		Quaternion rot = qcp.weighted_superpose(*r_htip, *r_htarget, *r_weights, p_translate);
 		Vector3 translation = qcp.get_translation();
-		if (p_dampening != -1.0f) { // Linter, stop yelling at me. We want the exact bit value of -1.0.
+		if (p_dampening != -1.0f) {
 			bone_damp = p_dampening;
 			rot = clamp_to_angle(rot, bone_damp);
 		} else {
