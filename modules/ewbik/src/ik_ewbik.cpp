@@ -641,7 +641,6 @@ void SkeletonModification3DEWBIK::execute(real_t delta) {
 		ERR_FAIL_NULL(root_ik_bone);
 		Ref<IKTransform3D> root_ik_parent_transform = root_ik_bone->get_parent();
 		ERR_FAIL_NULL(root_ik_parent_transform);
-		root_ik_parent_transform->set_global_transform(get_skeleton()->get_global_transform());
 	}
 	update_shadow_bones_transform();
 	for (int32_t i = 0; i < get_max_ik_iterations(); i++) {
