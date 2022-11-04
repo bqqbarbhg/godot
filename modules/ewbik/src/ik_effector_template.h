@@ -38,7 +38,7 @@ class IKEffectorTemplate : public Resource {
 	GDCLASS(IKEffectorTemplate, Resource);
 
 	NodePath target_node;
-	real_t depth_falloff = 0.0f;
+	real_t depth_falloff = 1.0f;
 	real_t weight = 1.0f;
 	Vector3 priority_direction = Vector3(0.5f, 0.0f, 0.5f);
 

@@ -54,7 +54,7 @@ class IKEffector3D : public Resource {
 	Transform3D target_global_transform;
 	int32_t num_headings = 7;
 	real_t weight = 1.0;
-	real_t depth_falloff = 0.0;
+	real_t depth_falloff = 1.0;
 	PackedVector3Array target_headings;
 	PackedVector3Array tip_headings;
 	Vector<real_t> heading_weights;
