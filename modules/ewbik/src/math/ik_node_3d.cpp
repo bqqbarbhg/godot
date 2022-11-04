@@ -96,7 +96,7 @@ Transform3D IKNode3D::get_global_transform() const {
 		}
 
 		if (disable_scale) {
-			global_transform.basis.orthonormalize();
+			global_transform.basis.orthogonalize();
 		}
 
 		dirty &= ~DIRTY_GLOBAL;
@@ -129,10 +129,4 @@ Vector3 IKNode3D::to_local(const Vector3 &p_global) const {
 
 Vector3 IKNode3D::to_global(const Vector3 &p_local) const {
 	return get_global_transform().xform(p_local);
-}
-
-void IKNode3D::orthonormalize() {
-	Transform3D t = get_transform();
-	t.orthonormalize();
-	set_transform(t);
 }
