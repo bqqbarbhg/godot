@@ -62,8 +62,6 @@ class IKTransform3D : public RefCounted {
 	void _propagate_transform_changed();
 	void _update_local_transform() const;
 
-	float chirality = 1.0;
-
 public:
 	void set_transform(const Transform3D &p_transform);
 	void set_global_transform(const Transform3D &p_transform);
@@ -79,15 +77,6 @@ public:
 	Vector3 to_local(const Vector3 &p_global) const;
 	Vector3 to_global(const Vector3 &p_local) const;
 	void rotate_local_with_global(Quaternion p_q);
-	real_t get_global_chirality() {
-		return chirality;
-	}
-	real_t set_global_chirality(real_t p_chirality) {
-		bool is_value = Math::is_equal_approx(p_chirality, real_t(-1.0)) || Math::is_equal_approx(p_chirality, real_t(1.0));
-		ERR_FAIL_COND_V(!is_value, real_t(1.0));
-		chirality = p_chirality;
-		return p_chirality < 0 ? false : true;
-	}
 	void orthonormalize();
 	void set_identity();
 };

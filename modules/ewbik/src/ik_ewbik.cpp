@@ -696,6 +696,9 @@ void SkeletonModification3DEWBIK::skeleton_changed(Skeleton3D *p_skeleton) {
 			}
 			constraint->_update_constraint();
 			constraint->set_axial_limits(axial_limit.x, axial_limit.y);
+			if (Math::is_zero_approx(axial_limit.length())) {
+				constraint->set_axial_limits(-Math::deg_to_rad(0.1), Math::deg_to_rad(0.1));
+			}
 			ik_bone_3d->add_constraint(constraint);
 			break;
 		}
