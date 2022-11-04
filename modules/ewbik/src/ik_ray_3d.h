@@ -36,77 +36,30 @@
 class IKRay3D : public RefCounted {
 	GDCLASS(IKRay3D, RefCounted);
 
-public:
-	static constexpr int X = 0;
-	static constexpr int Y = 1;
-	static constexpr int Z = 2;
-
-protected:
-	Vector3 point_1;
-	Vector3 point_2;
-	Vector3 working_vector;
-
-public:
 	Vector3 tta, ttb, ttc;
 	Vector3 I, u, v, n, dir, w0;
 	bool inUse = false;
 	Vector3 m, at, bt, ct, pt;
 	Vector3 bc, ca, ac;
 
+protected:
+	Vector3 point_1;
+	Vector3 point_2;
+	Vector3 working_vector;
+	static constexpr int X = 0;
+	static constexpr int Y = 1;
+	static constexpr int Z = 2;
+
+public:
 	virtual ~IKRay3D() {}
 
 	IKRay3D();
 
 	IKRay3D(Vector3 p_p1, Vector3 p_p2);
 
-	/**
-	 * returns the point on this ray which is closest to the input point
-	 *
-	 * @param p_point
-	 * @return
-	 */
-	virtual Vector3 closest_point_to(const Vector3 p_point);
-
-	virtual Vector3 closest_point_to_strict(const Vector3 &p_point);
-
 	virtual Vector3 heading();
 
-	/**
-	 * manually sets the raw variables of this
-	 * ray to be equivalent to the raw variables of the
-	 * target ray. Such that the two rays align without
-	 * creating a new variable.
-	 *
-	 * @param p_target
-	 */
-	virtual void set_align_to(Ref<IKRay3D> p_target);
-
 	virtual void set_heading(Vector3 &p_new_head);
-
-	/**
-	 * sets the input vector equal to this sgRay's heading.
-	 *
-	 * @param p_set_to
-	 */
-	virtual Vector3 get_heading(const Vector3 &p_set_to) const;
-
-	/**
-	 * @return a copy of this ray with its z-component set to 0;
-	 */
-	virtual Ref<IKRay3D> get_2d_copy();
-
-	/**
-	 * gets a copy of this ray, with the component specified by
-	 * p_collapse_on_axis set to 0.
-	 *
-	 * @param p_collapse_on_axis the axis on which to collapse the ray.
-	 * @return
-	 */
-	virtual Ref<IKRay3D> get_2d_copy(const int &p_collapse_on_axis);
-
-	virtual Vector3 get_origin();
-
-	virtual real_t get_length();
 
 	virtual void set_magnitude(const real_t &p_new_mag);
 
@@ -135,24 +88,6 @@ public:
 	 * @param p_input a vector to project onto this ray
 	 */
 	virtual real_t scaled_projection(const Vector3 &p_input);
-
-	/**
-	 * divides the ray by the amount specified by divisor, such that the
-	 * base of the ray remains where it is, and the tip
-	 * is scaled accordinly.
-	 *
-	 * @param p_divisor
-	 */
-	virtual void set_divide(const real_t &p_divisor);
-
-	/**
-	 * multiples the ray by the amount specified by scalar, such that the
-	 * base of the ray remains where it is, and the tip
-	 * is scaled accordinly.
-	 *
-	 * @param divisor
-	 */
-	virtual void set_multiply(const real_t &p_scalar);
 
 	/**
 	 * Returns a Vector3 representing where the tip
@@ -206,8 +141,6 @@ public:
 
 	virtual void point_with(Vector3 heading);
 
-	virtual Ref<IKRay3D> getRayScaledBy(real_t scalar);
-
 	/**
 	 * sets the values of the given vector to where the
 	 * tip of this Ray would be if the ray were inverted
@@ -227,20 +160,6 @@ public:
 
 	virtual void normalize();
 
-	virtual Vector3 intercepts2D(Ref<IKRay3D> r);
-
-	/**
-	 * returns the point on this ray which is closest to the input ray
-	 *
-	 * @param r
-	 * @return
-	 */
-
-	virtual Vector3 closest_point_to_ray_3d(Ref<IKRay3D> r);
-
-	// returns a ray perpendicular to this ray on the XY plane;
-	virtual Ref<IKRay3D> get_perpendicular_2d();
-
 	/**
 	 * @param ta the first vertex of a triangle on the plane
 	 * @param tb the second vertex of a triangle on the plane
@@ -250,7 +169,6 @@ public:
 	 */
 	virtual Vector3 intersects_plane(Vector3 ta, Vector3 tb, Vector3 tc);
 
-private:
 	/*
 	 * Find where this ray intersects a sphere
 	 *
@@ -266,7 +184,6 @@ private:
 	 *
 	 * @return number of intersections found;
 	 */
-public:
 	virtual int intersects_sphere(Vector3 sphereCenter, real_t radius, Vector3 &S1, Vector3 &S2);
 
 	virtual void p1(Vector3 in);
@@ -275,15 +192,11 @@ public:
 
 	virtual Vector3 p2();
 
-	virtual void setP2(Vector3 p2);
-
 	virtual Vector3 p1();
-
-	virtual void setP1(Vector3 p1);
 
 	virtual int intersects_sphere(Vector3 rp1, Vector3 rp2, float radius, Vector3 &S1, Vector3 &S2);
 
-	float triArea2D(float x1, float y1, float x2, float y2, float x3, float y3) {
+	float triangle_area_2d(float x1, float y1, float x2, float y2, float x3, float y3) {
 		return (x1 - x2) * (y2 - y3) - (x2 - x3) * (y1 - y2);
 	}
 	void barycentric(Vector3 a, Vector3 b, Vector3 c, Vector3 p, Vector3 &uvw) {
@@ -305,16 +218,16 @@ public:
 		float z = Math::abs(m.z);
 
 		if (x >= y && x >= z) {
-			nu = triArea2D(pt.y, pt.z, bt.y, bt.z, ct.y, ct.z);
-			nv = triArea2D(pt.y, pt.z, ct.y, ct.z, at.y, at.z);
+			nu = triangle_area_2d(pt.y, pt.z, bt.y, bt.z, ct.y, ct.z);
+			nv = triangle_area_2d(pt.y, pt.z, ct.y, ct.z, at.y, at.z);
 			ood = 1.0f / m.x;
 		} else if (y >= x && y >= z) {
-			nu = triArea2D(pt.x, pt.z, bt.x, bt.z, ct.x, ct.z);
-			nv = triArea2D(pt.x, pt.z, ct.x, ct.z, at.x, at.z);
+			nu = triangle_area_2d(pt.x, pt.z, bt.x, bt.z, ct.x, ct.z);
+			nv = triangle_area_2d(pt.x, pt.z, ct.x, ct.z, at.x, at.z);
 			ood = 1.0f / -m.y;
 		} else {
-			nu = triArea2D(pt.x, pt.y, bt.x, bt.y, ct.x, ct.y);
-			nv = triArea2D(pt.x, pt.y, ct.x, ct.y, at.x, at.y);
+			nu = triangle_area_2d(pt.x, pt.y, bt.x, bt.y, ct.x, ct.y);
+			nv = triangle_area_2d(pt.x, pt.y, ct.x, ct.y, at.x, at.y);
 			ood = 1.0f / m.z;
 		}
 		uvw[0] = nu * ood;
@@ -322,7 +235,7 @@ public:
 		uvw[2] = 1.0f - uvw[0] - uvw[1];
 	}
 
-	virtual Vector3 planeIntersectTest(Vector3 ta, Vector3 tb, Vector3 tc, Vector3 &uvw) {
+	virtual Vector3 plane_intersect_test(Vector3 ta, Vector3 tb, Vector3 tc, Vector3 &uvw) {
 		u = tb;
 		v = tc;
 		n = Vector3(0, 0, 0);
