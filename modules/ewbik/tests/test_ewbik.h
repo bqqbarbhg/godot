@@ -46,10 +46,10 @@ Vector3 rad2deg(const Vector3 &p_rotation) {
 	return p_rotation / Math_PI * 180.0;
 }
 
-void rotate_target_headings_quaternion(Vector<Vector3> &p_localizedTipHeadings, Vector<Vector3> &r_localizedTargetHeadings,
+void rotate_target_headings_quaternion(Vector<Vector3> &p_localized_tip_headings, Vector<Vector3> &r_localized_target_headings,
 		Quaternion p_rot) {
-	for (int32_t i = 0; i < r_localizedTargetHeadings.size(); i++) {
-		r_localizedTargetHeadings.write[i] = p_rot.xform(p_localizedTipHeadings[i]);
+	for (int32_t i = 0; i < r_localized_target_headings.size(); i++) {
+		r_localized_target_headings.write[i] = p_rot.xform(p_localized_tip_headings[i]);
 	}
 	Vector<real_t> weights;
 	weights.push_back(1.0);
@@ -65,42 +65,42 @@ void rotate_target_headings_quaternion(Vector<Vector3> &p_localizedTipHeadings, 
 	// Axis angle has an opposite theta
 	// q0 is the scalar of quaternion
 	// QCP uses the other quaternion convention!
-	rot = qcp->weighted_superpose(p_localizedTipHeadings, r_localizedTargetHeadings,
+	rot = qcp->weighted_superpose(p_localized_tip_headings, r_localized_target_headings,
 			weights, true);
 	CHECK_MESSAGE(qcp->get_translation().is_equal_approx(Vector3()), vformat("%s is not zero.", qcp->get_translation()).utf8().ptr());
 	memdelete(qcp);
-	for (int32_t i = 0; i < p_localizedTipHeadings.size(); i++) {
-		Vector3 result = rot.xform(p_localizedTipHeadings[i]);
-		float d = result.distance_to(r_localizedTargetHeadings[i]);
-		CHECK_MESSAGE(Math::is_zero_approx(d), vformat("%s is not approximately zero. Magnitude difference %s.", d, result.length() / r_localizedTargetHeadings[i].length()).utf8().ptr());
+	for (int32_t i = 0; i < p_localized_tip_headings.size(); i++) {
+		Vector3 result = rot.xform(p_localized_tip_headings[i]);
+		float d = result.distance_to(r_localized_target_headings[i]);
+		CHECK_MESSAGE(Math::is_zero_approx(d), vformat("%s is not approximately zero. Magnitude difference %s.", d, result.length() / r_localized_target_headings[i].length()).utf8().ptr());
 	}
 }
 
 TEST_CASE("[Modules][SkeletonModification3DEWBIK] qcp quaternion") {
-	Vector<Vector3> localizedTipHeadings;
-	localizedTipHeadings.push_back(Vector3(-14.739, -18.673, 15.040));
-	localizedTipHeadings.push_back(Vector3(-12.473, -15.810, 16.074));
-	localizedTipHeadings.push_back(Vector3(-14.802, -13.307, 14.408));
-	localizedTipHeadings.push_back(Vector3(-17.782, -14.852, 16.171));
-	localizedTipHeadings.push_back(Vector3(-16.124, -14.617, 19.584));
-	localizedTipHeadings.push_back(Vector3(-15.029, -11.037, 18.902));
-	localizedTipHeadings.push_back(Vector3(-18.577, -10.001, 17.996));
+	Vector<Vector3> localized_tip_headings;
+	localized_tip_headings.push_back(Vector3(-14.739, -18.673, 15.040));
+	localized_tip_headings.push_back(Vector3(-12.473, -15.810, 16.074));
+	localized_tip_headings.push_back(Vector3(-14.802, -13.307, 14.408));
+	localized_tip_headings.push_back(Vector3(-17.782, -14.852, 16.171));
+	localized_tip_headings.push_back(Vector3(-16.124, -14.617, 19.584));
+	localized_tip_headings.push_back(Vector3(-15.029, -11.037, 18.902));
+	localized_tip_headings.push_back(Vector3(-18.577, -10.001, 17.996));
 
-	Vector<Vector3> localizedTargetHeadings;
-	localizedTargetHeadings.resize(7);
+	Vector<Vector3> localized_target_headings;
+	localized_target_headings.resize(7);
 	Vector3 norm = Vector3(1.f, 2.0f, 0.0f).normalized();
 	Quaternion basis_x = Quaternion(norm, Math_PI / 2.0f);
-	rotate_target_headings_quaternion(localizedTipHeadings, localizedTargetHeadings, basis_x);
+	rotate_target_headings_quaternion(localized_tip_headings, localized_target_headings, basis_x);
 	Quaternion basis_y = Quaternion(Vector3(0.0f, 1.f, 0.0f), Math_PI / 2.0f);
-	rotate_target_headings_quaternion(localizedTipHeadings, localizedTargetHeadings, basis_y);
+	rotate_target_headings_quaternion(localized_tip_headings, localized_target_headings, basis_y);
 	Quaternion basis_z = Quaternion(Vector3(0.0f, 0.0f, 1.f), Math_PI / 2.0f);
-	rotate_target_headings_quaternion(localizedTipHeadings, localizedTargetHeadings, basis_z);
+	rotate_target_headings_quaternion(localized_tip_headings, localized_target_headings, basis_z);
 	basis_x = Quaternion(Vector3(-1.f, 0.0f, 0.0f), Math_PI / 2.0f);
-	rotate_target_headings_quaternion(localizedTipHeadings, localizedTargetHeadings, basis_x);
+	rotate_target_headings_quaternion(localized_tip_headings, localized_target_headings, basis_x);
 	basis_y = Quaternion(Vector3(0.0f, -1.f, 0.0f), Math_PI / 2.0f);
-	rotate_target_headings_quaternion(localizedTipHeadings, localizedTargetHeadings, basis_y);
+	rotate_target_headings_quaternion(localized_tip_headings, localized_target_headings, basis_y);
 	basis_z = Quaternion(Vector3(0.0f, 0.0f, -1.f), Math_PI / 2.0f);
-	rotate_target_headings_quaternion(localizedTipHeadings, localizedTargetHeadings, basis_z);
+	rotate_target_headings_quaternion(localized_tip_headings, localized_target_headings, basis_z);
 }
 } // namespace TestEWBIK
 

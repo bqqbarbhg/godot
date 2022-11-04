@@ -108,7 +108,7 @@ void SkeletonModification3DEWBIK::remove_pin(int32_t p_index) {
 	skeleton_changed(get_skeleton());
 }
 
-void SkeletonModification3DEWBIK::update_shadow_bones_transform() {
+void SkeletonModification3DEWBIK::update_ik_bones_transform() {
 	for (int32_t bone_i = bone_list.size(); bone_i-- > 0;) {
 		Ref<IKBone3D> bone = bone_list[bone_i];
 		if (bone.is_null()) {
@@ -643,7 +643,7 @@ void SkeletonModification3DEWBIK::execute(real_t delta) {
 		ERR_FAIL_NULL(root_ik_parent_transform);
 		root_ik_parent_transform->set_transform(get_skeleton()->get_transform());
 	}
-	update_shadow_bones_transform();
+	update_ik_bones_transform();
 	for (int32_t i = 0; i < get_max_ik_iterations(); i++) {
 		segmented_skeleton->segment_solver(get_default_damp());
 	}
@@ -672,7 +672,7 @@ void SkeletonModification3DEWBIK::skeleton_changed(Skeleton3D *p_skeleton) {
 	Vector<Vector<real_t>> weight_array;
 	segmented_skeleton->update_pinned_list(weight_array);
 	segmented_skeleton->recursive_create_headings_arrays_for(segmented_skeleton);
-	update_shadow_bones_transform();
+	update_ik_bones_transform();
 	for (int constraint_i = 0; constraint_i < constraint_count; constraint_i++) {
 		String bone = constraint_names[constraint_i];
 		BoneId bone_id = p_skeleton->find_bone(bone);

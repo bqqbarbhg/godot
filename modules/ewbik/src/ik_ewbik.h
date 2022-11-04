@@ -60,7 +60,7 @@ class SkeletonModification3DEWBIK : public SkeletonModification3D {
 	Ref<IKNode3D> root_transform = memnew(IKNode3D);
 	bool is_dirty = true;
 	NodePath skeleton_node_path = NodePath("..");
-	void update_shadow_bones_transform();
+	void update_ik_bones_transform();
 	void update_skeleton_bones_transform();
 	Vector<Ref<IKEffectorTemplate>> get_bone_effectors() const;
 
