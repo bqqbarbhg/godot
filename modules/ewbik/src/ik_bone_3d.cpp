@@ -88,16 +88,16 @@ void IKBone3D::set_initial_pose(Skeleton3D *p_skeleton) {
 	if (bone_id == -1) {
 		return;
 	}
-	Transform3D xform = p_skeleton->get_bone_pose(bone_id);
-	set_pose(xform);
+	Transform3D bone_origin_to_parent_origin = p_skeleton->get_bone_pose(bone_id);
+	set_pose(bone_origin_to_parent_origin);
 }
 
 void IKBone3D::set_skeleton_bone_pose(Skeleton3D *p_skeleton) {
 	ERR_FAIL_NULL(p_skeleton);
-	Transform3D custom = get_pose();
-	p_skeleton->set_bone_pose_position(bone_id, custom.origin);
-	p_skeleton->set_bone_pose_rotation(bone_id, custom.basis.get_rotation_quaternion());
-	p_skeleton->set_bone_pose_scale(bone_id, custom.basis.get_scale());
+	Transform3D bone_origin_to_parent_origin = get_pose();
+	p_skeleton->set_bone_pose_position(bone_id, bone_origin_to_parent_origin.origin);
+	p_skeleton->set_bone_pose_rotation(bone_id, bone_origin_to_parent_origin.basis.get_rotation_quaternion());
+	p_skeleton->set_bone_pose_scale(bone_id, bone_origin_to_parent_origin.basis.get_scale());
 }
 
 void IKBone3D::create_pin() {
