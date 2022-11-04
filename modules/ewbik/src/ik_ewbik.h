@@ -55,7 +55,7 @@ class SkeletonModification3DEWBIK : public SkeletonModification3D {
 	Vector<int> kusudama_limit_cone_count;
 	float MAX_KUSUDAMA_LIMIT_CONES = 30;
 	int32_t max_ik_iterations = 10;
-	float default_damp = Math::deg_to_rad(15.0f);
+	float default_damp = Math::deg_to_rad(5.0f);
 	bool debug_skeleton = true;
 	Ref<IKTransform3D> root_transform = memnew(IKTransform3D);
 	bool is_dirty = true;
