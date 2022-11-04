@@ -55,7 +55,7 @@ bool EWBIK3DGizmoPlugin::has_gizmo(Node3D *p_spatial) {
 }
 
 String EWBIK3DGizmoPlugin::get_gizmo_name() const {
-	return "SkeletonModification3DEWBIK Constraints";
+	return "EWBIK Constraints";
 }
 
 void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {

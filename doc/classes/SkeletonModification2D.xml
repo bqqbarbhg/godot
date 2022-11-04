@@ -113,6 +113,8 @@
 		<member name="enabled" type="bool" setter="set_enabled" getter="get_enabled" default="true">
 			If [code]true[/code], the modification's [method _execute] function will be called every frame during internal process.
 		</member>
+		<member name="run_in_editor" type="bool" setter="set_run_in_editor" getter="get_run_in_editor" default="true">
+		</member>
 		<member name="skeleton_path" type="NodePath" setter="set_skeleton_path" getter="get_skeleton_path" default="NodePath(&quot;..&quot;)">
 			Node path to the attached [Skeleton2D].
 		</member>
