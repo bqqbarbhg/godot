@@ -61,18 +61,29 @@ class IKLimitCone : public Resource {
 		return Quaternion(x * -1, y * -1, z * -1, w);
 	}
 
-public:
 	Vector3 control_point;
 	Vector3 radial_point;
 
 	// Radius stored as cosine to save on the acos call necessary for the angle between.
-private:
 	double radius_cosine = 0;
 	double radius = 0;
 	double cushion_radius = 0;
 	double cushion_cosine = 0;
 	double current_cushion = 1;
 
+	Vector3 closest_cone(Ref<IKLimitCone> next, Vector3 input) const;
+
+	void update_tangent_and_cushion_handles(Ref<IKLimitCone> p_next, int p_mode);
+
+	void set_tangent_circle_center_next_1(Vector3 point, int mode);
+	void set_tangent_circle_center_next_2(Vector3 point, int mode);
+
+	void set_tangent_circle_radius_next(double rad, int mode);
+
+protected:
+	virtual double _get_radius(int mode);
+
+	virtual double _get_radius_cosine(int mode);
 public:
 	Ref<IKKusudama> parent_kusudama;
 
@@ -187,17 +198,6 @@ public:
 	 */
 	Vector3 get_on_great_tangent_triangle(Ref<IKLimitCone> next, Vector3 input) const;
 
-private:
-	Vector3 closest_cone(Ref<IKLimitCone> next, Vector3 input) const;
-
-	void update_tangent_and_cushion_handles(Ref<IKLimitCone> p_next, int p_mode);
-
-	void set_tangent_circle_center_next_1(Vector3 point, int mode);
-	void set_tangent_circle_center_next_2(Vector3 point, int mode);
-
-	void set_tangent_circle_radius_next(double rad, int mode);
-
-public:
 	virtual Vector3 get_tangent_circle_center_next_1(int mode);
 
 	virtual double get_tangent_circle_radius_next(int mode);
@@ -206,12 +206,6 @@ public:
 
 	virtual Vector3 get_tangent_circle_center_next_2(int mode);
 
-protected:
-	virtual double _get_radius(int mode);
-
-	virtual double _get_radius_cosine(int mode);
-
-public:
 	virtual Vector3 get_control_point() const;
 	virtual void set_control_point(Vector3 p_control_point);
 	virtual double get_radius() const;
