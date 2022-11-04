@@ -28,8 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef EWBIK_SHADOW_BONE_3D_H
-#define EWBIK_SHADOW_BONE_3D_H
+#ifndef IK_BONE_3D_H
+#define IK_BONE_3D_H
 
 #include "ik_effector_template.h"
 #include "ik_kusudama.h"
@@ -57,8 +57,8 @@ class IKBone3D : public Resource {
 	float cos_half_dampen = Math::cos(dampening / 2.0f);
 	float stiffness = 1.0f;
 	Ref<IKKusudama> constraint;
-	// In the space of the local parent bone transform
-	// Origin is the origin of the bone direction transform
+	// In the space of the local parent bone transform. 
+	// The origin is the origin of the bone direction transform
 	// Can be independent and should be calculated
 	// to keep -y to be the opposite of its bone forward orientation
 	// To avoid singularity that is ambiguous.
@@ -99,4 +99,4 @@ public:
 	void set_cos_half_dampen(float p_cos_half_dampen);
 };
 
-#endif // EWBIK_SHADOW_BONE_3D_H
+#endif // IK_BONE_3D_H

@@ -27,8 +27,9 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
-#ifndef ik_pin_3d_H
-#define ik_pin_3d_H
+
+#ifndef IK_EFFECTOR_3D_H
+#define IK_EFFECTOR_3D_H
 
 #include "core/object/ref_counted.h"
 #include "ik_bone_3d.h"
@@ -86,4 +87,4 @@ public:
 	IKEffector3D(const Ref<IKBone3D> &p_current_bone);
 };
 
-#endif // ik_effector_3d_H
+#endif // IK_EFFECTOR_3D_H

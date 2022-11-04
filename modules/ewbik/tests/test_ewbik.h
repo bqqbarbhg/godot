@@ -104,4 +104,4 @@ TEST_CASE("[Modules][SkeletonModification3DEWBIK] qcp quaternion") {
 }
 } // namespace TestEWBIK
 
-#endif
+#endif // TEST_EWBIK_H

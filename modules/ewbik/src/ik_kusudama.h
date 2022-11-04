@@ -29,8 +29,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef KUSUDAMA_H
-#define KUSUDAMA_H
+#ifndef IK_KUSUDAMA_H
+#define IK_KUSUDAMA_H
 
 #include "core/io/resource.h"
 #include "core/math/quaternion.h"
@@ -332,4 +332,5 @@ public:
 		r_twist.z *= -1;
 	}
 };
-#endif
+
+#endif // IK_KUSUDAMA_H

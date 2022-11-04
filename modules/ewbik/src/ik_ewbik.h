@@ -28,8 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef SKELETON_MODIFICATION_3D_EWBIK_H
-#define SKELETON_MODIFICATION_3D_EWBIK_H
+#ifndef IK_EWBIK_H
+#define IK_EWBIK_H
 
 #include "core/object/ref_counted.h"
 #include "core/os/memory.h"
@@ -122,4 +122,4 @@ public:
 	~SkeletonModification3DEWBIK();
 };
 
-#endif // SKELETON_MODIFICATION_3D_EWBIK_H
+#endif // IK_EWBIK_H

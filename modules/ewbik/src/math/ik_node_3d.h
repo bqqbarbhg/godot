@@ -28,8 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef IK_TRANSFORM_H
-#define IK_TRANSFORM_H
+#ifndef IK_NODE_3D_H
+#define IK_NODE_3D_H
 
 #include "core/templates/list.h"
 
@@ -79,4 +79,4 @@ public:
 	void rotate_local_with_global(Quaternion p_q);
 };
 
-#endif // IK_TRANSFORM_H
+#endif // IK_NODE_3D_H

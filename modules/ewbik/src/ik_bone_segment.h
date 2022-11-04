@@ -28,8 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef ik_bone_chain_H
-#define ik_bone_chain_H
+#ifndef IK_BONE_SEGMENT_H
+#define IK_BONE_SEGMENT_H
 
 #include "ik_bone_3d.h"
 #include "ik_effector_3d.h"
@@ -80,6 +80,7 @@ protected:
 
 public:
 	static Quaternion clamp_to_angle(Quaternion p_quat, real_t p_angle);
+#define EXTRA_PRECISION 1
 	static Quaternion clamp_to_quadrance_angle(Quaternion p_quat, real_t p_cos_half_angle);
 	_FORCE_INLINE_ static real_t cos(real_t p_angle) {
 		// https://stackoverflow.com/questions/18662261/fastest-implementation-of-sine-cosine-and-square-root-in-c-doesnt-need-to-b/28050328#28050328
@@ -92,19 +93,6 @@ public:
 		x += real_t(.225) * x * (Math::abs(x) - real_t(1.));
 #endif
 		return x;
-	}
-	// Untested fast sine.
-	_FORCE_INLINE_ static real_t sine(float x) {
-		// https://stackoverflow.com/questions/18662261/fastest-implementation-of-sine-cosine-and-square-root-in-c-doesnt-need-to-b
-		constexpr real_t B = 4. / Math_PI;
-		constexpr real_t C = -4. / (Math_PI * Math_PI);
-		real_t y = B * x + C * x * Math::abs(x);
-#ifdef EXTRA_PRECISION
-		const real_t Q = 0.775;
-		const real_t P = 0.225;
-		y = P * (y * Math::abs(y) - y) + y; // Q * y + P * y * Math::abs(y)
-#endif
-		return y;
 	}
 	static void recursive_create_headings_arrays_for(Ref<IKBoneSegment> p_bone_segment);
 	void create_headings_arrays();
@@ -126,4 +114,4 @@ public:
 	~IKBoneSegment() {}
 };
 
-#endif // ik_bone_chain_H
+#endif // IK_BONE_SEGMENT_H

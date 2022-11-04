@@ -28,8 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef LIMIT_CONE_H
-#define LIMIT_CONE_H
+#ifndef IK_LIMIT_CONE_H
+#define IK_LIMIT_CONE_H
 
 #include "core/io/resource.h"
 #include "core/math/vector3.h"
@@ -172,4 +172,5 @@ public:
 	virtual double get_radius_cosine() const;
 	virtual void set_radius(double radius);
 };
-#endif
+
+#endif // IK_LIMIT_CONE_H

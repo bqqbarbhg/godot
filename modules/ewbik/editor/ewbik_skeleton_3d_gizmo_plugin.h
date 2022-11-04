@@ -28,8 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef EWBIK_SKELETON_3D_EDITOR_PLUGIN_H
-#define EWBIK_SKELETON_3D_EDITOR_PLUGIN_H
+#ifndef EWBIK_SKELETON_3D_GIZMO_PLUGIN_H
+#define EWBIK_SKELETON_3D_GIZMO_PLUGIN_H
 
 #include "core/templates/hash_map.h"
 #include "core/templates/local_vector.h"
@@ -89,4 +89,4 @@ public:
 	}
 };
 
-#endif // SKELETON_3D_EDITOR_PLUGIN_H
+#endif // EWBIK_SKELETON_3D_GIZMO_PLUGIN_H
