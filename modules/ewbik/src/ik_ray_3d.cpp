@@ -51,13 +51,6 @@ void IKRay3D::set_heading(Vector3 &p_new_head) {
 	point_2 = p_new_head;
 }
 
-void IKRay3D::set_magnitude(const real_t &p_new_mag) {
-	working_vector = point_2;
-	Vector3 dir = working_vector - point_1;
-	dir = dir * p_new_mag;
-	this->set_heading(dir);
-}
-
 real_t IKRay3D::scaled_projection(const Vector3 &p_input) {
 	working_vector = p_input;
 	working_vector = working_vector - this->point_1;
@@ -70,28 +63,6 @@ real_t IKRay3D::scaled_projection(const Vector3 &p_input) {
 	return (working_vector.dot(heading) / (headingMag * workingVectorMag)) * (workingVectorMag / headingMag);
 }
 
-Vector3 IKRay3D::get_multipled_by(const real_t &p_scalar) {
-	Vector3 result = this->heading();
-	result = result * p_scalar;
-	result = result + point_1;
-	return result;
-}
-
-Vector3 IKRay3D::get_divided_by(const real_t &p_divisor) {
-	Vector3 result = heading();
-	result = result * p_divisor;
-	result = result + point_1;
-	return result;
-}
-
-Vector3 IKRay3D::get_scaled_to(const real_t &scale) {
-	Vector3 result = heading();
-	result.normalize();
-	result *= scale;
-	result += point_1;
-	return result;
-}
-
 void IKRay3D::elongate(real_t amt) {
 	Vector3 midPoint = (point_1 + point_2) * 0.5f;
 	Vector3 p1Heading = point_1 - midPoint;
@@ -101,75 +72,6 @@ void IKRay3D::elongate(real_t amt) {
 
 	this->point_1 = p1Heading + p1Add + midPoint;
 	this->point_2 = p2Heading + p2Add + midPoint;
-}
-
-Ref<IKRay3D> IKRay3D::copy() {
-	return Ref<IKRay3D>(memnew(IKRay3D(this->point_1, this->point_2)));
-}
-
-void IKRay3D::reverse() {
-	Vector3 temp = this->point_1;
-	this->point_1 = this->point_2;
-	this->point_2 = temp;
-}
-
-Ref<IKRay3D> IKRay3D::get_reversed() {
-	return memnew(IKRay3D(this->point_2, this->point_1));
-}
-
-Ref<IKRay3D> IKRay3D::get_ray_scaled_to(real_t scalar) {
-	return memnew(IKRay3D(point_1, get_scaled_to(scalar)));
-}
-
-void IKRay3D::point_with(Ref<IKRay3D> r) {
-	if (this->heading().dot(r->heading()) < 0) {
-		this->reverse();
-	}
-}
-
-void IKRay3D::point_with(Vector3 heading) {
-	if (this->heading().dot(heading) < 0) {
-		this->reverse();
-	}
-}
-
-Vector3 IKRay3D::setToInvertedTip(Vector3 vec) {
-	vec.x = (point_1.x - point_2.x) + point_1.x;
-	vec.y = (point_1.y - point_2.y) + point_1.y;
-	vec.z = (point_1.z - point_2.z) + point_1.z;
-	return vec;
-}
-
-void IKRay3D::contractTo(real_t percent) {
-	// contracts both ends of a ray toward its center such that the total length of
-	// the ray is the percent % of its current length;
-	real_t halfPercent = 1 - ((1 - percent) / 2.0f);
-
-	point_1 = point_1.lerp(point_2, halfPercent);
-	point_2 = point_2.lerp(point_1, halfPercent);
-}
-
-void IKRay3D::translateTo(Vector3 newLocation) {
-	working_vector = point_2;
-	working_vector = working_vector - point_1;
-	working_vector = working_vector + newLocation;
-	point_2 = working_vector;
-	point_1 = newLocation;
-}
-
-void IKRay3D::translateTipTo(Vector3 newLocation) {
-	working_vector = newLocation;
-	Vector3 transBy = working_vector - point_2;
-	this->translateBy(transBy);
-}
-
-void IKRay3D::translateBy(Vector3 toAdd) {
-	point_1 += toAdd;
-	point_2 += toAdd;
-}
-
-void IKRay3D::normalize() {
-	this->set_magnitude(1);
 }
 
 Vector3 IKRay3D::intersects_plane(Vector3 ta, Vector3 tb, Vector3 tc) {
@@ -241,4 +143,63 @@ int IKRay3D::intersects_sphere(Vector3 rp1, Vector3 rp2, float radius, Vector3 &
 	S2 = e * (lf + s);
 	S2 += rp1; // S2=A+e*(lf+s)
 	return result;
+}
+Vector3 IKRay3D::plane_intersect_test(Vector3 ta, Vector3 tb, Vector3 tc, Vector3 &uvw) {
+	u = tb;
+	v = tc;
+	n = Vector3(0, 0, 0);
+	dir = this->heading();
+	w0 = Vector3(0, 0, 0);
+	float r, a, b;
+	u -= ta;
+	v -= ta;
+
+	n = u.cross(v);
+
+	w0 -= ta;
+	a = -(n.dot(w0));
+	b = n.dot(dir);
+	r = a / b;
+	I = dir;
+	I *= r;
+	barycentric(ta, tb, tc, I, uvw);
+	return I;
+}
+float IKRay3D::triangle_area_2d(float x1, float y1, float x2, float y2, float x3, float y3) {
+	return (x1 - x2) * (y2 - y3) - (x2 - x3) * (y1 - y2);
+}
+void IKRay3D::barycentric(Vector3 a, Vector3 b, Vector3 c, Vector3 p, Vector3 &uvw) {
+	bc = b;
+	ca = a;
+	at = a;
+	bt = b;
+	ct = c;
+	pt = p;
+
+	m = Vector3(bc - ct).cross(ca - at);
+
+	float nu;
+	float nv;
+	float ood;
+
+	float x = Math::abs(m.x);
+	float y = Math::abs(m.y);
+	float z = Math::abs(m.z);
+
+	if (x >= y && x >= z) {
+		nu = triangle_area_2d(pt.y, pt.z, bt.y, bt.z, ct.y, ct.z);
+		nv = triangle_area_2d(pt.y, pt.z, ct.y, ct.z, at.y, at.z);
+		ood = 1.0f / m.x;
+	} else if (y >= x && y >= z) {
+		nu = triangle_area_2d(pt.x, pt.z, bt.x, bt.z, ct.x, ct.z);
+		nv = triangle_area_2d(pt.x, pt.z, ct.x, ct.z, at.x, at.z);
+		ood = 1.0f / -m.y;
+	} else {
+		nu = triangle_area_2d(pt.x, pt.y, bt.x, bt.y, ct.x, ct.y);
+		nv = triangle_area_2d(pt.x, pt.y, ct.x, ct.y, at.x, at.y);
+		ood = 1.0f / m.z;
+	}
+	uvw[0] = nu * ood;
+	uvw[1] = nv * ood;
+	uvw[2] = 1.0f - uvw[0] - uvw[1];
 }

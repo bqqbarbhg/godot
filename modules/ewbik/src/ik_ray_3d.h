@@ -61,8 +61,6 @@ public:
 
 	virtual void set_heading(Vector3 &p_new_head);
 
-	virtual void set_magnitude(const real_t &p_new_mag);
-
 	/**
 	 * Returns the scalar projection of the input vector on this
 	 * ray. In other words, if this ray goes from (5, 0) to (10, 0),
@@ -90,75 +88,9 @@ public:
 	virtual real_t scaled_projection(const Vector3 &p_input);
 
 	/**
-	 * Returns a Vector3 representing where the tip
-	 * of this ray would be if multiply() was called on the ray
-	 * with scalar as the parameter.
-	 *
-	 * @param p_scalar
-	 * @return
-	 */
-	virtual Vector3 get_multipled_by(const real_t &p_scalar);
-
-	/**
-	 * Returns a Vector3 representing where the tip
-	 * of this ray would be if div() was called on the ray
-	 * with scalar as the parameter.
-	 *
-	 * @param scalar
-	 * @return
-	 */
-	virtual Vector3 get_divided_by(const real_t &p_divisor);
-
-	/**
-	 * Returns a Vector3 representing where the tip
-	 * of this ray would be if mag(scale) was called on the ray
-	 * with scalar as the parameter.
-	 *
-	 * @param scalar
-	 * @return
-	 */
-	virtual Vector3 get_scaled_to(const real_t &scale);
-
-	/**
 	 * adds the specified length to the ray in both directions.
 	 */
 	virtual void elongate(real_t amt);
-
-	virtual Ref<IKRay3D> copy();
-
-	virtual void reverse();
-
-	virtual Ref<IKRay3D> get_reversed();
-
-	virtual Ref<IKRay3D> get_ray_scaled_to(real_t scalar);
-
-	/*
-	 * reverses this ray's direction so that it
-	 * has a positive dot product with the heading of r
-	 * if dot product is already positive, does nothing.
-	 */
-	virtual void point_with(Ref<IKRay3D> r);
-
-	virtual void point_with(Vector3 heading);
-
-	/**
-	 * sets the values of the given vector to where the
-	 * tip of this Ray would be if the ray were inverted
-	 *
-	 * @param vec
-	 * @return the vector that was passed in after modification (for chaining)
-	 */
-	virtual Vector3 setToInvertedTip(Vector3 vec);
-
-	virtual void contractTo(real_t percent);
-
-	virtual void translateTo(Vector3 newLocation);
-
-	virtual void translateTipTo(Vector3 newLocation);
-
-	virtual void translateBy(Vector3 toAdd);
-
-	virtual void normalize();
 
 	/**
 	 * @param ta the first vertex of a triangle on the plane
@@ -185,78 +117,14 @@ public:
 	 * @return number of intersections found;
 	 */
 	virtual int intersects_sphere(Vector3 sphereCenter, real_t radius, Vector3 &S1, Vector3 &S2);
-
 	virtual void p1(Vector3 in);
-
 	virtual void p2(Vector3 in);
-
 	virtual Vector3 p2();
-
 	virtual Vector3 p1();
-
 	virtual int intersects_sphere(Vector3 rp1, Vector3 rp2, float radius, Vector3 &S1, Vector3 &S2);
-
-	float triangle_area_2d(float x1, float y1, float x2, float y2, float x3, float y3) {
-		return (x1 - x2) * (y2 - y3) - (x2 - x3) * (y1 - y2);
-	}
-	void barycentric(Vector3 a, Vector3 b, Vector3 c, Vector3 p, Vector3 &uvw) {
-		bc = b;
-		ca = a;
-		at = a;
-		bt = b;
-		ct = c;
-		pt = p;
-
-		m = Vector3(bc - ct).cross(ca - at);
-
-		float nu;
-		float nv;
-		float ood;
-
-		float x = Math::abs(m.x);
-		float y = Math::abs(m.y);
-		float z = Math::abs(m.z);
-
-		if (x >= y && x >= z) {
-			nu = triangle_area_2d(pt.y, pt.z, bt.y, bt.z, ct.y, ct.z);
-			nv = triangle_area_2d(pt.y, pt.z, ct.y, ct.z, at.y, at.z);
-			ood = 1.0f / m.x;
-		} else if (y >= x && y >= z) {
-			nu = triangle_area_2d(pt.x, pt.z, bt.x, bt.z, ct.x, ct.z);
-			nv = triangle_area_2d(pt.x, pt.z, ct.x, ct.z, at.x, at.z);
-			ood = 1.0f / -m.y;
-		} else {
-			nu = triangle_area_2d(pt.x, pt.y, bt.x, bt.y, ct.x, ct.y);
-			nv = triangle_area_2d(pt.x, pt.y, ct.x, ct.y, at.x, at.y);
-			ood = 1.0f / m.z;
-		}
-		uvw[0] = nu * ood;
-		uvw[1] = nv * ood;
-		uvw[2] = 1.0f - uvw[0] - uvw[1];
-	}
-
-	virtual Vector3 plane_intersect_test(Vector3 ta, Vector3 tb, Vector3 tc, Vector3 &uvw) {
-		u = tb;
-		v = tc;
-		n = Vector3(0, 0, 0);
-		dir = this->heading();
-		w0 = Vector3(0, 0, 0);
-		float r, a, b;
-		u -= ta;
-		v -= ta;
-
-		n = u.cross(v);
-
-		w0 -= ta;
-		a = -(n.dot(w0));
-		b = n.dot(dir);
-		r = a / b;
-		I = dir;
-		I *= r;
-		barycentric(ta, tb, tc, I, uvw);
-		return I;
-	}
-
+	float triangle_area_2d(float x1, float y1, float x2, float y2, float x3, float y3);
+	void barycentric(Vector3 a, Vector3 b, Vector3 c, Vector3 p, Vector3 &uvw);
+	virtual Vector3 plane_intersect_test(Vector3 ta, Vector3 tb, Vector3 tc, Vector3 &uvw);
 	operator String() const {
 		return String(L"(") + this->point_1.x + L" ->  " + this->point_2.x + L") \n " + L"(" + this->point_1.y + L" ->  " + this->point_2.y + L") \n " + L"(" + this->point_1.z + L" ->  " + this->point_2.z + L") \n ";
 	}
