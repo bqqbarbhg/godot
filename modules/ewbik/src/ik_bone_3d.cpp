@@ -65,6 +65,14 @@ Ref<IKEffector3D> IKBone3D::get_pin() const {
 	return pin;
 }
 
+void IKBone3D::set_pose(const Transform3D &p_transform) {
+	transform->set_transform(p_transform);
+}
+
+Transform3D IKBone3D::get_pose() const {
+	return transform->get_transform();
+}
+
 void IKBone3D::set_global_pose(const Transform3D &p_transform) {
 	transform->set_global_transform(p_transform);
 	constraint_transform->local_transform.origin = transform->local_transform.origin;
@@ -80,19 +88,13 @@ void IKBone3D::set_initial_pose(Skeleton3D *p_skeleton) {
 	if (bone_id == -1) {
 		return;
 	}
-	Transform3D xform = p_skeleton->get_bone_global_pose(bone_id);
-	xform = p_skeleton->get_transform() * xform;
-	set_global_pose(xform);
+	Transform3D xform = p_skeleton->get_bone_pose(bone_id);
+	set_pose(xform);
 }
 
 void IKBone3D::set_skeleton_bone_pose(Skeleton3D *p_skeleton) {
 	ERR_FAIL_NULL(p_skeleton);
-	Transform3D custom = get_global_pose();
-	custom = p_skeleton->get_global_transform().affine_inverse() * custom;
-	int32_t parent_id = p_skeleton->get_bone_parent(bone_id);
-	if (parent_id != -1) {
-		custom = p_skeleton->get_bone_global_pose(parent_id).affine_inverse() * custom;
-	}
+	Transform3D custom = get_pose();
 	p_skeleton->set_bone_pose_position(bone_id, custom.origin);
 	p_skeleton->set_bone_pose_rotation(bone_id, custom.basis.get_rotation_quaternion());
 	p_skeleton->set_bone_pose_scale(bone_id, custom.basis.get_scale());
