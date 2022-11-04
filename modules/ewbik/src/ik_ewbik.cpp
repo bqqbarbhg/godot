@@ -244,8 +244,6 @@ void SkeletonModification3DEWBIK::_get_property_list(List<PropertyInfo> *p_list)
 		}
 		p_list->push_back(bone_name);
 		p_list->push_back(
-				PropertyInfo(Variant::BOOL, "constraints/" + itos(constraint_i) + "/kusudama_flip_handedness"));
-		p_list->push_back(
 				PropertyInfo(Variant::VECTOR2, "constraints/" + itos(constraint_i) + "/kusudama_twist", PROPERTY_HINT_RANGE, "-360.0,360.0,0.1,radians,or_less,or_greater"));
 		p_list->push_back(
 				PropertyInfo(Variant::INT, "constraints/" + itos(constraint_i) + "/kusudama_limit_cone_count",
@@ -298,9 +296,6 @@ bool SkeletonModification3DEWBIK::_get(const StringName &p_name, Variant &r_ret)
 		if (what == "name") {
 			ERR_FAIL_INDEX_V(index, constraint_names.size(), false);
 			r_ret = constraint_names[index];
-			return true;
-		} else if (what == "kusudama_flip_handedness") {
-			r_ret = get_kusudama_flip_handedness(index);
 			return true;
 		} else if (what == "kusudama_twist") {
 			r_ret = get_kusudama_twist(index);
@@ -366,9 +361,6 @@ bool SkeletonModification3DEWBIK::_set(const StringName &p_name, const Variant &
 			}
 			set_constraint_name(index, p_value);
 			return true;
-		} else if (what == "kusudama_flip_handedness") {
-			set_kusudama_flip_handedness(index, p_value);
-			return true;
 		} else if (what == "kusudama_twist") {
 			set_kusudama_twist(index, p_value);
 			return true;
@@ -429,7 +421,6 @@ void SkeletonModification3DEWBIK::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_debug_skeleton", "enable"), &SkeletonModification3DEWBIK::set_debug_skeleton);
 	ClassDB::bind_method(D_METHOD("get_default_damp"), &SkeletonModification3DEWBIK::get_default_damp);
 	ClassDB::bind_method(D_METHOD("set_default_damp", "damp"), &SkeletonModification3DEWBIK::set_default_damp);
-	ClassDB::bind_method(D_METHOD("get_kusudama_flip_handedness", "enable"), &SkeletonModification3DEWBIK::get_kusudama_flip_handedness);
 	ClassDB::bind_method(D_METHOD("get_pin_nodepath"), &SkeletonModification3DEWBIK::get_pin_nodepath);
 	ClassDB::bind_method(D_METHOD("set_pin_nodepath", "index", "nodepath"), &SkeletonModification3DEWBIK::set_pin_nodepath);
 
@@ -468,12 +459,10 @@ void SkeletonModification3DEWBIK::set_constraint_count(int32_t p_count) {
 	constraint_count = p_count;
 	constraint_names.resize(p_count);
 	kusudama_twist.resize(p_count);
-	kusudama_flip_handedness.resize(p_count);
 	kusudama_limit_cone_count.resize(p_count);
 	kusudama_limit_cones.resize(p_count);
 	for (int32_t constraint_i = p_count; constraint_i-- > old_count;) {
 		constraint_names.write[constraint_i] = String();
-		kusudama_flip_handedness.write[constraint_i] = false;
 		kusudama_limit_cone_count.write[constraint_i] = 0;
 		kusudama_limit_cones.write[constraint_i].resize(0);
 	}
@@ -620,35 +609,6 @@ float SkeletonModification3DEWBIK::get_max_ik_iterations() const {
 
 void SkeletonModification3DEWBIK::set_max_ik_iterations(const float &p_max_ik_iterations) {
 	max_ik_iterations = p_max_ik_iterations;
-}
-
-bool SkeletonModification3DEWBIK::get_kusudama_flip_handedness(int32_t p_bone) const {
-	ERR_FAIL_INDEX_V(p_bone, kusudama_flip_handedness.size(), false);
-	return kusudama_flip_handedness[p_bone];
-}
-
-void SkeletonModification3DEWBIK::set_kusudama_flip_handedness(int32_t p_bone, bool p_flip) {
-	ERR_FAIL_INDEX(p_bone, kusudama_flip_handedness.size());
-	kusudama_flip_handedness.write[p_bone] = p_flip;
-	if (segmented_skeleton.is_null()) {
-		return;
-	}
-	Ref<IKBone3D> bone = segmented_skeleton->get_ik_bone(p_bone);
-	if (bone.is_null()) {
-		return;
-	}
-	Ref<IKTransform3D> constraint_transform = bone->get_constraint_transform();
-	if (constraint_transform.is_null()) {
-		return;
-	}
-	constraint_transform->set_global_chirality(p_flip ? -1.0 : 1.0);
-	Ref<IKTransform3D> transform = bone->get_ik_transform();
-	if (transform.is_null()) {
-		return;
-	}
-	transform->set_global_chirality(p_flip ? -1.0 : 1.0);
-	notify_property_list_changed();
-	skeleton_changed(get_skeleton());
 }
 
 void SkeletonModification3DEWBIK::set_pin_bone_name(int32_t p_effector_index, StringName p_name) const {

@@ -51,7 +51,6 @@ class SkeletonModification3DEWBIK : public SkeletonModification3D {
 	Vector<Ref<IKEffectorTemplate>> pins;
 	Vector<Ref<IKBone3D>> bone_list;
 	Vector<Vector2> kusudama_twist;
-	Vector<bool> kusudama_flip_handedness;
 	Vector<Vector<Vector4>> kusudama_limit_cones;
 	Vector<int> kusudama_limit_cone_count;
 	float MAX_KUSUDAMA_LIMIT_CONES = 30;
@@ -147,8 +146,6 @@ public:
 	void set_kusudama_limit_cone_radius(int32_t p_contraint_index, int32_t p_index, float p_radius);
 	int32_t get_kusudama_limit_cone_count(int32_t p_contraint_index) const;
 	void set_kusudama_limit_cone_count(int32_t p_constraint_index, int32_t p_count);
-	bool get_kusudama_flip_handedness(int32_t p_bone) const;
-	void set_kusudama_flip_handedness(int32_t p_bone, bool p_flip);
 	SkeletonModification3DEWBIK();
 	~SkeletonModification3DEWBIK();
 };

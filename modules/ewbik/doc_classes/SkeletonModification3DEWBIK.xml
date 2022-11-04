@@ -25,12 +25,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="get_kusudama_flip_handedness" qualifiers="const">
-			<return type="bool" />
-			<param index="0" name="enable" type="int" />
-			<description>
-			</description>
-		</method>
 		<method name="get_kusudama_limit_cone_center">
 			<return type="void" />
 			<param index="0" name="index" type="int" />
