@@ -79,43 +79,6 @@ Transform3D IKEffector3D::get_target_global_transform() const {
 	return target_global_transform;
 }
 
-void IKEffector3D::create_headings(Vector<real_t> &p_weights) {
-	// int32_t nw = p_weights.size();
-	// int32_t nheadings = nw;
-	// heading_weights.resize(nheadings);
-	// tip_headings.resize(nheadings);
-	// target_headings.resize(nheadings);
-	// for (int32_t i_w = 0; i_w < nw; i_w++) {
-	// 	heading_weights.write[i_w] = p_weights[i_w];
-	// }
-	// int32_t index = 0;
-	// heading_weights.write[nw + index] = weight;
-	// if (get_priority_x_direction() > 0.0) {
-	// 	index++;
-	// 	ERR_FAIL_INDEX(nw + index, heading_weights.size());
-	// 	heading_weights.write[nw + index] = weight;
-	// 	index++;
-	// 	ERR_FAIL_INDEX(nw + index + 1, heading_weights.size());
-	// 	heading_weights.write[nw + index + 1] = weight;
-	// }
-	// if (get_priority_y_direction() > 0.0) {
-	// 	index++;
-	// 	ERR_FAIL_INDEX(nw + index, heading_weights.size());
-	// 	heading_weights.write[nw + index] = weight;
-	// 	index++;
-	// 	ERR_FAIL_INDEX(nw + index + 1, heading_weights.size());
-	// 	heading_weights.write[nw + index + 1] = weight;
-	// }
-	// if (get_priority_z_direction() > 0.0) {
-	// 	index++;
-	// 	ERR_FAIL_INDEX(nw + index, heading_weights.size());
-	// 	heading_weights.write[nw + index] = weight;
-	// 	index++;
-	// 	ERR_FAIL_INDEX(nw + index + 1, heading_weights.size());
-	// 	heading_weights.write[nw + index + 1] = weight;
-	// }
-}
-
 int32_t IKEffector3D::update_effector_target_headings(PackedVector3Array *p_headings, int32_t p_index, Ref<IKBone3D> p_for_bone, const Vector<real_t> *p_weights) const {
 	ERR_FAIL_COND_V(p_index == -1, -1);
 	ERR_FAIL_NULL_V(p_headings, -1);
