@@ -30,10 +30,10 @@
 
 #include "register_types.h"
 
-#include "src/ik_ewbik.h"
 #include "src/ik_bone_3d.h"
 #include "src/ik_effector_3d.h"
 #include "src/ik_effector_template.h"
+#include "src/ik_ewbik.h"
 #include "src/ik_kusudama.h"
 
 #ifdef TOOLS_ENABLED
@@ -55,6 +55,8 @@ void initialize_ewbik_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(IKEffector3D);
 		GDREGISTER_CLASS(IKBoneSegment);
 		GDREGISTER_CLASS(IKKusudama);
+		GDREGISTER_CLASS(IKRay3D);
+		GDREGISTER_CLASS(IKLimitCone);
 	}
 }
 

@@ -51,10 +51,8 @@ protected:
 	static constexpr int Z = 2;
 
 public:
-	virtual ~IKRay3D() {}
-
 	IKRay3D();
-
+	virtual ~IKRay3D() {}
 	IKRay3D(Vector3 p_p1, Vector3 p_p2);
 
 	virtual Vector3 heading();
