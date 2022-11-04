@@ -397,7 +397,7 @@ void SkeletonModification3DEWBIK::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_kusudama_limit_cone_center", "index", "cone_index"), &SkeletonModification3DEWBIK::set_kusudama_limit_cone_center);
 	ClassDB::bind_method(D_METHOD("set_kusudama_limit_cone_count", "index", "count"), &SkeletonModification3DEWBIK::set_kusudama_limit_cone_count);
 	ClassDB::bind_method(D_METHOD("get_kusudama_limit_cone_count", "index"), &SkeletonModification3DEWBIK::get_kusudama_limit_cone_count);
-	ClassDB::bind_method(D_METHOD("set_kusudama_twist", "index", "name"), &SkeletonModification3DEWBIK::set_kusudama_twist);
+	ClassDB::bind_method(D_METHOD("set_kusudama_twist", "index", "limit"), &SkeletonModification3DEWBIK::set_kusudama_twist);
 	ClassDB::bind_method(D_METHOD("get_kusudama_twist", "index"), &SkeletonModification3DEWBIK::get_kusudama_twist);
 	ClassDB::bind_method(D_METHOD("set_pin_depth_falloff", "index", "falloff"), &SkeletonModification3DEWBIK::set_pin_depth_falloff);
 	ClassDB::bind_method(D_METHOD("get_pin_depth_falloff", "index"), &SkeletonModification3DEWBIK::get_pin_depth_falloff);
