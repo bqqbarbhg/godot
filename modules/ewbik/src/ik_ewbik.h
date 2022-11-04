@@ -95,38 +95,10 @@ public:
 	NodePath get_pin_nodepath(int32_t p_effector_index) const;
 	int32_t find_effector_id(StringName p_bone_name);
 	void set_pin_target_nodepath(int32_t p_effector_index, const NodePath &p_target_node);
-	void set_pin_weight(int32_t p_pin_index, const real_t &p_weight) {
-		ERR_FAIL_INDEX(p_pin_index, pins.size());
-		Ref<IKEffectorTemplate> data = pins[p_pin_index];
-		if (data.is_null()) {
-			data.instantiate();
-			pins.write[p_pin_index] = data;
-		}
-		data->set_weight(p_weight);
-		notify_property_list_changed();
-		skeleton_changed(get_skeleton());
-	}
-	real_t get_pin_weight(int32_t p_pin_index) const {
-		ERR_FAIL_INDEX_V(p_pin_index, pins.size(), 0.0);
-		const Ref<IKEffectorTemplate> data = pins[p_pin_index];
-		return data->get_weight();
-	}
-	void set_pin_direction_priorities(int32_t p_pin_index, const Vector3 &p_priority_direction) {
-		ERR_FAIL_INDEX(p_pin_index, pins.size());
-		Ref<IKEffectorTemplate> data = pins[p_pin_index];
-		if (data.is_null()) {
-			data.instantiate();
-			pins.write[p_pin_index] = data;
-		}
-		data->set_direction_priorities(p_priority_direction);
-		notify_property_list_changed();
-		skeleton_changed(get_skeleton());
-	}
-	Vector3 get_pin_direction_priorities(int32_t p_pin_index) const {
-		ERR_FAIL_INDEX_V(p_pin_index, pins.size(), Vector3(0, 0, 0));
-		const Ref<IKEffectorTemplate> data = pins[p_pin_index];
-		return data->get_direction_priorities();
-	}
+	void set_pin_weight(int32_t p_pin_index, const real_t &p_weight);
+	real_t get_pin_weight(int32_t p_pin_index) const;
+	void set_pin_direction_priorities(int32_t p_pin_index, const Vector3 &p_priority_direction);
+	Vector3 get_pin_direction_priorities(int32_t p_pin_index) const;
 	NodePath get_pin_target_nodepath(int32_t p_pin_index);
 	void set_pin_depth_falloff(int32_t p_effector_index, const float p_depth_falloff);
 	float get_pin_depth_falloff(int32_t p_effector_index) const;

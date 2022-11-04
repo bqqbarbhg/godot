@@ -729,3 +729,35 @@ void SkeletonModification3DEWBIK::set_tip_bone(StringName p_bone) {
 	notify_property_list_changed();
 	skeleton_changed(get_skeleton());
 }
+real_t SkeletonModification3DEWBIK::get_pin_weight(int32_t p_pin_index) const {
+	ERR_FAIL_INDEX_V(p_pin_index, pins.size(), 0.0);
+	const Ref<IKEffectorTemplate> data = pins[p_pin_index];
+	return data->get_weight();
+}
+void SkeletonModification3DEWBIK::set_pin_weight(int32_t p_pin_index, const real_t &p_weight) {
+	ERR_FAIL_INDEX(p_pin_index, pins.size());
+	Ref<IKEffectorTemplate> data = pins[p_pin_index];
+	if (data.is_null()) {
+		data.instantiate();
+		pins.write[p_pin_index] = data;
+	}
+	data->set_weight(p_weight);
+	notify_property_list_changed();
+	skeleton_changed(get_skeleton());
+}
+Vector3 SkeletonModification3DEWBIK::get_pin_direction_priorities(int32_t p_pin_index) const {
+	ERR_FAIL_INDEX_V(p_pin_index, pins.size(), Vector3(0, 0, 0));
+	const Ref<IKEffectorTemplate> data = pins[p_pin_index];
+	return data->get_direction_priorities();
+}
+void SkeletonModification3DEWBIK::set_pin_direction_priorities(int32_t p_pin_index, const Vector3 &p_priority_direction) {
+	ERR_FAIL_INDEX(p_pin_index, pins.size());
+	Ref<IKEffectorTemplate> data = pins[p_pin_index];
+	if (data.is_null()) {
+		data.instantiate();
+		pins.write[p_pin_index] = data;
+	}
+	data->set_direction_priorities(p_priority_direction);
+	notify_property_list_changed();
+	skeleton_changed(get_skeleton());
+}

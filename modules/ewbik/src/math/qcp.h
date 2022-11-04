@@ -187,9 +187,6 @@ public:
 	/**
 	 * Constructor with option to set the precision values.
 	 *
-	 * @param centered
-	 *            true if the point arrays are centered at the origin (faster),
-	 *            false otherwise
 	 * @param evec_prec
 	 *            required eigenvector precision
 	 * @param eval_prec
@@ -199,7 +196,7 @@ public:
 
 	/**
 	 * Return the RMSD of the superposition of input coordinate set y onto x. Note,
-	 * this is the fasted way to calculate an RMSD without actually superposing the
+	 * this is the faster way to calculate an RMSD without actually superposing the
 	 * two sets. The calculation is performed "lazy", meaning calculations are only
 	 * performed if necessary.
 	 *
@@ -210,10 +207,10 @@ public:
 	/**
 	 * Weighted superposition.
 	 *
-	 * @param fixed
 	 * @param moved
-	 * @param weight
-	 *            array of weights for each equivalent point position
+	 * @param target
+	 * @param weight array of weights for each equivalent point position
+	 * @param translate translate
 	 * @return
 	 */
 	Quaternion weighted_superpose(PackedVector3Array &p_moved, PackedVector3Array &p_target, Vector<real_t> &p_weight, bool translate);
