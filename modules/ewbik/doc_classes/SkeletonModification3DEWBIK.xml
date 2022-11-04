@@ -137,7 +137,7 @@
 		<method name="set_kusudama_twist">
 			<return type="void" />
 			<param index="0" name="index" type="int" />
-			<param index="1" name="name" type="Vector2" />
+			<param index="1" name="limit" type="Vector2" />
 			<description>
 			</description>
 		</method>
