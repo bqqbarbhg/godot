@@ -43,11 +43,29 @@ class IKKusudama;
 class IKLimitCone : public Resource {
 	GDCLASS(IKLimitCone, Resource);
 
+	void compute_triangles(Ref<IKLimitCone> p_next);
+	static Quaternion quaternion_set_axis_angle(Vector3 axis, real_t angle) {
+		real_t norm = axis.length();
+		if (norm == 0) {
+			ERR_PRINT_ONCE("Axis doesn't have a direction.");
+			return Quaternion();
+		}
+
+		real_t halfAngle = -0.5 * angle;
+		real_t coeff = sin(halfAngle) / norm;
+
+		real_t x = coeff * axis.x;
+		real_t y = coeff * axis.y;
+		real_t z = coeff * axis.z;
+		real_t w = cos(halfAngle);
+		return Quaternion(x * -1, y * -1, z * -1, w);
+	}
+
 public:
 	Vector3 control_point;
 	Vector3 radial_point;
 
-	// radius stored as  cosine to save on the acos call necessary for angleBetween.
+	// Radius stored as cosine to save on the acos call necessary for the angle between.
 private:
 	double radius_cosine = 0;
 	double radius = 0;
@@ -193,27 +211,7 @@ protected:
 
 	virtual double _get_radius_cosine(int mode);
 
-private:
-	void compute_triangles(Ref<IKLimitCone> p_next);
-
 public:
-	static Quaternion quaternion_set_axis_angle(Vector3 axis, real_t angle) {
-		real_t norm = axis.length();
-		if (norm == 0) {
-			ERR_PRINT_ONCE("Axis doesn't have a direction.");
-			return Quaternion();
-		}
-
-		real_t halfAngle = -0.5 * angle;
-		real_t coeff = sin(halfAngle) / norm;
-
-		real_t x = coeff * axis.x;
-		real_t y = coeff * axis.y;
-		real_t z = coeff * axis.z;
-		real_t w = cos(halfAngle);
-		return Quaternion(x * -1, y * -1, z * -1, w);
-	}
-
 	virtual Vector3 get_control_point() const;
 	virtual void set_control_point(Vector3 p_control_point);
 	virtual double get_radius() const;
