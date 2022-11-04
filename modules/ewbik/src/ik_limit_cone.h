@@ -67,13 +67,10 @@ class IKLimitCone : public Resource {
 	// Radius stored as cosine to save on the acos call necessary for the angle between.
 	double radius_cosine = 0;
 	double radius = 0;
-	double cushion_radius = 0;
-	double cushion_cosine = 0;
-	double current_cushion = 1;
 
 	Vector3 closest_cone(Ref<IKLimitCone> next, Vector3 input) const;
 
-	void update_tangent_and_cushion_handles(Ref<IKLimitCone> p_next, int p_mode);
+	void update_tangent_handles(Ref<IKLimitCone> p_next, int p_mode);
 
 	void set_tangent_circle_center_next_1(Vector3 point, int mode);
 	void set_tangent_circle_center_next_2(Vector3 point, int mode);
@@ -92,15 +89,7 @@ public:
 	double tangent_circle_radius_next = 0;
 	double tangent_circle_radius_next_cos = 0;
 
-	Vector3 cushion_tangent_circle_center_next_1;
-	Vector3 cushion_tangent_circle_center_next_2;
-	Vector3 cushion_tangent_circle_center_previous_1;
-	Vector3 cushion_tangent_circle_center_previous_2;
-	double cushion_tangent_circle_radius_next = 0;
-	double cushion_tangent_circle_radius_next_cos = 0;
-
 	static const int BOUNDARY = 0;
-	static const int CUSHION = 1;
 
 	// Any softness of 0.0f means completely hard.
 	// any softness higher than 0.0f means that
@@ -122,17 +111,6 @@ public:
 	IKLimitCone();
 
 	IKLimitCone(Vector3 &direction, double rad, Ref<IKKusudama> attached_to);
-
-	/**
-	 *
-	 * @param direction
-	 * @param rad
-	 * @param cushion range 0-1, how far toward the boundary to begin slowing down the rotation if soft constraints are enabled.
-	 * Value of 1 creates a hard boundary. Value of 0 means it will always be the case that the closer a joint in the allowable region
-	 * is to the boundary, the more any further rotation in the direction of that boundary will be avoided.
-	 * @param attached_to
-	 */
-	IKLimitCone(Vector3 direction, double rad, double cushion, Ref<IKKusudama> attached_to);
 
 	static Vector3 get_orthogonal(Vector3 p_in);
 
@@ -211,15 +189,5 @@ public:
 	virtual double get_radius() const;
 	virtual double get_radius_cosine() const;
 	virtual void set_radius(double radius);
-	virtual double get_cushion_radius();
-	virtual double get_cushion_cosine();
-	/**
-	 * @param p_cushion range 0-1, how far toward the boundary to begin slowing down the rotation if soft constraints are enabled.
-	 * Value of 1 creates a hard boundary. Value of 0 means it will always be the case that the closer a joint in the allowable region
-	 * is to the boundary, the more any further rotation in the direction of that boundary will be avoided.
-	 */
-	virtual void set_cushion_boundary(double p_cushion);
-
-	virtual Ref<IKKusudama> get_parent_kusudama();
 };
 #endif

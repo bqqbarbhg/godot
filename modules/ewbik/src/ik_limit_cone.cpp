@@ -40,11 +40,10 @@ IKLimitCone::IKLimitCone() {
 
 void IKLimitCone::update_tangent_handles(Ref<IKLimitCone> next) {
 	this->control_point.normalize();
-	update_tangent_and_cushion_handles(next, BOUNDARY);
-	update_tangent_and_cushion_handles(next, CUSHION);
+	update_tangent_handles(next, BOUNDARY);
 }
 
-void IKLimitCone::update_tangent_and_cushion_handles(Ref<IKLimitCone> p_next, int p_mode) {
+void IKLimitCone::update_tangent_handles(Ref<IKLimitCone> p_next, int p_mode) {
 	if (p_next.is_valid()) {
 		double radA = this->_get_radius(p_mode);
 		double radB = p_next->_get_radius(p_mode);
@@ -120,11 +119,9 @@ void IKLimitCone::update_tangent_and_cushion_handles(Ref<IKLimitCone> p_next, in
 	}
 	if (this->tangent_circle_center_next_1 == Vector3(NAN, NAN, NAN)) {
 		this->tangent_circle_center_next_1 = get_orthogonal(control_point).normalized();
-		this->cushion_tangent_circle_center_next_1 = this->tangent_circle_center_next_1;
 	}
 	if (tangent_circle_center_next_2 == Vector3(NAN, NAN, NAN)) {
 		tangent_circle_center_next_2 = (tangent_circle_center_next_1 * -1).normalized();
-		cushion_tangent_circle_center_next_2 = (cushion_tangent_circle_center_next_2 * -1).normalized();
 	}
 	if (p_next.is_valid()) {
 		compute_triangles(p_next);
@@ -132,53 +129,31 @@ void IKLimitCone::update_tangent_and_cushion_handles(Ref<IKLimitCone> p_next, in
 }
 
 void IKLimitCone::set_tangent_circle_radius_next(double rad, int mode) {
-	if (mode == CUSHION) {
-		this->cushion_tangent_circle_radius_next = rad;
-		this->cushion_tangent_circle_radius_next = cos(cushion_tangent_circle_radius_next_cos);
-	}
 	this->tangent_circle_radius_next = rad;
 	this->tangent_circle_radius_next_cos = cos(tangent_circle_radius_next);
 }
 
 Vector3 IKLimitCone::get_tangent_circle_center_next_1(int mode) {
-	if (mode == CUSHION) {
-		return cushion_tangent_circle_center_next_1;
-	}
 	return tangent_circle_center_next_1;
 }
 
 double IKLimitCone::get_tangent_circle_radius_next(int mode) {
-	if (mode == CUSHION) {
-		return cushion_tangent_circle_radius_next;
-	}
 	return tangent_circle_radius_next;
 }
 
 double IKLimitCone::get_tangent_circle_radius_next_cos(int mode) {
-	if (mode == CUSHION) {
-		return cushion_tangent_circle_radius_next_cos;
-	}
 	return tangent_circle_radius_next_cos;
 }
 
 Vector3 IKLimitCone::get_tangent_circle_center_next_2(int mode) {
-	if (mode == CUSHION) {
-		return cushion_tangent_circle_center_next_2;
-	}
 	return tangent_circle_center_next_2;
 }
 
 double IKLimitCone::_get_radius(int mode) {
-	if (mode == CUSHION) {
-		return cushion_radius;
-	}
 	return radius;
 }
 
 double IKLimitCone::_get_radius_cosine(int mode) {
-	if (mode == CUSHION) {
-		return cushion_cosine;
-	}
 	return radius_cosine;
 }
 
@@ -212,25 +187,6 @@ double IKLimitCone::get_radius_cosine() const {
 void IKLimitCone::set_radius(double p_radius) {
 	this->radius = p_radius;
 	this->radius_cosine = cos(p_radius);
-}
-
-double IKLimitCone::get_cushion_radius() {
-	return this->cushion_radius;
-}
-
-double IKLimitCone::get_cushion_cosine() {
-	return this->cushion_cosine;
-}
-
-void IKLimitCone::set_cushion_boundary(double p_cushion) {
-	// Todo: fire 2022-08-31 Pending work.
-	double adjustedCushion = MIN(1, MAX(0.001, p_cushion));
-	this->cushion_radius = this->radius * adjustedCushion;
-	this->cushion_cosine = cos(cushion_radius);
-}
-
-Ref<IKKusudama> IKLimitCone::get_parent_kusudama() {
-	return parent_kusudama;
 }
 
 bool IKLimitCone::determine_if_in_bounds(Ref<IKLimitCone> next, Vector3 input) const {
@@ -346,28 +302,12 @@ Vector3 IKLimitCone::get_orthogonal(Vector3 p_in) {
 	return result;
 }
 
-IKLimitCone::IKLimitCone(Vector3 direction, double rad, double cushion, Ref<IKKusudama> attached_to) {
-	parent_kusudama = attached_to;
-	tangent_circle_center_next_1 = IKLimitCone::get_orthogonal(direction);
-	tangent_circle_center_next_2 = (tangent_circle_center_next_1 * -1);
-
-	this->radius = MAX(DBL_TRUE_MIN, rad);
-	this->radius_cosine = IKBoneSegment::cos(radius);
-	double adjustedCushion = MIN(1, MAX(0.001, cushion));
-	this->cushion_radius = this->radius * adjustedCushion;
-	this->cushion_cosine = IKBoneSegment::cos(cushion_radius);
-	this->control_point = direction;
-	this->control_point.normalize();
-}
-
 IKLimitCone::IKLimitCone(Vector3 &direction, double rad, Ref<IKKusudama> attached_to) {
 	parent_kusudama = attached_to;
 	tangent_circle_center_next_1 = direction.normalized();
 	tangent_circle_center_next_2 = (tangent_circle_center_next_1 * -1);
 	this->radius = MAX(DBL_TRUE_MIN, rad);
 	this->radius_cosine = cos(radius);
-	this->cushion_radius = this->radius;
-	this->cushion_cosine = this->radius_cosine;
 	this->control_point = direction;
 	this->control_point.normalize();
 }
@@ -453,19 +393,11 @@ Vector3 IKLimitCone::closest_to_cone(Vector3 input, Vector<double> &in_bounds) c
 }
 
 void IKLimitCone::set_tangent_circle_center_next_1(Vector3 point, int mode) {
-	if (mode == CUSHION) {
-		this->cushion_tangent_circle_center_next_1 = point;
-	} else {
-		this->tangent_circle_center_next_1 = point;
-	}
+	this->tangent_circle_center_next_1 = point;
 }
 
 void IKLimitCone::set_tangent_circle_center_next_2(Vector3 point, int mode) {
-	if (mode == CUSHION) {
-		this->cushion_tangent_circle_center_next_2 = point;
-	} else {
-		this->tangent_circle_center_next_2 = point;
-	}
+	tangent_circle_center_next_2 = point;
 }
 
 Vector3 IKLimitCone::get_on_path_sequence(Ref<IKLimitCone> next, Vector3 input) const {
