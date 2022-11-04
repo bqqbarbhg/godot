@@ -42,7 +42,6 @@ class IKRay3D : public RefCounted {
 	Vector3 m, at, bt, ct, pt;
 	Vector3 bc, ca, ac;
 
-protected:
 	Vector3 point_1;
 	Vector3 point_2;
 	Vector3 working_vector;
@@ -54,9 +53,7 @@ public:
 	IKRay3D();
 	virtual ~IKRay3D() {}
 	IKRay3D(Vector3 p_p1, Vector3 p_p2);
-
 	virtual Vector3 heading();
-
 	virtual void set_heading(Vector3 &p_new_head);
 
 	/**
