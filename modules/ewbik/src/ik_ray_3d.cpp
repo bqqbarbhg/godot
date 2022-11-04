@@ -278,10 +278,6 @@ Vector3 IKRay3D::intercepts2D(Ref<IKRay3D> r) {
 	return result = Vector3(p0_x + (t * s1_x), p0_y + (t * s1_y), 0.0f);
 }
 
-Vector3 IKRay3D::closestPointToSegment3D(Ref<IKRay3D> r) {
-	Vector3 closestToThis = r->closest_point_to_ray_3d_strict(this);
-	return this->closest_point_to(closestToThis);
-}
 
 Vector3 IKRay3D::closest_point_to_ray_3d(Ref<IKRay3D> r) {
 	working_vector = point_2;
@@ -306,40 +302,6 @@ Vector3 IKRay3D::closest_point_to_ray_3d(Ref<IKRay3D> r) {
 	}
 
 	return getRayScaledBy(sc)->p2();
-}
-
-Vector3 IKRay3D::closest_point_to_ray_3d_strict(Ref<IKRay3D> r) {
-	working_vector = point_2;
-	Vector3 u = working_vector - this->point_1;
-	working_vector = r->point_2;
-	Vector3 v = working_vector - r->point_1;
-	working_vector = this->point_1;
-	Vector3 w = working_vector - r->point_1;
-	real_t a = u.dot(u); // always >= s0
-	real_t b = u.dot(v);
-	real_t c = v.dot(v); // always >= 0
-	real_t d = u.dot(w);
-	real_t e = v.dot(w);
-	real_t D = a * c - b * b; // always >= 0
-	real_t sc; // tc
-
-	// compute the line parameters of the two closest points
-	if (D < FLT_TRUE_MIN) {
-		sc = 0.0f;
-	} else {
-		sc = (b * e - c * d) / D;
-	}
-
-	Vector3 result;
-	if (sc < 0) {
-		result = this->point_1;
-	} else if (sc > 1) {
-		result = this->point_2;
-	} else {
-		result = this->getRayScaledBy(sc)->p2();
-	}
-
-	return result;
 }
 
 Ref<IKRay3D> IKRay3D::get_perpendicular_2d() {

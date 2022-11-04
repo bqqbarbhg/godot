@@ -217,12 +217,6 @@ public:
 	 */
 	virtual Vector3 setToInvertedTip(Vector3 vec);
 
-	/*
-	 * public Vector3 closestPointToSegment3DStrict(sgRay r) {
-	 *
-	 * }
-	 */
-
 	virtual void contractTo(real_t percent);
 
 	virtual void translateTo(Vector3 newLocation);
@@ -236,16 +230,6 @@ public:
 	virtual Vector3 intercepts2D(Ref<IKRay3D> r);
 
 	/**
-	 * If the closest point to this sgRay on the input sgRay lies
-	 * beyond the bounds of that input sgRay, this returns closest point
-	 * to the input Rays bound;
-	 *
-	 * @param r
-	 * @return
-	 */
-	virtual Vector3 closestPointToSegment3D(Ref<IKRay3D> r);
-
-	/**
 	 * returns the point on this ray which is closest to the input ray
 	 *
 	 * @param r
@@ -253,8 +237,6 @@ public:
 	 */
 
 	virtual Vector3 closest_point_to_ray_3d(Ref<IKRay3D> r);
-
-	virtual Vector3 closest_point_to_ray_3d_strict(Ref<IKRay3D> r);
 
 	// returns a ray perpendicular to this ray on the XY plane;
 	virtual Ref<IKRay3D> get_perpendicular_2d();
