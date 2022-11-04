@@ -190,7 +190,7 @@ void IKRay3D::reverse() {
 	this->point_2 = temp;
 }
 
-Ref<IKRay3D> IKRay3D::getReversed() {
+Ref<IKRay3D> IKRay3D::get_reversed() {
 	return memnew(IKRay3D(this->point_2, this->point_1));
 }
 
@@ -198,13 +198,13 @@ Ref<IKRay3D> IKRay3D::get_ray_scaled_to(real_t scalar) {
 	return memnew(IKRay3D(point_1, get_scaled_to(scalar)));
 }
 
-void IKRay3D::pointWith(Ref<IKRay3D> r) {
+void IKRay3D::point_with(Ref<IKRay3D> r) {
 	if (this->heading().dot(r->heading()) < 0) {
 		this->reverse();
 	}
 }
 
-void IKRay3D::pointWith(Vector3 heading) {
+void IKRay3D::point_with(Vector3 heading) {
 	if (this->heading().dot(heading) < 0) {
 		this->reverse();
 	}
@@ -279,11 +279,11 @@ Vector3 IKRay3D::intercepts2D(Ref<IKRay3D> r) {
 }
 
 Vector3 IKRay3D::closestPointToSegment3D(Ref<IKRay3D> r) {
-	Vector3 closestToThis = r->closestPointToRay3DStrict(this);
+	Vector3 closestToThis = r->closest_point_to_ray_3d_strict(this);
 	return this->closest_point_to(closestToThis);
 }
 
-Vector3 IKRay3D::closestPointToRay3D(Ref<IKRay3D> r) {
+Vector3 IKRay3D::closest_point_to_ray_3d(Ref<IKRay3D> r) {
 	working_vector = point_2;
 	Vector3 u = working_vector - this->point_1;
 	working_vector = r->point_2;
@@ -308,7 +308,7 @@ Vector3 IKRay3D::closestPointToRay3D(Ref<IKRay3D> r) {
 	return getRayScaledBy(sc)->p2();
 }
 
-Vector3 IKRay3D::closestPointToRay3DStrict(Ref<IKRay3D> r) {
+Vector3 IKRay3D::closest_point_to_ray_3d_strict(Ref<IKRay3D> r) {
 	working_vector = point_2;
 	Vector3 u = working_vector - this->point_1;
 	working_vector = r->point_2;
@@ -342,13 +342,13 @@ Vector3 IKRay3D::closestPointToRay3DStrict(Ref<IKRay3D> r) {
 	return result;
 }
 
-Ref<IKRay3D> IKRay3D::getPerpendicular2D() {
+Ref<IKRay3D> IKRay3D::get_perpendicular_2d() {
 	Vector3 heading = this->heading();
 	working_vector = Vector3(heading.x - 1.0f, heading.x, 0.0f);
 	return Ref<IKRay3D>(memnew(IKRay3D(this->point_1, working_vector + this->point_1)));
 }
 
-Vector3 IKRay3D::intersectsPlane(Vector3 ta, Vector3 tb, Vector3 tc) {
+Vector3 IKRay3D::intersects_plane(Vector3 ta, Vector3 tb, Vector3 tc) {
 	Vector3 uvw;
 	tta = ta;
 	ttb = tb;
@@ -361,10 +361,10 @@ Vector3 IKRay3D::intersectsPlane(Vector3 ta, Vector3 tb, Vector3 tc) {
 	return result + point_1;
 }
 
-int IKRay3D::intersectsSphere(Vector3 sphereCenter, real_t radius, Vector3 &S1, Vector3 &S2) {
+int IKRay3D::intersects_sphere(Vector3 sphereCenter, real_t radius, Vector3 &S1, Vector3 &S2) {
 	Vector3 tp1 = point_1 - sphereCenter;
 	Vector3 tp2 = point_2 - sphereCenter;
-	int result = intersectsSphere(tp1, tp2, radius, S1, S2);
+	int result = intersects_sphere(tp1, tp2, radius, S1, S2);
 	S1 += sphereCenter;
 	S2 += sphereCenter;
 	return result;
@@ -394,7 +394,7 @@ void IKRay3D::setP1(Vector3 p_p1) {
 	this->point_1 = p_p1;
 }
 
-int IKRay3D::intersectsSphere(Vector3 rp1, Vector3 rp2, float radius, Vector3 &S1, Vector3 &S2) {
+int IKRay3D::intersects_sphere(Vector3 rp1, Vector3 rp2, float radius, Vector3 &S1, Vector3 &S2) {
 	Vector3 direction = rp2 - rp1;
 	Vector3 e = direction; // e=ray.dir
 	e.normalize(); // e=g/|g|

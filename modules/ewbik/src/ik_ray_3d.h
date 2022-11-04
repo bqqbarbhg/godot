@@ -193,7 +193,7 @@ public:
 
 	virtual void reverse();
 
-	virtual Ref<IKRay3D> getReversed();
+	virtual Ref<IKRay3D> get_reversed();
 
 	virtual Ref<IKRay3D> get_ray_scaled_to(real_t scalar);
 
@@ -202,9 +202,9 @@ public:
 	 * has a positive dot product with the heading of r
 	 * if dot product is already positive, does nothing.
 	 */
-	virtual void pointWith(Ref<IKRay3D> r);
+	virtual void point_with(Ref<IKRay3D> r);
 
-	virtual void pointWith(Vector3 heading);
+	virtual void point_with(Vector3 heading);
 
 	virtual Ref<IKRay3D> getRayScaledBy(real_t scalar);
 
@@ -252,12 +252,12 @@ public:
 	 * @return
 	 */
 
-	virtual Vector3 closestPointToRay3D(Ref<IKRay3D> r);
+	virtual Vector3 closest_point_to_ray_3d(Ref<IKRay3D> r);
 
-	virtual Vector3 closestPointToRay3DStrict(Ref<IKRay3D> r);
+	virtual Vector3 closest_point_to_ray_3d_strict(Ref<IKRay3D> r);
 
 	// returns a ray perpendicular to this ray on the XY plane;
-	virtual Ref<IKRay3D> getPerpendicular2D();
+	virtual Ref<IKRay3D> get_perpendicular_2d();
 
 	/**
 	 * @param ta the first vertex of a triangle on the plane
@@ -266,7 +266,7 @@ public:
 	 * @return the point where this ray intersects the plane specified by the
 	 *         triangle ta,tb,tc.
 	 */
-	virtual Vector3 intersectsPlane(Vector3 ta, Vector3 tb, Vector3 tc);
+	virtual Vector3 intersects_plane(Vector3 ta, Vector3 tb, Vector3 tc);
 
 private:
 	/*
@@ -285,7 +285,7 @@ private:
 	 * @return number of intersections found;
 	 */
 public:
-	virtual int intersectsSphere(Vector3 sphereCenter, real_t radius, Vector3 &S1, Vector3 &S2);
+	virtual int intersects_sphere(Vector3 sphereCenter, real_t radius, Vector3 &S1, Vector3 &S2);
 
 	virtual void p1(Vector3 in);
 
@@ -299,7 +299,7 @@ public:
 
 	virtual void setP1(Vector3 p1);
 
-	virtual int intersectsSphere(Vector3 rp1, Vector3 rp2, float radius, Vector3 &S1, Vector3 &S2);
+	virtual int intersects_sphere(Vector3 rp1, Vector3 rp2, float radius, Vector3 &S1, Vector3 &S2);
 
 	float triArea2D(float x1, float y1, float x2, float y2, float x3, float y3) {
 		return (x1 - x2) * (y2 - y3) - (x2 - x3) * (y1 - y2);

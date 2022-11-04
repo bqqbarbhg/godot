@@ -103,8 +103,8 @@ void IKLimitCone::update_tangent_and_cushion_handles(Ref<IKLimitCone> p_next, in
 		r1B->elongate(99);
 		r2B->elongate(99);
 
-		Vector3 intersection1 = r1B->intersectsPlane(scaledAxisA, planeDir1A, planeDir2A);
-		Vector3 intersection2 = r2B->intersectsPlane(scaledAxisA, planeDir1A, planeDir2A);
+		Vector3 intersection1 = r1B->intersects_plane(scaledAxisA, planeDir1A, planeDir2A);
+		Vector3 intersection2 = r2B->intersects_plane(scaledAxisA, planeDir1A, planeDir2A);
 
 		Ref<IKRay3D> intersectionRay = memnew(IKRay3D(intersection1, intersection2));
 		intersectionRay->elongate(99);
@@ -112,7 +112,7 @@ void IKLimitCone::update_tangent_and_cushion_handles(Ref<IKLimitCone> p_next, in
 		Vector3 sphereIntersect1;
 		Vector3 sphereIntersect2;
 		Vector3 sphereCenter;
-		intersectionRay->intersectsSphere(sphereCenter, 1.0f, sphereIntersect1, sphereIntersect2);
+		intersectionRay->intersects_sphere(sphereCenter, 1.0f, sphereIntersect1, sphereIntersect2);
 
 		this->set_tangent_circle_center_next_1(sphereIntersect1, p_mode);
 		this->set_tangent_circle_center_next_2(sphereIntersect2, p_mode);
@@ -476,7 +476,7 @@ Vector3 IKLimitCone::get_on_path_sequence(Ref<IKLimitCone> next, Vector3 input) 
 		Vector3 t1xc2 = tangent_circle_center_next_1.cross(next->get_control_point());
 		if (input.dot(c1xt1) > 0.0f && input.dot(t1xc2) > 0.0f) {
 			Ref<IKRay3D> tan1ToInput = memnew(IKRay3D(tangent_circle_center_next_1, input));
-			Vector3 result = tan1ToInput->intersectsPlane(Vector3(0.0f, 0.0f, 0.0f), get_control_point(), next->get_control_point());
+			Vector3 result = tan1ToInput->intersects_plane(Vector3(0.0f, 0.0f, 0.0f), get_control_point(), next->get_control_point());
 			return result.normalized();
 		} else {
 			return Vector3(NAN, NAN, NAN);
@@ -486,7 +486,7 @@ Vector3 IKLimitCone::get_on_path_sequence(Ref<IKLimitCone> next, Vector3 input) 
 		Vector3 c2xt2 = next->get_control_point().cross(tangent_circle_center_next_2);
 		if (input.dot(t2xc1) > 0 && input.dot(c2xt2) > 0) {
 			Ref<IKRay3D> tan2ToInput = memnew(IKRay3D(tangent_circle_center_next_2, input));
-			Vector3 result = tan2ToInput->intersectsPlane(Vector3(0.0f, 0.0f, 0.0f), get_control_point(), next->get_control_point());
+			Vector3 result = tan2ToInput->intersects_plane(Vector3(0.0f, 0.0f, 0.0f), get_control_point(), next->get_control_point());
 			return result.normalized();
 		} else {
 			return Vector3(NAN, NAN, NAN);
