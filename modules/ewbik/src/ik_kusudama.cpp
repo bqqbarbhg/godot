@@ -82,7 +82,7 @@ bool IKKusudama::is_in_global_pose_orientation_limits(Ref<IKNode3D> p_global_axe
 	Vector3 global_y_heading = p_global_axes->get_global_transform().basis.get_column(Vector3::AXIS_Y);
 	global_y_heading = global_y_heading + p_global_axes->get_global_transform().origin;
 	Vector3 local_point = p_limiting_axes->to_local(global_y_heading);
-	Vector3 in_limits = _local_point_in_limits(local_point, in_bounds, IKKusudama::BOUNDARY);
+	Vector3 in_limits = _local_point_in_limits(local_point, in_bounds);
 	bool is_rotation = !Math::is_nan(in_limits.x);
 	if (in_bounds[0] < 0.0 || !is_rotation) {
 		return false;
@@ -346,7 +346,7 @@ Vector3 IKKusudama::local_point_on_path_sequence(Vector3 in_point, Ref<IKNode3D>
  * the point is outside of the boundary, but does not signify anything about how far from the boundary the point is.
  * @return the original point, if it's in limits, or the closest point which is in limits.
  */
-Vector3 IKKusudama::_local_point_in_limits(Vector3 in_point, Vector<double> &in_bounds, int mode) {
+Vector3 IKKusudama::_local_point_in_limits(Vector3 in_point, Vector<double> &in_bounds) {
 	Vector3 point = in_point.normalized();
 	real_t closest_cos = -2.0;
 	Vector3 closest_collision_point = Vector3(NAN, NAN, NAN);
@@ -401,7 +401,7 @@ void IKKusudama::set_axes_to_orientation_snap(Ref<IKNode3D> to_set, Ref<IKNode3D
 	bone_ray->p1(limiting_axes->get_global_transform().origin);
 	bone_ray->p2(to_set->get_global_transform().basis.get_column(Vector3::AXIS_Y));
 	Vector3 bone_tip = limiting_axes->to_local(bone_ray->p2());
-	Vector3 in_limits = _local_point_in_limits(bone_tip, in_bounds, IKKusudama::BOUNDARY);
+	Vector3 in_limits = _local_point_in_limits(bone_tip, in_bounds);
 	if (in_bounds[0] < 0 && !Math::is_nan(in_limits.x)) {
 		constrained_ray->p1(bone_ray->p1());
 		constrained_ray->p2(limiting_axes->to_global(in_limits));

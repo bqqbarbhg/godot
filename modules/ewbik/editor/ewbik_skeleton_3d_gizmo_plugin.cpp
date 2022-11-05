@@ -317,16 +317,16 @@ void fragment() {
 					float radius = limit_cone->get_radius();
 					kusudama_limit_cones.write[out_idx + 3] = radius;
 
-					Vector3 tangent_center_1 = limit_cone->get_tangent_circle_center_next_1(IKKusudama::BOUNDARY);
+					Vector3 tangent_center_1 = limit_cone->get_tangent_circle_center_next_1();
 					tangent_center_1.normalize();
 					out_idx += 4;
 					kusudama_limit_cones.write[out_idx + 0] = tangent_center_1.x;
 					kusudama_limit_cones.write[out_idx + 1] = tangent_center_1.y;
 					kusudama_limit_cones.write[out_idx + 2] = tangent_center_1.z;
-					float tangent_radius = limit_cone->get_tangent_circle_radius_next(IKKusudama::BOUNDARY);
+					float tangent_radius = limit_cone->get_tangent_circle_radius_next();
 					kusudama_limit_cones.write[out_idx + 3] = tangent_radius;
 
-					Vector3 tangent_center_2 = limit_cone->get_tangent_circle_center_next_2(IKKusudama::BOUNDARY);
+					Vector3 tangent_center_2 = limit_cone->get_tangent_circle_center_next_2();
 					tangent_center_2.normalize();
 					out_idx += 4;
 					kusudama_limit_cones.write[out_idx + 0] = tangent_center_2.x;

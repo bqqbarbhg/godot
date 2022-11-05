@@ -70,12 +70,11 @@ class IKLimitCone : public Resource {
 
 	Vector3 closest_cone(Ref<IKLimitCone> next, Vector3 input) const;
 
-	void update_tangent_handles(Ref<IKLimitCone> p_next, int p_mode);
 
-	void set_tangent_circle_center_next_1(Vector3 point, int mode);
-	void set_tangent_circle_center_next_2(Vector3 point, int mode);
+	void set_tangent_circle_center_next_1(Vector3 point);
+	void set_tangent_circle_center_next_2(Vector3 point);
 
-	void set_tangent_circle_radius_next(double rad, int mode);
+	void set_tangent_circle_radius_next(double rad);
 
 	Ref<IKKusudama> parent_kusudama;
 
@@ -93,16 +92,17 @@ class IKLimitCone : public Resource {
 	Vector<Vector3> second_triangle_next = { Vector3(), Vector3(), Vector3() };
 
 protected:
-	virtual double _get_radius(int mode);
+	virtual double _get_radius();
 
-	virtual double _get_radius_cosine(int mode);
+	virtual double _get_radius_cosine();
 public:
-	static const int BOUNDARY = 0;
 
 	virtual ~IKLimitCone() {}
 	IKLimitCone();
 	IKLimitCone(Vector3 &direction, double rad, Ref<IKKusudama> attached_to);
 	static Vector3 get_orthogonal(Vector3 p_in);
+
+	void update_tangent_handles(Ref<IKLimitCone> p_next);
 
 	/**
 	 *
@@ -144,7 +144,6 @@ public:
 	 * @return
 	 */
 	Vector3 closest_point_on_closest_cone(Ref<IKLimitCone> next, Vector3 input, Vector<double> &in_bounds) const;
-	virtual void update_tangent_handles(Ref<IKLimitCone> next);
 
 	/**
 	 * returns null if no rectification is required.
@@ -162,10 +161,10 @@ public:
 	 * between two cones if the point is out of bounds and applicable for rectification.
 	 */
 	Vector3 get_on_great_tangent_triangle(Ref<IKLimitCone> next, Vector3 input) const;
-	virtual Vector3 get_tangent_circle_center_next_1(int mode);
-	virtual double get_tangent_circle_radius_next(int mode);
-	virtual double get_tangent_circle_radius_next_cos(int mode);
-	virtual Vector3 get_tangent_circle_center_next_2(int mode);
+	virtual Vector3 get_tangent_circle_center_next_1();
+	virtual double get_tangent_circle_radius_next();
+	virtual double get_tangent_circle_radius_next_cos();
+	virtual Vector3 get_tangent_circle_center_next_2();
 	virtual Vector3 get_control_point() const;
 	virtual void set_control_point(Vector3 p_control_point);
 	virtual double get_radius() const;

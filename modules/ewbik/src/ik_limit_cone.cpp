@@ -38,15 +38,10 @@
 IKLimitCone::IKLimitCone() {
 }
 
-void IKLimitCone::update_tangent_handles(Ref<IKLimitCone> next) {
-	this->control_point.normalize();
-	update_tangent_handles(next, BOUNDARY);
-}
-
-void IKLimitCone::update_tangent_handles(Ref<IKLimitCone> p_next, int p_mode) {
+void IKLimitCone::update_tangent_handles(Ref<IKLimitCone> p_next) {
 	if (p_next.is_valid()) {
-		double radA = this->_get_radius(p_mode);
-		double radB = p_next->_get_radius(p_mode);
+		double radA = this->_get_radius();
+		double radB = p_next->_get_radius();
 
 		Vector3 A = this->get_control_point();
 		Vector3 B = p_next->get_control_point();
@@ -113,9 +108,9 @@ void IKLimitCone::update_tangent_handles(Ref<IKLimitCone> p_next, int p_mode) {
 		Vector3 sphereCenter;
 		intersectionRay->intersects_sphere(sphereCenter, 1.0f, sphereIntersect1, sphereIntersect2);
 
-		this->set_tangent_circle_center_next_1(sphereIntersect1, p_mode);
-		this->set_tangent_circle_center_next_2(sphereIntersect2, p_mode);
-		this->set_tangent_circle_radius_next(tRadius, p_mode);
+		this->set_tangent_circle_center_next_1(sphereIntersect1);
+		this->set_tangent_circle_center_next_2(sphereIntersect2);
+		this->set_tangent_circle_radius_next(tRadius);
 	}
 	if (this->tangent_circle_center_next_1 == Vector3(NAN, NAN, NAN)) {
 		this->tangent_circle_center_next_1 = get_orthogonal(control_point).normalized();
@@ -128,32 +123,32 @@ void IKLimitCone::update_tangent_handles(Ref<IKLimitCone> p_next, int p_mode) {
 	}
 }
 
-void IKLimitCone::set_tangent_circle_radius_next(double rad, int mode) {
+void IKLimitCone::set_tangent_circle_radius_next(double rad) {
 	this->tangent_circle_radius_next = rad;
 	this->tangent_circle_radius_next_cos = cos(tangent_circle_radius_next);
 }
 
-Vector3 IKLimitCone::get_tangent_circle_center_next_1(int mode) {
+Vector3 IKLimitCone::get_tangent_circle_center_next_1() {
 	return tangent_circle_center_next_1;
 }
 
-double IKLimitCone::get_tangent_circle_radius_next(int mode) {
+double IKLimitCone::get_tangent_circle_radius_next() {
 	return tangent_circle_radius_next;
 }
 
-double IKLimitCone::get_tangent_circle_radius_next_cos(int mode) {
+double IKLimitCone::get_tangent_circle_radius_next_cos() {
 	return tangent_circle_radius_next_cos;
 }
 
-Vector3 IKLimitCone::get_tangent_circle_center_next_2(int mode) {
+Vector3 IKLimitCone::get_tangent_circle_center_next_2() {
 	return tangent_circle_center_next_2;
 }
 
-double IKLimitCone::_get_radius(int mode) {
+double IKLimitCone::_get_radius() {
 	return radius;
 }
 
-double IKLimitCone::_get_radius_cosine(int mode) {
+double IKLimitCone::_get_radius_cosine() {
 	return radius_cosine;
 }
 
@@ -392,11 +387,11 @@ Vector3 IKLimitCone::closest_to_cone(Vector3 input, Vector<double> &in_bounds) c
 	return result;
 }
 
-void IKLimitCone::set_tangent_circle_center_next_1(Vector3 point, int mode) {
+void IKLimitCone::set_tangent_circle_center_next_1(Vector3 point) {
 	this->tangent_circle_center_next_1 = point;
 }
 
-void IKLimitCone::set_tangent_circle_center_next_2(Vector3 point, int mode) {
+void IKLimitCone::set_tangent_circle_center_next_2(Vector3 point) {
 	tangent_circle_center_next_2 = point;
 }
 
