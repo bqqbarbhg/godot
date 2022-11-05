@@ -46,7 +46,7 @@ void IKLimitCone::update_tangent_handles(Ref<IKLimitCone> p_next) {
 		Vector3 A = this->get_control_point();
 		Vector3 B = p_next->get_control_point();
 
-		Vector3 arcNormal = A.cross(B);
+		Vector3 arc_normal = A.cross(B);
 
 		/**
 		 * There are an infinite number of circles co-tangent with A and B, every other
@@ -76,7 +76,7 @@ void IKLimitCone::update_tangent_handles(Ref<IKLimitCone> p_next) {
 		// the axis of this cone, scaled to minimize its distance to the tangent contact points.
 		Vector3 scaledAxisA = A * cos(boundaryPlusTangentRadiusA);
 		// a point on the plane running through the tangent contact points
-		Quaternion temp_var = quaternion_set_axis_angle(arcNormal, boundaryPlusTangentRadiusA);
+		Quaternion temp_var = quaternion_set_axis_angle(arc_normal, boundaryPlusTangentRadiusA);
 		Vector3 planeDir1A = temp_var.xform(A);
 		// another point on the same plane
 		Quaternion tempVar2 = quaternion_set_axis_angle(A, Math_PI / 2);
@@ -84,7 +84,7 @@ void IKLimitCone::update_tangent_handles(Ref<IKLimitCone> p_next) {
 
 		Vector3 scaledAxisB = B * cos(boundaryPlusTangentRadiusB);
 		// a point on the plane running through the tangent contact points
-		Quaternion tempVar3 = quaternion_set_axis_angle(arcNormal, boundaryPlusTangentRadiusB);
+		Quaternion tempVar3 = quaternion_set_axis_angle(arc_normal, boundaryPlusTangentRadiusB);
 		Vector3 planeDir1B = tempVar3.xform(B);
 		// another point on the same plane
 		Quaternion tempVar4 = quaternion_set_axis_angle(B, Math_PI / 2);
