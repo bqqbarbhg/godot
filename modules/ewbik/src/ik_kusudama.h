@@ -74,15 +74,9 @@ protected:
 	bool orientationally_constrained = false;
 	bool axially_constrained = false;
 
-	// for IK solvers. Defines the weight ratio between the unconstrained IK solved orientation and the constrained orientation for this bone
-	// per iteration. This should help stabilize solutions somewhat by allowing for soft constraint violations.
-	real_t strength = 1;
-
 	Ref<IKBone3D> _attached_to;
 
 public:
-	static const int BOUNDARY = 0;
-
 	virtual ~IKKusudama() {
 	}
 
@@ -273,16 +267,6 @@ protected:
 	 * @param for_bone the bone to which to attach this Kusudama.
 	 */
 public:
-	/**for IK solvers. Defines the weight ratio between the unconstrained IK solved orientation and the constrained orientation for this bone
-	 per iteration. This should help stabilize solutions somewhat by allowing for soft constraint violations.
-	 @param strength a value between 0 and 1. Any other value will be clamped to this range.
-	 **/
-	virtual void set_strength(double newStrength);
-
-	/**for IK solvers. Defines the weight ratio between the unconstrained IK solved orientation and the constrained orientation for this bone
-	 per iteration. This should help stabilize solutions somewhat by allowing for soft constraint violations.**/
-	virtual double get_strength() const;
-
 	virtual Vector<Ref<IKLimitCone>> get_limit_cones() const;
 
 	virtual void set_limit_cones(Vector<Ref<IKLimitCone>> p_cones) {

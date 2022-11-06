@@ -298,14 +298,6 @@ void IKKusudama::update_rotational_freedom() {
 	rotational_freedom = axial_constrained_hyper_area * (is_orientationally_constrained() ? MIN(total_limit_cone_surface_area_ratio, 1) : 1);
 }
 
-void IKKusudama::set_strength(double newStrength) {
-	this->strength = MAX(0, MIN(1, newStrength));
-}
-
-double IKKusudama::get_strength() const {
-	return this->strength;
-}
-
 Vector<Ref<IKLimitCone>> IKKusudama::get_limit_cones() const {
 	return limit_cones;
 }
