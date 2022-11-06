@@ -174,8 +174,7 @@ Skeleton3D *BoneAttachment3D::_get_skeleton3d() {
 void BoneAttachment3D::_check_unbind() {
 	if (bound) {
 		Skeleton3D *sk = _get_skeleton3d();
-
-		if (sk && sk->is_connected(SNAME("bone_pose_changed"))) {
+		if (sk && sk->is_connected(SNAME("bone_pose_changed"), callable_mp(this, &BoneAttachment3D::on_bone_pose_update))) {
 			sk->disconnect(SNAME("bone_pose_changed"), callable_mp(this, &BoneAttachment3D::on_bone_pose_update));
 		}
 		bound = false;
