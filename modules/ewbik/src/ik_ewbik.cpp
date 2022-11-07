@@ -653,7 +653,6 @@ void SkeletonModification3DEWBIK::execute(real_t delta) {
 		segmented_skeleton->segment_solver(get_default_damp());
 	}
 	update_skeleton_bones_transform();
-	update_gizmos();
 }
 
 void SkeletonModification3DEWBIK::skeleton_changed(Skeleton3D *p_skeleton) {
