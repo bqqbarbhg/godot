@@ -172,17 +172,9 @@ Ref<IKBone3D> IKKusudama::attached_to() {
 }
 
 void IKKusudama::add_limit_cone(Vector3 new_cone_local_point, double radius, Ref<IKLimitCone> previous, Ref<IKLimitCone> next) {
-	Vector3 localized_point = new_cone_local_point;
-	if (_attached_to.is_valid() && _attached_to->get_parent().is_valid()) {
-		Vector3 globalized_point = _attached_to->get_parent()->get_ik_transform()->get_global_transform().xform(new_cone_local_point);
-		Vector3 offset = _attached_to->get_parent()->get_ik_transform()->get_global_transform().origin - _limiting_axes->get_global_transform().origin;
-		globalized_point += offset;
-		localized_point = _limiting_axes->to_local(globalized_point);
-	}
-
 	int insert_at = 0;
 	if (next.is_null() || limit_cones.is_empty()) {
-		add_limit_cone_at_index(insert_at, localized_point, radius);
+		add_limit_cone_at_index(insert_at, new_cone_local_point, radius);
 		return;
 	}
 	if (previous.is_valid()) {
@@ -190,7 +182,7 @@ void IKKusudama::add_limit_cone(Vector3 new_cone_local_point, double radius, Ref
 	} else {
 		insert_at = MAX(0, limit_cones.find(next));
 	}
-	add_limit_cone_at_index(insert_at, localized_point, radius);
+	add_limit_cone_at_index(insert_at, new_cone_local_point, radius);
 }
 
 void IKKusudama::remove_limit_cone(Ref<IKLimitCone> limitCone) {

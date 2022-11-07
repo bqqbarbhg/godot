@@ -299,12 +299,11 @@ Vector3 IKLimitCone::get_orthogonal(Vector3 p_in) {
 
 IKLimitCone::IKLimitCone(Vector3 &direction, double rad, Ref<IKKusudama> attached_to) {
 	parent_kusudama = attached_to;
-	tangent_circle_center_next_1 = direction.normalized();
-	tangent_circle_center_next_2 = (tangent_circle_center_next_1 * -1);
+	tangent_circle_center_next_1 = Vector3(0.0f, -1.0f, 0.0f);
+	tangent_circle_center_next_2 = Vector3(0.0f, 1.0f, 0.0f);
 	this->radius = MAX(DBL_TRUE_MIN, rad);
 	this->radius_cosine = cos(radius);
-	this->control_point = direction;
-	this->control_point.normalize();
+	this->control_point = direction.normalized();
 }
 
 Vector3 IKLimitCone::get_on_great_tangent_triangle(Ref<IKLimitCone> next, Vector3 input) const {
@@ -388,11 +387,11 @@ Vector3 IKLimitCone::closest_to_cone(Vector3 input, Vector<double> &in_bounds) c
 }
 
 void IKLimitCone::set_tangent_circle_center_next_1(Vector3 point) {
-	this->tangent_circle_center_next_1 = point;
+	this->tangent_circle_center_next_1 = point.normalized();
 }
 
 void IKLimitCone::set_tangent_circle_center_next_2(Vector3 point) {
-	tangent_circle_center_next_2 = point;
+	tangent_circle_center_next_2 = point.normalized();
 }
 
 Vector3 IKLimitCone::get_on_path_sequence(Ref<IKLimitCone> next, Vector3 input) const {

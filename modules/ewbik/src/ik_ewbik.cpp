@@ -499,7 +499,7 @@ void SkeletonModification3DEWBIK::set_kusudama_limit_cone(int32_t p_contraint_in
 		Vector3 p_center, float p_radius) {
 	ERR_FAIL_INDEX(p_contraint_index, kusudama_limit_cones.size());
 	Vector<Vector4> cones = kusudama_limit_cones.write[p_contraint_index];
-	Vector3 center = p_center;
+	Vector3 center = p_center.normalized();
 	Vector4 cone;
 	cone.x = center.x;
 	cone.y = center.y;
@@ -549,6 +549,7 @@ void SkeletonModification3DEWBIK::set_kusudama_limit_cone_count(int32_t p_contra
 	}
 
 	notify_property_list_changed();
+	update_gizmos();
 	skeleton_changed(get_skeleton());
 }
 
@@ -574,6 +575,7 @@ void SkeletonModification3DEWBIK::set_kusudama_limit_cone_radius(int32_t p_effec
 	ERR_FAIL_INDEX(p_index, kusudama_limit_cones[p_effector_index].size());
 	Vector4 &cone = kusudama_limit_cones.write[p_effector_index].write[p_index];
 	cone.w = p_radius;
+	update_gizmos();
 	skeleton_changed(get_skeleton());
 }
 
@@ -585,6 +587,7 @@ void SkeletonModification3DEWBIK::set_kusudama_limit_cone_center(int32_t p_effec
 	cone.x = p_center.x;
 	cone.y = p_center.y;
 	cone.z = p_center.z;
+	update_gizmos();
 	skeleton_changed(get_skeleton());
 }
 
@@ -597,6 +600,7 @@ void SkeletonModification3DEWBIK::set_constraint_name(int32_t p_index, String p_
 	ERR_FAIL_INDEX(p_index, constraint_names.size());
 	constraint_names.write[p_index] = p_name;
 	notify_property_list_changed();
+	update_gizmos();
 	skeleton_changed(get_skeleton());
 }
 
@@ -635,6 +639,7 @@ void SkeletonModification3DEWBIK::execute(real_t delta) {
 	}
 	if (segmented_skeleton.is_null() || is_dirty) {
 		skeleton_changed(get_skeleton());
+		is_dirty = false;
 	}
 	if (bone_list.size()) {
 		Ref<IKNode3D> root_ik_bone = bone_list.write[0]->get_ik_transform();
