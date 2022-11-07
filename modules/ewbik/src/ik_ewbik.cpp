@@ -649,6 +649,7 @@ void SkeletonModification3DNBoneIK::execute(real_t delta) {
 		segmented_skeleton->segment_solver(get_default_damp());
 	}
 	update_skeleton_bones_transform();
+	update_gizmos();
 }
 
 void SkeletonModification3DNBoneIK::skeleton_changed(Skeleton3D *p_skeleton) {
@@ -752,11 +753,13 @@ void SkeletonModification3DNBoneIK::set_pin_weight(int32_t p_pin_index, const re
 	notify_property_list_changed();
 	skeleton_changed(get_skeleton());
 }
+
 Vector3 SkeletonModification3DNBoneIK::get_pin_direction_priorities(int32_t p_pin_index) const {
 	ERR_FAIL_INDEX_V(p_pin_index, pins.size(), Vector3(0, 0, 0));
 	const Ref<IKEffectorTemplate> data = pins[p_pin_index];
 	return data->get_direction_priorities();
 }
+
 void SkeletonModification3DNBoneIK::set_pin_direction_priorities(int32_t p_pin_index, const Vector3 &p_priority_direction) {
 	ERR_FAIL_INDEX(p_pin_index, pins.size());
 	Ref<IKEffectorTemplate> data = pins[p_pin_index];
