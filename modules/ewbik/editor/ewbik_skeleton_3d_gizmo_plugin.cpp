@@ -53,7 +53,8 @@
 #include "../src/ik_kusudama.h"
 
 bool EWBIK3DGizmoPlugin::has_gizmo(Node3D *p_spatial) {
-	return p_spatial->is_class("SkeletonModification3DEWBIK");
+	bool is_gizmo = p_spatial->is_class("SkeletonModification3DEWBIK");
+	return is_gizmo;
 }
 
 String EWBIK3DGizmoPlugin::get_gizmo_name() const {
@@ -63,7 +64,6 @@ String EWBIK3DGizmoPlugin::get_gizmo_name() const {
 void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 	ewbik = Object::cast_to<SkeletonModification3DEWBIK>(p_gizmo->get_node_3d());
 	if (!ewbik) {
-		p_gizmo->clear();
 		return;
 	}
 	Skeleton3D *skeleton = ewbik->get_skeleton();
@@ -73,6 +73,7 @@ void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 	if (!skeleton->is_connected(SceneStringNames::get_singleton()->pose_updated, Callable(this, "update_gizmos"))) {
 		skeleton->connect(SceneStringNames::get_singleton()->pose_updated, Callable(this, "update_gizmos"));
 	}
+	p_gizmo->clear();
 	Color bone_color = EditorSettings::get_singleton()->get("editors/3d_gizmos/gizmo_colors/skeleton");
 	LocalVector<int> bones;
 	LocalVector<float> weights;
