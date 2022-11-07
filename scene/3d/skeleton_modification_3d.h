@@ -34,8 +34,8 @@
 #include "core/string/node_path.h"
 #include "scene/3d/skeleton_3d.h"
 
-class SkeletonModification3D : public Node {
-	GDCLASS(SkeletonModification3D, Node);
+class SkeletonModification3D : public Node3D {
+	GDCLASS(SkeletonModification3D, Node3D);
 
 private:
 	static void _bind_methods();

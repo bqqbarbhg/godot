@@ -112,6 +112,9 @@ void IKBone3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_pin"), &IKBone3D::get_pin);
 	ClassDB::bind_method(D_METHOD("set_pin", "pin"), &IKBone3D::set_pin);
 	ClassDB::bind_method(D_METHOD("is_pinned"), &IKBone3D::is_pinned);
+	ClassDB::bind_method(D_METHOD("get_constraint"), &IKBone3D::get_constraint);
+	ClassDB::bind_method(D_METHOD("get_constraint_transform"), &IKBone3D::get_constraint_transform);
+	
 }
 
 IKBone3D::IKBone3D(StringName p_bone, Skeleton3D *p_skeleton, const Ref<IKBone3D> &p_parent, Vector<Ref<IKEffectorTemplate>> &p_pins, float p_default_dampening) {

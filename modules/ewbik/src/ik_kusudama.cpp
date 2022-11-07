@@ -51,9 +51,10 @@ void IKKusudama::update_tangent_radii() {
 		Ref<IKLimitCone> current = limit_cones[i];
 		Ref<IKLimitCone> next;
 		if (i < limit_cones.size() - 1) {
-			next = limit_cones.write[i + 1];
+			next = limit_cones[i + 1];
 		}
-		limit_cones.write[i]->update_tangent_handles(next);
+		Ref<IKLimitCone> cone = limit_cones[i];
+		cone->update_tangent_handles(next);
 	}
 }
 
@@ -70,8 +71,6 @@ void IKKusudama::update_tangent_radii() {
  * If the new d is  greater than the old d, our result is the weighted average of these
  * (with the weight determining the resistance of the boundary). This result is stored for reference by future calls.
  * If the new d is less than the old d, we return the input orientation, and set the new d to this lower value for reference by future calls.
- *
- * Because we can expect rotations to be fairly small, we use nlerp instead of slerp for efficiency when averaging.
  */
 IKKusudama::IKKusudama(Ref<IKNode3D> to_set, Ref<IKNode3D> bone_direction, Ref<IKNode3D> limiting_axes, double cos_half_angle_dampen) {
 	Vector<double> in_bounds = { 1 };
@@ -290,15 +289,16 @@ double IKKusudama::get_rotational_freedom() {
 
 void IKKusudama::update_rotational_freedom() {
 	double axial_constrained_hyper_area = is_axially_constrained() ? (range / Math_TAU) : 1;
-	// quick and dirty solution (should revisit);
+	// A quick and dirty solution (should revisit).
 	double total_limit_cone_surface_area_ratio = 0;
-	for (Ref<IKLimitCone> l : limit_cones) {
+	for (int32_t cone_i = 0; cone_i < limit_cones.size(); cone_i++) {
+		Ref<IKLimitCone> l = limit_cones[cone_i];
 		total_limit_cone_surface_area_ratio += (l->get_radius() * 2) / Math_TAU;
 	}
 	rotational_freedom = axial_constrained_hyper_area * (is_orientationally_constrained() ? MIN(total_limit_cone_surface_area_ratio, 1) : 1);
 }
 
-Vector<Ref<IKLimitCone>> IKKusudama::get_limit_cones() const {
+TypedArray<IKLimitCone> IKKusudama::get_limit_cones() const {
 	return limit_cones;
 }
 
@@ -309,11 +309,13 @@ Vector3 IKKusudama::local_point_on_path_sequence(Vector3 in_point, Ref<IKNode3D>
 	Vector3 result = point;
 
 	if (limit_cones.size() == 1) {
-		result = limit_cones[0]->get_control_point();
+		Ref<IKLimitCone> cone = limit_cones[0];
+		result = cone->get_control_point();
 	} else {
 		for (int i = 0; i < limit_cones.size() - 1; i++) {
 			Ref<IKLimitCone> next_cone = limit_cones[i + 1];
-			Vector3 closestPathPoint = limit_cones[i]->get_closest_path_point(next_cone, point);
+			Ref<IKLimitCone> cone = limit_cones[i];
+			Vector3 closestPathPoint = cone->get_closest_path_point(next_cone, point);
 			double closeDot = closestPathPoint.dot(point);
 			if (closeDot > closest_point_dot) {
 				result = closestPathPoint;

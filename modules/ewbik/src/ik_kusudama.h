@@ -36,6 +36,7 @@
 #include "core/math/quaternion.h"
 #include "core/math/vector3.h"
 #include "core/object/ref_counted.h"
+#include "core/variant/typed_array.h"
 
 #include "ik_bone_3d.h"
 #include "ik_bone_segment.h"
@@ -58,7 +59,7 @@ protected:
 	 * with the expectation that any limitCone in the array is connected to the cone at the previous element in the array,
 	 * and the cone at the next element in the array.
 	 */
-	Vector<Ref<IKLimitCone>> limit_cones;
+	TypedArray<IKLimitCone> limit_cones;
 
 	/**
 	 * Defined as some Angle in radians about the limiting_axes Y axis, 0 being equivalent to the
@@ -75,6 +76,13 @@ protected:
 	bool axially_constrained = false;
 
 	Ref<IKBone3D> _attached_to;
+
+protected:
+	static void _bind_methods() {
+		ClassDB::bind_method(D_METHOD("get_limit_cones"), &IKKusudama::get_limit_cones);
+		ClassDB::bind_method(D_METHOD("set_limit_cones", "limit_cones"), &IKKusudama::set_limit_cones);
+	}
+	
 
 public:
 	virtual ~IKKusudama() {
@@ -267,9 +275,9 @@ protected:
 	 * @param for_bone the bone to which to attach this Kusudama.
 	 */
 public:
-	virtual Vector<Ref<IKLimitCone>> get_limit_cones() const;
+	virtual TypedArray<IKLimitCone> get_limit_cones() const;
 
-	virtual void set_limit_cones(Vector<Ref<IKLimitCone>> p_cones) {
+	virtual void set_limit_cones(TypedArray<IKLimitCone> p_cones) {
 		limit_cones = p_cones;
 	}
 

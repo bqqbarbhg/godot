@@ -68,9 +68,7 @@ void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 		return;
 	}
 	p_gizmo->clear();
-
 	Color bone_color = EditorSettings::get_singleton()->get("editors/3d_gizmos/gizmo_colors/skeleton");
-
 	LocalVector<int> bones;
 	LocalVector<float> weights;
 	bones.resize(4);
@@ -80,8 +78,6 @@ void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 		weights[i] = 0;
 	}
 	weights[0] = 1;
-
-	int current_bone_index = 0;
 	Vector<int> bones_to_process = skeleton->get_parentless_bones();
 	Ref<Shader> kusudama_shader;
 	kusudama_shader.instantiate();
@@ -259,9 +255,10 @@ void fragment() {
 	ALPHA = result_color_allowed.a;
 }
 )");
-	while (bones_to_process.size() > current_bone_index) {
-		int current_bone_idx = bones_to_process[current_bone_index];
-		current_bone_index++;
+	int bones_to_process_i = 0;
+	while (bones_to_process_i < bones_to_process.size()) {
+		int current_bone_idx = bones_to_process[bones_to_process_i];
+		bones_to_process_i++;
 		Color current_bone_color = bone_color;
 		Vector<int> child_bones_vector = skeleton->get_bone_children(current_bone_idx);
 		int child_bones_size = child_bones_vector.size();
@@ -307,7 +304,7 @@ void fragment() {
 					continue;
 				}
 				int out_idx = 0;
-				const Vector<Ref<IKLimitCone>> &limit_cones = kusudama->get_limit_cones();
+				const TypedArray<IKLimitCone> &limit_cones = kusudama->get_limit_cones();
 				for (int32_t cone_i = 0; cone_i < limit_cones.size(); cone_i++) {
 					Ref<IKLimitCone> limit_cone = limit_cones[cone_i];
 					Vector3 control_point = limit_cone->get_control_point();
@@ -429,7 +426,7 @@ void fragment() {
 			kusudama_surface_tool->begin(Mesh::PRIMITIVE_LINES);
 			// Make the gizmo color as bright as possible for better visibility
 			Color color = bone_color;
-			color.set_hsv(color.get_h(), color.get_s(), 1);
+			color.set_ok_hsl(color.get_h(), color.get_s(), 1);
 
 			const Ref<Material> material_primary = get_material("lines_primary", p_gizmo);
 			const Ref<Material> material_secondary = get_material("lines_secondary", p_gizmo);

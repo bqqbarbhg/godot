@@ -30,6 +30,7 @@
 
 #include "ik_bone_segment.h"
 #include "ik_effector_3d.h"
+#include "ik_limit_cone.h"
 #include "math/ik_node_3d.h"
 #include "scene/3d/skeleton_3d.h"
 
@@ -233,8 +234,14 @@ void IKBoneSegment::set_optimal_rotation(Ref<IKBone3D> p_for_bone, PackedVector3
 	// If the solved transform is outside the hard constraints, move it back into range.
 	if (p_for_bone->get_constraint().is_valid() && p_for_bone->get_constraint_transform().is_valid()) {
 		if (!p_for_bone->get_constraint()->get_limit_cones().is_empty()) {
-			Vector3 control_point = p_for_bone->get_constraint_transform()->to_global(p_for_bone->get_constraint()->get_limit_cones()[0]->get_control_point());
-			control_point -= p_for_bone->get_constraint_transform()->get_global_transform().origin;
+			TypedArray<IKLimitCone> limit_cones = p_for_bone->get_constraint()->get_limit_cones();
+			if (limit_cones.size()) {
+				Ref<IKLimitCone> cone = limit_cones[0];
+				if (cone.is_valid()) {
+					Vector3 control_point = p_for_bone->get_constraint_transform()->to_global(cone->get_control_point());
+					control_point -= p_for_bone->get_constraint_transform()->get_global_transform().origin;
+				}
+			}
 		}
 		if (p_for_bone->get_constraint()->is_orientationally_constrained()) {
 			p_for_bone->get_constraint()->set_axes_to_orientation_snap(p_for_bone->get_ik_transform(), p_for_bone->get_constraint_transform(), bone_damp, p_for_bone->get_cos_half_dampen());
@@ -285,6 +292,7 @@ void IKBoneSegment::qcp_solver(real_t p_damp, bool p_translate) {
 
 void IKBoneSegment::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_pinned"), &IKBoneSegment::is_pinned);
+	ClassDB::bind_method(D_METHOD("get_ik_bone", "bone"), &IKBoneSegment::get_ik_bone);
 }
 
 Ref<IKBoneSegment> IKBoneSegment::get_parent_segment() {

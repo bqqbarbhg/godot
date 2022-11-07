@@ -39,8 +39,8 @@
 
 class Bone2D;
 
-class SkeletonModification2D : public Node {
-	GDCLASS(SkeletonModification2D, Node);
+class SkeletonModification2D : public Node2D {
+	GDCLASS(SkeletonModification2D, Node2D);
 
 private:
 	static void _bind_methods();
