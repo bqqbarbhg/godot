@@ -549,7 +549,6 @@ void SkeletonModification3DEWBIK::set_kusudama_limit_cone_count(int32_t p_contra
 	}
 
 	notify_property_list_changed();
-	update_gizmos();
 	skeleton_changed(get_skeleton());
 }
 
@@ -575,7 +574,7 @@ void SkeletonModification3DEWBIK::set_kusudama_limit_cone_radius(int32_t p_effec
 	ERR_FAIL_INDEX(p_index, kusudama_limit_cones[p_effector_index].size());
 	Vector4 &cone = kusudama_limit_cones.write[p_effector_index].write[p_index];
 	cone.w = p_radius;
-	update_gizmos();
+	call_deferred("update_gizmos");
 	skeleton_changed(get_skeleton());
 }
 
@@ -587,7 +586,7 @@ void SkeletonModification3DEWBIK::set_kusudama_limit_cone_center(int32_t p_effec
 	cone.x = p_center.x;
 	cone.y = p_center.y;
 	cone.z = p_center.z;
-	update_gizmos();
+	call_deferred("update_gizmos");
 	skeleton_changed(get_skeleton());
 }
 
@@ -653,7 +652,7 @@ void SkeletonModification3DEWBIK::execute(real_t delta) {
 		segmented_skeleton->segment_solver(get_default_damp());
 	}
 	update_skeleton_bones_transform();
-	update_gizmos();
+	call_deferred("update_gizmos");
 }
 
 void SkeletonModification3DEWBIK::skeleton_changed(Skeleton3D *p_skeleton) {
