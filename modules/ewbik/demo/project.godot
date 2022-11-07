@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="SkeletonModification3DEWBIK Game Project"
+config/name="SkeletonModification3DNBoneIK Game Project"
 run/main_scene="res://ewbik/scenes/male.tscn"
 config/features=PackedStringArray("4.0")
 config/icon="res://icon.png"

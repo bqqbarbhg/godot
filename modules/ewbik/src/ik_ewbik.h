@@ -39,8 +39,8 @@
 #include "scene/3d/skeleton_modification_3d.h"
 
 class IKBoneSegment;
-class SkeletonModification3DEWBIK : public SkeletonModification3D {
-	GDCLASS(SkeletonModification3DEWBIK, SkeletonModification3D);
+class SkeletonModification3DNBoneIK : public SkeletonModification3D {
+	GDCLASS(SkeletonModification3DNBoneIK, SkeletonModification3D);
 	StringName root_bone;
 	StringName tip_bone;
 	NodePath skeleton_path;
@@ -118,8 +118,8 @@ public:
 	void set_kusudama_limit_cone_radius(int32_t p_contraint_index, int32_t p_index, float p_radius);
 	int32_t get_kusudama_limit_cone_count(int32_t p_contraint_index) const;
 	void set_kusudama_limit_cone_count(int32_t p_constraint_index, int32_t p_count);
-	SkeletonModification3DEWBIK();
-	~SkeletonModification3DEWBIK();
+	SkeletonModification3DNBoneIK();
+	~SkeletonModification3DNBoneIK();
 };
 
 #endif // IK_EWBIK_H

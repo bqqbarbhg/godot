@@ -53,7 +53,7 @@
 #include "../src/ik_kusudama.h"
 
 bool EWBIK3DGizmoPlugin::has_gizmo(Node3D *p_spatial) {
-	return cast_to<SkeletonModification3DEWBIK>(p_spatial);
+	return cast_to<SkeletonModification3DNBoneIK>(p_spatial);
 }
 
 String EWBIK3DGizmoPlugin::get_gizmo_name() const {
@@ -72,10 +72,10 @@ void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 	if (!owner_node) {
 		return;
 	}
-	TypedArray<Node> nodes = owner_node->find_children("*", "SkeletonModification3DEWBIK");
+	TypedArray<Node> nodes = owner_node->find_children("*", "SkeletonModification3DNBoneIK");
 	p_gizmo->clear();
 	for (int32_t node_i = 0; node_i < nodes.size(); node_i++) {
-		SkeletonModification3DEWBIK *ewbik = cast_to<SkeletonModification3DEWBIK>(nodes[node_i]);
+		SkeletonModification3DNBoneIK *ewbik = cast_to<SkeletonModification3DNBoneIK>(nodes[node_i]);
 		if (!ewbik) {
 			continue;
 		}

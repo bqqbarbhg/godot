@@ -23,7 +23,7 @@ bones/4/scale = Vector3(1, 1, 1)
 [node name="Simple_Test_Rig" parent="Simple_Test_Rig_Armature/Skeleton3D" index="0"]
 visible = false
 
-[node name="SkeletonModification3DEWBIK" type="SkeletonModification3DEWBIK" parent="Simple_Test_Rig_Armature/Skeleton3D" index="1"]
+[node name="SkeletonModification3DNBoneIK" type="SkeletonModification3DNBoneIK" parent="Simple_Test_Rig_Armature/Skeleton3D" index="1"]
 root_bone = &"Bone_01"
 pin_count = 3
 pins/0/name = "Bone_05"

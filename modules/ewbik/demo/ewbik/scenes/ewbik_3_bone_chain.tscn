@@ -55,7 +55,7 @@ transform = Transform3D(0.999127, 0.0417939, 8.6755e-07, -0.0417939, 0.999126, -
 [node name="t2" type="Marker3D" parent="Armature/Skeleton3D/o1/t1" index="0"]
 transform = Transform3D(0.894468, 0.447129, -4.35827e-07, -0.447131, 0.894469, -2.45855e-07, 2.16702e-07, 3.97163e-07, 1, 0.254847, 0.273782, 2.70253e-07)
 
-[node name="SkeletonModification3DEWBIK" type="SkeletonModification3DEWBIK" parent="Armature/Skeleton3D" index="2"]
+[node name="SkeletonModification3DNBoneIK" type="SkeletonModification3DNBoneIK" parent="Armature/Skeleton3D" index="2"]
 root_bone = &"A0"
 max_ik_iterations = 120.0
 pin_count = 4
