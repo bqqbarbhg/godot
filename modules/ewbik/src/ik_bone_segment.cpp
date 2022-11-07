@@ -149,21 +149,12 @@ void IKBoneSegment::update_pinned_list(Vector<Vector<real_t>> &r_weights) {
 			effector_list.append_array(child->effector_list);
 		}
 	}
-	// for(const Vector<real_t> &penalty : penalty_array);
-	// 	for(real_t weight : penalty) {
-	// 		heading_weights.push_back(weight);
-	// 	}
-	// }
-	// int32_t n = heading_weights.size();
-	// target_headings.resize(n);
-	// tip_headings.resize(n);
 }
 
 void IKBoneSegment::update_optimal_rotation(Ref<IKBone3D> p_for_bone, real_t p_damp, bool p_translate) {
 	ERR_FAIL_NULL(p_for_bone);
 	update_target_headings(p_for_bone, &heading_weights, &target_headings);
 	update_tip_headings(p_for_bone, &tip_headings);
-	// TODO: fire 2022-09-08 Research apply the rotation if the joint is too constrainted.
 	set_optimal_rotation(p_for_bone, &tip_headings, &target_headings, &heading_weights, p_damp, p_translate);
 }
 
@@ -305,7 +296,7 @@ IKBoneSegment::IKBoneSegment(Skeleton3D *p_skeleton, StringName p_root_bone_name
 	root = p_root;
 	tip = p_tip;
 	skeleton = p_skeleton;
-	root = Ref<IKBone3D>(memnew(IKBone3D(p_root_bone_name, p_skeleton, p_parent, p_pins, IK_DEFAULT_DAMPENING)));
+	root = Ref<IKBone3D>(memnew(IKBone3D(p_root_bone_name, p_skeleton, p_parent, p_pins, Math_PI)));
 	if (p_parent.is_valid()) {
 		root_segment = p_parent->root_segment;
 	} else {
