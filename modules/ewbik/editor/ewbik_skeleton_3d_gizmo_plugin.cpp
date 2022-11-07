@@ -70,6 +70,9 @@ void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 	if (!skeleton) {
 		return;
 	}
+	if (!skeleton->is_connected(SceneStringNames::get_singleton()->pose_updated, Callable(p_gizmo, "update"))) {
+		skeleton->connect(SceneStringNames::get_singleton()->pose_updated, Callable(p_gizmo, "update"));
+	}
 	p_gizmo->clear();
 	Color bone_color = EditorSettings::get_singleton()->get("editors/3d_gizmos/gizmo_colors/skeleton");
 	LocalVector<int> bones;
@@ -335,11 +338,11 @@ void fragment() {
 				}
 				break;
 			}
-			Transform3D constraint_relative_to_skeleton = ik_bone->get_constraint_transform()->get_global_transform();
+			BoneId bone_parent = skeleton->get_bone_parent(current_bone_idx);
+			Transform3D bone_rest_relative_to_constraint = bone_parent != -1 ?  skeleton->get_bone_rest(bone_parent) : skeleton->get_bone_rest(current_bone_idx);
+			Transform3D constraint_relative_to_skeleton = bone_rest_relative_to_constraint * ik_bone->get_constraint_transform()->get_global_transform();
 			Transform3D selected_node_relative_to_the_universe = ewbik->get_global_transform();
-			Transform3D skeleton_relative_to_the_universe = skeleton->get_global_transform();
-			Transform3D selected_node_relative_to_the_skeleton = skeleton_relative_to_the_universe.affine_inverse() * ewbik->get_global_transform();
-			Transform3D constraint_relative_to_selected_node = selected_node_relative_to_the_universe.affine_inverse() * constraint_relative_to_skeleton;
+			Transform3D selected_node_relative_to_the_skeleton = skeleton->get_global_transform().affine_inverse() * selected_node_relative_to_the_universe;
 			// Copied from the SphereMesh.
 			float radius = dist / 5.0;
 			float height = dist / 2.5;
