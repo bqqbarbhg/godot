@@ -48,6 +48,7 @@
 #include "scene/resources/primitive_meshes.h"
 #include "scene/resources/sphere_shape_3d.h"
 #include "scene/resources/surface_tool.h"
+#include "scene/scene_string_names.h"
 
 #include "../src/ik_kusudama.h"
 
@@ -62,13 +63,16 @@ String EWBIK3DGizmoPlugin::get_gizmo_name() const {
 void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 	ewbik = Object::cast_to<SkeletonModification3DEWBIK>(p_gizmo->get_node_3d());
 	if (!ewbik) {
+		p_gizmo->clear();
 		return;
 	}
 	Skeleton3D *skeleton = ewbik->get_skeleton();
 	if (!skeleton) {
 		return;
 	}
-	p_gizmo->clear();
+	if (!skeleton->is_connected(SceneStringNames::get_singleton()->pose_updated, Callable(this, "update_gizmos"))) {
+		skeleton->connect(SceneStringNames::get_singleton()->pose_updated, Callable(this, "update_gizmos"));
+	}
 	Color bone_color = EditorSettings::get_singleton()->get("editors/3d_gizmos/gizmo_colors/skeleton");
 	LocalVector<int> bones;
 	LocalVector<float> weights;
@@ -333,11 +337,11 @@ void fragment() {
 				}
 				break;
 			}
-			BoneId bone_parent = skeleton->get_bone_parent(current_bone_idx);
-			Transform3D bone_rest_relative_to_constraint = bone_parent != -1 ?  skeleton->get_bone_rest(bone_parent) : skeleton->get_bone_rest(current_bone_idx);
-			Transform3D constraint_relative_to_skeleton = bone_rest_relative_to_constraint * ik_bone->get_constraint_transform()->get_global_transform();
+			Transform3D constraint_relative_to_skeleton = ik_bone->get_constraint_transform()->get_global_transform();
 			Transform3D selected_node_relative_to_the_universe = ewbik->get_global_transform();
-			Transform3D selected_node_relative_to_the_skeleton = skeleton->get_global_transform().affine_inverse() * selected_node_relative_to_the_universe;
+			Transform3D skeleton_relative_to_the_universe = skeleton->get_global_transform();
+			Transform3D selected_node_relative_to_the_skeleton = skeleton_relative_to_the_universe.affine_inverse() * ewbik->get_global_transform();
+			Transform3D constraint_relative_to_selected_node = selected_node_relative_to_the_universe.affine_inverse() * constraint_relative_to_skeleton;
 			// Copied from the SphereMesh.
 			float radius = dist / 5.0;
 			float height = dist / 2.5;
