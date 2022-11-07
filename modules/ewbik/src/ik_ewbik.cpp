@@ -719,6 +719,7 @@ void SkeletonModification3DEWBIK::skeleton_changed(Skeleton3D *p_skeleton) {
 		constraint->update_tangent_radii();
 		constraint->update_rotational_freedom();
 	}
+	update_gizmos();
 }
 
 StringName SkeletonModification3DEWBIK::get_root_bone() const {

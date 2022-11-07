@@ -70,9 +70,6 @@ void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 	if (!skeleton) {
 		return;
 	}
-	if (!skeleton->is_connected(SceneStringNames::get_singleton()->pose_updated, Callable(this, "update_gizmos"))) {
-		skeleton->connect(SceneStringNames::get_singleton()->pose_updated, Callable(this, "update_gizmos"));
-	}
 	p_gizmo->clear();
 	Color bone_color = EditorSettings::get_singleton()->get("editors/3d_gizmos/gizmo_colors/skeleton");
 	LocalVector<int> bones;
