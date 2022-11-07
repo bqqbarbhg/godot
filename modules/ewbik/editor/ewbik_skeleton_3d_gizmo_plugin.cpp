@@ -344,15 +344,14 @@ void fragment() {
 						kusudama_limit_cones.write[out_idx + 2] = tangent_center_2.z;
 						kusudama_limit_cones.write[out_idx + 3] = tangent_radius;
 						out_idx += 4;
+					}
+					break;
 				}
-				break;
-			}
-			BoneId bone_parent = skeleton->get_bone_parent(current_bone_idx);
-			Transform3D bone_rest_relative_to_constraint = bone_parent != -1 ?  skeleton->get_bone_rest(bone_parent) : skeleton->get_bone_rest(current_bone_idx);
-			Transform3D constraint_relative_to_skeleton = bone_rest_relative_to_constraint * ik_bone->get_constraint_transform()->get_global_transform();
-			Transform3D selected_node_relative_to_the_universe = ewbik->get_global_transform();
-			Transform3D selected_node_relative_to_the_skeleton = selected_node_relative_to_the_universe.affine_inverse() * selected_node_relative_to_the_universe;
-			// Copied from the SphereMesh.
+				Transform3D constraint_relative_to_the_skeleton = ik_bone->get_constraint_transform()->get_global_transform();
+				Transform3D selected_node_relative_to_the_universe = ewbik->get_global_transform();
+				Transform3D constraint_relative_to_the_universe = skeleton->get_global_transform() * constraint_relative_to_the_skeleton;
+				Transform3D constraint_relative_to_the_node = selected_node_relative_to_the_universe.affine_inverse() * constraint_relative_to_the_universe;
+				// Copied from the SphereMesh.
 				float radius = dist / 5.0;
 				float height = dist / 2.5;
 				int rings = 64;
@@ -432,7 +431,7 @@ void fragment() {
 				int32_t cone_count = kusudama->get_limit_cones().size();
 				kusudama_material->set_shader_parameter("cone_count", cone_count);
 				kusudama_material->set_shader_parameter("kusudama_color", current_bone_color);
-				p_gizmo->add_mesh(kusudama_surface_tool->commit(Ref<Mesh>(), RS::ARRAY_CUSTOM_RGBA_HALF << RS::ARRAY_FORMAT_CUSTOM0_SHIFT), kusudama_material, selected_node_relative_to_the_skeleton, skeleton->register_skin(skeleton->create_skin_from_rest_transforms()));
+				p_gizmo->add_mesh(kusudama_surface_tool->commit(Ref<Mesh>(), RS::ARRAY_CUSTOM_RGBA_HALF << RS::ARRAY_FORMAT_CUSTOM0_SHIFT), kusudama_material, constraint_relative_to_the_node, skeleton->register_skin(skeleton->create_skin_from_rest_transforms()));
 
 				// START Create a cone visualization.
 				//
