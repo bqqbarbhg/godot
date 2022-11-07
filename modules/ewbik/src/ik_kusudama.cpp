@@ -110,7 +110,7 @@ void IKKusudama::set_snap_to_twist_limit(Ref<IKNode3D> to_set, Ref<IKNode3D> lim
 	}
 	double dist_to_min = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - min_axial_angle()));
 	double dist_to_max = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - (min_axial_angle() + range)));
-	double turn_diff = 1;
+	double turn_diff = 1.0; // TODO: If the basis is inside out time by -1.
 	Quaternion rot;
 	Vector3 axis_y = to_set->get_global_transform().basis.get_column(Vector3::AXIS_Y);
 	if (dist_to_min < dist_to_max) {
