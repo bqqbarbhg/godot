@@ -639,9 +639,13 @@ void SkeletonModification3DNBoneIK::execute(real_t delta) {
 	}
 	if (bone_list.size()) {
 		Ref<IKNode3D> root_ik_bone = bone_list.write[0]->get_ik_transform();
-		ERR_FAIL_NULL(root_ik_bone);
+		if (root_ik_bone.is_null()) {
+			return;
+		}
 		Ref<IKNode3D> root_ik_parent_transform = root_ik_bone->get_parent();
-		ERR_FAIL_NULL(root_ik_parent_transform);
+		if (root_ik_parent_transform.is_null()) {
+			return;
+		}
 		root_ik_parent_transform->set_transform(get_skeleton()->get_transform());
 	}
 	update_ik_bones_transform();
