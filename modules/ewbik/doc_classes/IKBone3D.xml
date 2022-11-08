@@ -7,6 +7,16 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="get_constraint" qualifiers="const">
+			<return type="IKKusudama" />
+			<description>
+			</description>
+		</method>
+		<method name="get_constraint_transform">
+			<return type="IKNode3D" />
+			<description>
+			</description>
+		</method>
 		<method name="get_pin" qualifiers="const">
 			<return type="IKEffector3D" />
 			<description>

@@ -15,6 +15,7 @@ def get_doc_classes():
         "IKEffectorTemplate",
         "IKKusudama",
         "IKRay3D",
+        "IKNode3D",
         "IKLimitCone",
     ]
 

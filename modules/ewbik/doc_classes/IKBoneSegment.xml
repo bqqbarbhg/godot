@@ -7,6 +7,12 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="get_ik_bone">
+			<return type="IKBone3D" />
+			<param index="0" name="bone" type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="is_pinned" qualifiers="const">
 			<return type="bool" />
 			<description>

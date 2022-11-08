@@ -8,4 +8,17 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="get_limit_cones" qualifiers="const">
+			<return type="IKLimitCone[]" />
+			<description>
+			</description>
+		</method>
+		<method name="set_limit_cones">
+			<return type="void" />
+			<param index="0" name="limit_cones" type="IKLimitCone[]" />
+			<description>
+			</description>
+		</method>
+	</methods>
 </class>
