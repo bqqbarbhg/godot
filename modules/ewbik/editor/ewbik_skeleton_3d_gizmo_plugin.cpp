@@ -518,7 +518,5 @@ void fragment() {
 			// TODO: Use several colors for the dots and match the color of the lines.
 			p_gizmo->add_handles(handles, get_material("handles"), Vector<int>(), true, true);
 		}
-		notify_property_list_changed();
-		ewbik->notify_property_list_changed();
 	}
 }
