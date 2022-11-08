@@ -1,12 +1,12 @@
 /*************************************************************************/
-/*  ray_3d.h                                                             */
+/*  ik_ray_3d.h                                                          */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2020 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2020 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -51,22 +51,23 @@ class IKRay3D : public RefCounted {
 	static constexpr int Z = 2;
 
 protected:
-static void _bind_methods() {
-	ClassDB::bind_method(D_METHOD("heading"), &IKRay3D::heading);
-	ClassDB::bind_method(D_METHOD("scaled_projection", "input"), &IKRay3D::scaled_projection);
-	ClassDB::bind_method(D_METHOD("intersects_plane", "a", "b", "c"), &IKRay3D::intersects_plane);
-	// TODO: Bind variables that are c++ references.
-	// ClassDB::bind_method(D_METHOD("set_heading", "heading"), &IKRay3D::set_heading);
-	// ClassDB::bind_method(D_METHOD("barycentric", "a", "b", "c", "p", "uvw"), &IKRay3D::barycentric);
-	// ClassDB::bind_method(D_METHOD("plane_intersect_test", "ta", "tb", "tc", "uvw"), &IKRay3D::plane_intersect_test);
-	// ClassDB::bind_method(D_METHOD("p1", "point"), &IKRay3D::p1);
-	// ClassDB::bind_method(D_METHOD("p2", "point"), &IKRay3D::p2);
-	// ClassDB::bind_method(D_METHOD("p1"), &IKRay3D::p1);
-	// ClassDB::bind_method(D_METHOD("p2"), &IKRay3D::p2);
-	// ClassDB::bind_method(D_METHOD("triangle_area_2d", "x1", "y1", "x2", "y2", "x3", "y3"), &IKRay3D::triangle_area_2d);
-	// ClassDB::bind_method(D_METHOD("intersects_sphere", "sphere_center", "radius", "sphere_1", "sphere_2"), &IKRay3D::intersects_sphere);
-	// ClassDB::bind_method(D_METHOD("intersects_sphere", "rp1", "rp2", "radius", "sphere_1", "sphere_2"), &IKRay3D::intersects_sphere);
-}
+	static void _bind_methods() {
+		ClassDB::bind_method(D_METHOD("heading"), &IKRay3D::heading);
+		ClassDB::bind_method(D_METHOD("scaled_projection", "input"), &IKRay3D::scaled_projection);
+		ClassDB::bind_method(D_METHOD("intersects_plane", "a", "b", "c"), &IKRay3D::intersects_plane);
+		// TODO: Bind variables that are c++ references.
+		// ClassDB::bind_method(D_METHOD("set_heading", "heading"), &IKRay3D::set_heading);
+		// ClassDB::bind_method(D_METHOD("barycentric", "a", "b", "c", "p", "uvw"), &IKRay3D::barycentric);
+		// ClassDB::bind_method(D_METHOD("plane_intersect_test", "ta", "tb", "tc", "uvw"), &IKRay3D::plane_intersect_test);
+		// ClassDB::bind_method(D_METHOD("p1", "point"), &IKRay3D::p1);
+		// ClassDB::bind_method(D_METHOD("p2", "point"), &IKRay3D::p2);
+		// ClassDB::bind_method(D_METHOD("p1"), &IKRay3D::p1);
+		// ClassDB::bind_method(D_METHOD("p2"), &IKRay3D::p2);
+		// ClassDB::bind_method(D_METHOD("triangle_area_2d", "x1", "y1", "x2", "y2", "x3", "y3"), &IKRay3D::triangle_area_2d);
+		// ClassDB::bind_method(D_METHOD("intersects_sphere", "sphere_center", "radius", "sphere_1", "sphere_2"), &IKRay3D::intersects_sphere);
+		// ClassDB::bind_method(D_METHOD("intersects_sphere", "rp1", "rp2", "radius", "sphere_1", "sphere_2"), &IKRay3D::intersects_sphere);
+	}
+
 public:
 	IKRay3D();
 	virtual ~IKRay3D() {}

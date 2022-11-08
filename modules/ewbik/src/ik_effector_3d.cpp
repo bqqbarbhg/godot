@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2019 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2019 Godot Engine contributors (cf. AUTHORS.md)    */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -71,7 +71,7 @@ void IKEffector3D::update_target_global_transform(Skeleton3D *p_skeleton, Skelet
 	if (!current_target_node) {
 		return;
 	}
-	target_relative_to_skeleton_origin = p_skeleton->get_global_transform().affine_inverse() *current_target_node->get_global_transform();
+	target_relative_to_skeleton_origin = p_skeleton->get_global_transform().affine_inverse() * current_target_node->get_global_transform();
 }
 
 Transform3D IKEffector3D::get_target_global_transform() const {
