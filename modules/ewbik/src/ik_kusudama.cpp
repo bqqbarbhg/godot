@@ -71,6 +71,8 @@ void IKKusudama::update_tangent_radii() {
  * If the new d is  greater than the old d, our result is the weighted average of these
  * (with the weight determining the resistance of the boundary). This result is stored for reference by future calls.
  * If the new d is less than the old d, we return the input orientation, and set the new d to this lower value for reference by future calls.
+ *
+ * Because we can expect rotations to be fairly small, we use nlerp instead of slerp for efficiency when averaging.
  */
 IKKusudama::IKKusudama(Ref<IKNode3D> to_set, Ref<IKNode3D> bone_direction, Ref<IKNode3D> limiting_axes, double cos_half_angle_dampen) {
 	Vector<double> in_bounds = { 1 };
@@ -109,15 +111,14 @@ void IKKusudama::set_snap_to_twist_limit(Ref<IKNode3D> to_set, Ref<IKNode3D> lim
 	}
 	double dist_to_min = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - min_axial_angle()));
 	double dist_to_max = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - (min_axial_angle() + range)));
-	double turn_diff = 1.0; // TODO: If the basis is inside out time by -1.
-	Quaternion rot;
+	double turn_diff = 1;
 	Vector3 axis_y = to_set->get_global_transform().basis.get_column(Vector3::AXIS_Y);
 	if (dist_to_min < dist_to_max) {
 		turn_diff = turn_diff * (from_min_to_angle_delta);
 	} else {
 		turn_diff = turn_diff * (range - (Math_TAU - from_min_to_angle_delta));
 	}
-	to_set->rotate_local_with_global(rot);
+	to_set->rotate_local_with_global(Quaternion(axis_y, turn_diff));
 }
 
 double IKKusudama::angle_to_twist_center(Ref<IKNode3D> to_set, Ref<IKNode3D> limiting_axes) {
