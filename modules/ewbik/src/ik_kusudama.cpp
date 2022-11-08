@@ -171,26 +171,30 @@ Ref<IKBone3D> IKKusudama::attached_to() {
 }
 
 void IKKusudama::add_limit_cone(Vector3 new_cone_local_point, double radius, Ref<IKLimitCone> previous, Ref<IKLimitCone> next) {
-	int insert_at = 0;
+	Ref<IKLimitCone> cone = Ref<IKLimitCone>(memnew(IKLimitCone(new_cone_local_point, radius, Ref<IKKusudama>(this))));
+
 	if (next.is_null() || limit_cones.is_empty()) {
-		add_limit_cone_at_index(insert_at, new_cone_local_point, radius);
+		limit_cones.insert(0, cone);
 		return;
 	}
+	int32_t index = 0;
 	if (previous.is_valid()) {
-		insert_at = limit_cones.find(previous) + 1;
+		index = limit_cones.find(previous) + 1;
 	} else {
-		insert_at = MAX(0, limit_cones.find(next));
+		index = limit_cones.find(next);
+		if (index == -1) {
+			index = 0;
+		}
 	}
-	add_limit_cone_at_index(insert_at, new_cone_local_point, radius);
+	if (index == -1) {
+		limit_cones.insert(0, cone);
+	} else {
+		limit_cones.insert(index, cone);
+	}
 }
 
 void IKKusudama::remove_limit_cone(Ref<IKLimitCone> limitCone) {
 	this->limit_cones.erase(limitCone);
-}
-
-void IKKusudama::add_limit_cone_at_index(int insert_at, Vector3 new_cone_local_point, double radius) {
-	Ref<IKLimitCone> newCone = Ref<IKLimitCone>(memnew(IKLimitCone(new_cone_local_point, radius, Ref<IKKusudama>(this))));
-	limit_cones.insert(insert_at, newCone);
 }
 
 double IKKusudama::to_tau(double angle) {

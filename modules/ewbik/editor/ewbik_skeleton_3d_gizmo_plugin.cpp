@@ -314,38 +314,38 @@ void fragment() {
 				kusudama_limit_cones.resize(KUSUDAMA_MAX_CONES * 4);
 				kusudama_limit_cones.fill(0.0f);
 				Ref<IKKusudama> kusudama = ik_bone->get_constraint();
-				for (int32_t constraint_i = 0; constraint_i < ewbik->get_constraint_count(); constraint_i++) {
-					if (ewbik->get_constraint_name(constraint_i) != skeleton->get_bone_name(current_bone_idx)) {
-						continue;
-					}
-					int out_idx = 0;
-					const TypedArray<IKLimitCone> &limit_cones = kusudama->get_limit_cones();
-					for (int32_t cone_i = 0; cone_i < limit_cones.size(); cone_i++) {
-						Ref<IKLimitCone> limit_cone = limit_cones[cone_i];
-						Vector3 control_point = limit_cone->get_control_point();
-						kusudama_limit_cones.write[out_idx + 0] = control_point.x;
-						kusudama_limit_cones.write[out_idx + 1] = control_point.y;
-						kusudama_limit_cones.write[out_idx + 2] = control_point.z;
-						float radius = limit_cone->get_radius();
-						kusudama_limit_cones.write[out_idx + 3] = radius;
+				int32_t constraint_i = 0;
+				while (constraint_i < ewbik->get_constraint_count()) {
+					if (ewbik->get_constraint_name(constraint_i) == skeleton->get_bone_name(current_bone_idx)) {
+						int out_idx = 0;
+						const TypedArray<IKLimitCone> &limit_cones = kusudama->get_limit_cones();
+						for (int32_t cone_i = 0; cone_i < limit_cones.size(); cone_i++) {
+							Ref<IKLimitCone> limit_cone = limit_cones[cone_i];
+							Vector3 control_point = limit_cone->get_control_point();
+							kusudama_limit_cones.write[out_idx + 0] = control_point.x;
+							kusudama_limit_cones.write[out_idx + 1] = control_point.y;
+							kusudama_limit_cones.write[out_idx + 2] = control_point.z;
+							float radius = limit_cone->get_radius();
+							kusudama_limit_cones.write[out_idx + 3] = radius;
+							out_idx += 4;
 
-						Vector3 tangent_center_1 = limit_cone->get_tangent_circle_center_next_1();
-						out_idx += 4;
-						kusudama_limit_cones.write[out_idx + 0] = tangent_center_1.x;
-						kusudama_limit_cones.write[out_idx + 1] = tangent_center_1.y;
-						kusudama_limit_cones.write[out_idx + 2] = tangent_center_1.z;
-						float tangent_radius = limit_cone->get_tangent_circle_radius_next();
-						kusudama_limit_cones.write[out_idx + 3] = tangent_radius;
+							Vector3 tangent_center_1 = limit_cone->get_tangent_circle_center_next_1();
+							kusudama_limit_cones.write[out_idx + 0] = tangent_center_1.x;
+							kusudama_limit_cones.write[out_idx + 1] = tangent_center_1.y;
+							kusudama_limit_cones.write[out_idx + 2] = tangent_center_1.z;
+							float tangent_radius = limit_cone->get_tangent_circle_radius_next();
+							kusudama_limit_cones.write[out_idx + 3] = tangent_radius;
+							out_idx += 4;
 
-						Vector3 tangent_center_2 = limit_cone->get_tangent_circle_center_next_2();
-						out_idx += 4;
-						kusudama_limit_cones.write[out_idx + 0] = tangent_center_2.x;
-						kusudama_limit_cones.write[out_idx + 1] = tangent_center_2.y;
-						kusudama_limit_cones.write[out_idx + 2] = tangent_center_2.z;
-						kusudama_limit_cones.write[out_idx + 3] = tangent_radius;
-						out_idx += 4;
+							Vector3 tangent_center_2 = limit_cone->get_tangent_circle_center_next_2();
+							kusudama_limit_cones.write[out_idx + 0] = tangent_center_2.x;
+							kusudama_limit_cones.write[out_idx + 1] = tangent_center_2.y;
+							kusudama_limit_cones.write[out_idx + 2] = tangent_center_2.z;
+							kusudama_limit_cones.write[out_idx + 3] = tangent_radius;
+							out_idx += 4;
+						}
 					}
-					break;
+					constraint_i++;
 				}
 				Transform3D constraint_relative_to_the_skeleton = ik_bone->get_constraint_transform()->get_global_transform();
 				Transform3D selected_node_relative_to_the_universe = ewbik->get_global_transform();

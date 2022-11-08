@@ -181,18 +181,6 @@ public:
 
 	virtual void remove_limit_cone(Ref<IKLimitCone> limitCone);
 
-	/**
-	 * Adds a IKLimitCone to the Kusudama. LimitCones are reach cones which can be arranged sequentially. The Kusudama will infer
-	 * a smooth path leading from one IKLimitCone to the next.
-	 *
-	 * Using a single IKLimitCone is functionally equivalent to a classic reachCone constraint.
-	 *
-	 * @param insert_at the intended index for this LimitCone in the sequence of LimitCones from which the Kusudama will infer a path. @see IK.IKKusudama.limit_cones limit_cones array.
-	 * @param new_point where on the Kusudama to add the LimitCone (in Kusudama's local coordinate frame defined by its bone's majorRotationAxes))
-	 * @param radius the radius of the limitCone
-	 */
-	void add_limit_cone_at_index(int insert_at, Vector3 new_point, double radius);
-
 	static double to_tau(double angle);
 
 	virtual double mod(double x, double y);
