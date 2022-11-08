@@ -30,6 +30,7 @@
 
 #include "ik_ewbik.h"
 #include "core/core_string_names.h"
+#include "core/error/error_macros.h"
 #include "ik_bone_3d.h"
 
 #ifdef TOOLS_ENABLED
@@ -589,7 +590,7 @@ void SkeletonModification3DNBoneIK::set_kusudama_limit_cone_center(int32_t p_eff
 }
 
 Vector2 SkeletonModification3DNBoneIK::get_kusudama_twist(int32_t p_index) const {
-	ERR_FAIL_INDEX_V(p_index, kusudama_twist.size(), Vector2(0.0, 0.0));
+	ERR_FAIL_INDEX_V(p_index, kusudama_twist.size(), Vector2(Math::deg_to_rad(360.0f), Math::deg_to_rad(-360.0f)));
 	return kusudama_twist[p_index];
 }
 
@@ -693,7 +694,6 @@ void SkeletonModification3DNBoneIK::skeleton_changed(Skeleton3D *p_skeleton) {
 			bone_direction_transform->set_parent(ik_bone_3d->get_ik_transform());
 			bone_direction_transform->set_transform(Transform3D(Basis(), ik_bone_3d->get_bone_direction_transform()->get_transform().origin));
 			Ref<IKKusudama> constraint = Ref<IKKusudama>(memnew(IKKusudama(ik_bone_3d)));
-			constraint->enable_axial_limits();
 			const Vector2 axial_limit = get_kusudama_twist(constraint_i);
 			for (int32_t cone_i = 0; cone_i < kusudama_limit_cone_count[constraint_i]; cone_i++) {
 				if (cone_i == 0) {
@@ -703,10 +703,8 @@ void SkeletonModification3DNBoneIK::skeleton_changed(Skeleton3D *p_skeleton) {
 				constraint->add_limit_cone(Vector3(cone.x, cone.y, cone.z), cone.w);
 			}
 			constraint->_update_constraint();
+			constraint->enable_axial_limits();
 			constraint->set_axial_limits(axial_limit.x, axial_limit.y);
-			if (Math::is_zero_approx(axial_limit.length())) {
-				constraint->set_axial_limits(-Math::deg_to_rad(0.1), Math::deg_to_rad(0.1));
-			}
 			ik_bone_3d->add_constraint(constraint);
 			break;
 		}
