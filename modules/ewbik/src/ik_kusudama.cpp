@@ -71,8 +71,6 @@ void IKKusudama::update_tangent_radii() {
  * If the new d is  greater than the old d, our result is the weighted average of these
  * (with the weight determining the resistance of the boundary). This result is stored for reference by future calls.
  * If the new d is less than the old d, we return the input orientation, and set the new d to this lower value for reference by future calls.
- *
- * Because we can expect rotations to be fairly small, we use nlerp instead of slerp for efficiency when averaging.
  */
 IKKusudama::IKKusudama(Ref<IKNode3D> to_set, Ref<IKNode3D> bone_direction, Ref<IKNode3D> limiting_axes, double cos_half_angle_dampen) {
 	Vector<double> in_bounds = { 1 };
