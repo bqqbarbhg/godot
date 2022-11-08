@@ -33,7 +33,7 @@
 
 #include "core/math/basis.h"
 #include "core/math/vector3.h"
-#include "ewbik/math/qcp.h"
+#include "../math/qcp.h"
 
 #include "tests/test_macros.h"
 
