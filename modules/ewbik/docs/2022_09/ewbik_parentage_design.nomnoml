@@ -2,7 +2,7 @@
 [All cases diagrammed|
 [o1|Node3D] -> [w|Parented to something else]
 [o2|Node3D] -> [w]
-[t1] 
+[t1]
 [t2]
 [eb6]
 [ea6]
@@ -18,7 +18,7 @@
 [bb4] <- [bb5]
 [ba4] <- [ba5]
 [t1|Target] --> [skeleton_root]
-[t2|Target] --> [skeleton_root] 
+[t2|Target] --> [skeleton_root]
 [skeleton|Godot Skeleton3D] -> [o1]
 [t2] -> [o1]
 [t1] -> [o2]

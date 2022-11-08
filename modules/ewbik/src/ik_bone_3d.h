@@ -55,7 +55,7 @@ class IKBone3D : public Resource {
 	float cos_half_dampen = Math::cos(dampening / 2.0f);
 	float stiffness = 1.0f;
 	Ref<IKKusudama> constraint;
-	// In the space of the local parent bone transform. 
+	// In the space of the local parent bone transform.
 	// The origin is the origin of the bone direction transform
 	// Can be independent and should be calculated
 	// to keep -y to be the opposite of its bone forward orientation
