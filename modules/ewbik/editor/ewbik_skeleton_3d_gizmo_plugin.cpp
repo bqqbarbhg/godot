@@ -442,9 +442,10 @@ void fragment() {
 
 				const Ref<Material> material_primary = get_material("lines_primary", p_gizmo);
 				const Ref<Material> material_secondary = get_material("lines_secondary", p_gizmo);
-
+				Vector<Vector3> handles;
 				for (int32_t cone_i = 0; cone_i < kusudama_limit_cones.size(); cone_i = cone_i + (3 * 4)) {
 					Vector3 center = Vector3(kusudama_limit_cones[cone_i + 0], kusudama_limit_cones[cone_i + 1], kusudama_limit_cones[cone_i + 2]);
+					handles.append(constraint_relative_to_the_node.origin + (center * radius));
 					Basis center_rotation = Quaternion(Vector3(0, 1, 0), center) * Basis::from_euler(Vector3(Math::deg_to_rad(90.0f), 0, 0));
 					Vector<Vector3> points_primary;
 					Vector<Vector3> points_secondary;
@@ -485,6 +486,7 @@ void fragment() {
 					kusudama_surface_tool->set_weights(weights);
 					kusudama_surface_tool->add_vertex(center_rotation.xform(Vector3()));
 				}
+				p_gizmo->add_handles(handles, get_material("handles"));
 				p_gizmo->add_mesh(kusudama_surface_tool->commit(), material_secondary, constraint_relative_to_the_node, skeleton->register_skin(skeleton->create_skin_from_rest_transforms()));
 				// END cone
 
