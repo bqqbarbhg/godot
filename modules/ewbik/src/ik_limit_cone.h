@@ -70,7 +70,6 @@ class IKLimitCone : public Resource {
 
 	Vector3 closest_cone(Ref<IKLimitCone> next, Vector3 input) const;
 
-
 	void set_tangent_circle_center_next_1(Vector3 point);
 	void set_tangent_circle_center_next_2(Vector3 point);
 

@@ -83,7 +83,6 @@ protected:
 		ClassDB::bind_method(D_METHOD("set_limit_cones", "limit_cones"), &IKKusudama::set_limit_cones);
 	}
 
-
 public:
 	virtual ~IKKusudama() {
 	}
