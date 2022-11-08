@@ -80,20 +80,20 @@ void SkeletonModification3DNBoneIK::set_pin_bone(int32_t p_pin_index, const Stri
 
 void SkeletonModification3DNBoneIK::set_pin_target_nodepath(int32_t p_pin_index, const NodePath &p_target_node) {
 	ERR_FAIL_INDEX(p_pin_index, pins.size());
-	Ref<IKEffectorTemplate> data = pins[p_pin_index];
-	if (data.is_null()) {
-		data.instantiate();
-		pins.write[p_pin_index] = data;
+	Ref<IKEffectorTemplate> effector_template = pins[p_pin_index];
+	if (effector_template.is_null()) {
+		effector_template.instantiate();
+		pins.write[p_pin_index] = effector_template;
 	}
-	data->set_target_node(p_target_node);
+	effector_template->set_target_node(p_target_node);
 	notify_property_list_changed();
 	skeleton_changed(get_skeleton());
 }
 
 NodePath SkeletonModification3DNBoneIK::get_pin_target_nodepath(int32_t p_pin_index) {
 	ERR_FAIL_INDEX_V(p_pin_index, pins.size(), NodePath());
-	const Ref<IKEffectorTemplate> data = pins[p_pin_index];
-	return data->get_target_node();
+	const Ref<IKEffectorTemplate> effector_template = pins[p_pin_index];
+	return effector_template->get_target_node();
 }
 
 Vector<Ref<IKEffectorTemplate>> SkeletonModification3DNBoneIK::get_bone_effectors() const {
@@ -271,13 +271,13 @@ bool SkeletonModification3DNBoneIK::_get(const StringName &p_name, Variant &r_re
 		int index = name.get_slicec('/', 1).to_int();
 		String what = name.get_slicec('/', 2);
 		ERR_FAIL_INDEX_V(index, pins.size(), false);
-		Ref<IKEffectorTemplate> data = pins[index];
-		ERR_FAIL_NULL_V(data, false);
+		Ref<IKEffectorTemplate> effector_template = pins[index];
+		ERR_FAIL_NULL_V(effector_template, false);
 		if (what == "name") {
-			r_ret = data->get_name();
+			r_ret = effector_template->get_name();
 			return true;
 		} else if (what == "target_node") {
-			r_ret = data->get_target_node();
+			r_ret = effector_template->get_target_node();
 			return true;
 		} else if (what == "depth_falloff") {
 			r_ret = get_pin_depth_falloff(index);
@@ -443,14 +443,14 @@ void SkeletonModification3DNBoneIK::set_debug_skeleton(bool p_skeleton_debug) {
 
 float SkeletonModification3DNBoneIK::get_pin_depth_falloff(int32_t p_effector_index) const {
 	ERR_FAIL_INDEX_V(p_effector_index, pins.size(), 0.0f);
-	const Ref<IKEffectorTemplate> data = pins[p_effector_index];
-	return data->get_depth_falloff();
+	const Ref<IKEffectorTemplate> effector_template = pins[p_effector_index];
+	return effector_template->get_depth_falloff();
 }
 
 void SkeletonModification3DNBoneIK::set_pin_depth_falloff(int32_t p_effector_index, const float p_depth_falloff) {
-	Ref<IKEffectorTemplate> data = pins[p_effector_index];
-	ERR_FAIL_NULL(data);
-	data->set_depth_falloff(p_depth_falloff);
+	Ref<IKEffectorTemplate> effector_template = pins[p_effector_index];
+	ERR_FAIL_NULL(effector_template);
+	effector_template->set_depth_falloff(p_depth_falloff);
 	notify_property_list_changed();
 	skeleton_changed(get_skeleton());
 }
@@ -565,8 +565,8 @@ void SkeletonModification3DNBoneIK::set_default_damp(float p_default_damp) {
 
 StringName SkeletonModification3DNBoneIK::get_pin_bone_name(int32_t p_effector_index) const {
 	ERR_FAIL_INDEX_V(p_effector_index, pins.size(), "");
-	Ref<IKEffectorTemplate> data = pins[p_effector_index];
-	return data->get_name();
+	Ref<IKEffectorTemplate> effector_template = pins[p_effector_index];
+	return effector_template->get_name();
 }
 
 void SkeletonModification3DNBoneIK::set_kusudama_limit_cone_radius(int32_t p_effector_index, int32_t p_index, float p_radius) {
@@ -614,20 +614,20 @@ void SkeletonModification3DNBoneIK::set_max_ik_iterations(const float &p_max_ik_
 
 void SkeletonModification3DNBoneIK::set_pin_bone_name(int32_t p_effector_index, StringName p_name) const {
 	ERR_FAIL_INDEX(p_effector_index, pins.size());
-	Ref<IKEffectorTemplate> data = pins[p_effector_index];
-	data->set_name(p_name);
+	Ref<IKEffectorTemplate> effector_template = pins[p_effector_index];
+	effector_template->set_name(p_name);
 }
 
 void SkeletonModification3DNBoneIK::set_pin_nodepath(int32_t p_effector_index, NodePath p_node_path) {
 	ERR_FAIL_INDEX(p_effector_index, pins.size());
-	Ref<IKEffectorTemplate> data = pins[p_effector_index];
-	data->set_target_node(p_node_path);
+	Ref<IKEffectorTemplate> effector_template = pins[p_effector_index];
+	effector_template->set_target_node(p_node_path);
 }
 
 NodePath SkeletonModification3DNBoneIK::get_pin_nodepath(int32_t p_effector_index) const {
 	ERR_FAIL_INDEX_V(p_effector_index, pins.size(), NodePath());
-	Ref<IKEffectorTemplate> data = pins[p_effector_index];
-	return data->get_target_node();
+	Ref<IKEffectorTemplate> effector_template = pins[p_effector_index];
+	return effector_template->get_target_node();
 }
 
 void SkeletonModification3DNBoneIK::execute(real_t delta) {
@@ -743,35 +743,35 @@ void SkeletonModification3DNBoneIK::set_tip_bone(StringName p_bone) {
 }
 real_t SkeletonModification3DNBoneIK::get_pin_weight(int32_t p_pin_index) const {
 	ERR_FAIL_INDEX_V(p_pin_index, pins.size(), 0.0);
-	const Ref<IKEffectorTemplate> data = pins[p_pin_index];
-	return data->get_weight();
+	const Ref<IKEffectorTemplate> effector_template = pins[p_pin_index];
+	return effector_template->get_weight();
 }
 void SkeletonModification3DNBoneIK::set_pin_weight(int32_t p_pin_index, const real_t &p_weight) {
 	ERR_FAIL_INDEX(p_pin_index, pins.size());
-	Ref<IKEffectorTemplate> data = pins[p_pin_index];
-	if (data.is_null()) {
-		data.instantiate();
-		pins.write[p_pin_index] = data;
+	Ref<IKEffectorTemplate> effector_template = pins[p_pin_index];
+	if (effector_template.is_null()) {
+		effector_template.instantiate();
+		pins.write[p_pin_index] = effector_template;
 	}
-	data->set_weight(p_weight);
+	effector_template->set_weight(p_weight);
 	notify_property_list_changed();
 	skeleton_changed(get_skeleton());
 }
 
 Vector3 SkeletonModification3DNBoneIK::get_pin_direction_priorities(int32_t p_pin_index) const {
 	ERR_FAIL_INDEX_V(p_pin_index, pins.size(), Vector3(0, 0, 0));
-	const Ref<IKEffectorTemplate> data = pins[p_pin_index];
-	return data->get_direction_priorities();
+	const Ref<IKEffectorTemplate> effector_template = pins[p_pin_index];
+	return effector_template->get_direction_priorities();
 }
 
 void SkeletonModification3DNBoneIK::set_pin_direction_priorities(int32_t p_pin_index, const Vector3 &p_priority_direction) {
 	ERR_FAIL_INDEX(p_pin_index, pins.size());
-	Ref<IKEffectorTemplate> data = pins[p_pin_index];
-	if (data.is_null()) {
-		data.instantiate();
-		pins.write[p_pin_index] = data;
+	Ref<IKEffectorTemplate> effector_template = pins[p_pin_index];
+	if (effector_template.is_null()) {
+		effector_template.instantiate();
+		pins.write[p_pin_index] = effector_template;
 	}
-	data->set_direction_priorities(p_priority_direction);
+	effector_template->set_direction_priorities(p_priority_direction);
 	notify_property_list_changed();
 	skeleton_changed(get_skeleton());
 }
