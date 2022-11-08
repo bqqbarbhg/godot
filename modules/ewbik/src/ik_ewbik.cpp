@@ -422,7 +422,7 @@ void SkeletonModification3DNBoneIK::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_debug_skeleton", "enable"), &SkeletonModification3DNBoneIK::set_debug_skeleton);
 	ClassDB::bind_method(D_METHOD("get_default_damp"), &SkeletonModification3DNBoneIK::get_default_damp);
 	ClassDB::bind_method(D_METHOD("set_default_damp", "damp"), &SkeletonModification3DNBoneIK::set_default_damp);
-	ClassDB::bind_method(D_METHOD("get_pin_nodepath"), &SkeletonModification3DNBoneIK::get_pin_nodepath);
+	ClassDB::bind_method(D_METHOD("get_pin_nodepath", "index"), &SkeletonModification3DNBoneIK::get_pin_nodepath);
 	ClassDB::bind_method(D_METHOD("set_pin_nodepath", "index", "nodepath"), &SkeletonModification3DNBoneIK::set_pin_nodepath);
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "root_bone", PROPERTY_HINT_ENUM_SUGGESTION), "set_root_bone", "get_root_bone");
