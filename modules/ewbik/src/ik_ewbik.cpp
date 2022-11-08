@@ -395,7 +395,7 @@ void SkeletonModification3DNBoneIK::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_kusudama_limit_cone_radius", "index", "cone_index", "radius"), &SkeletonModification3DNBoneIK::set_kusudama_limit_cone_radius);
 	ClassDB::bind_method(D_METHOD("get_kusudama_limit_cone_radius", "index", "cone_index"), &SkeletonModification3DNBoneIK::get_kusudama_limit_cone_radius);
 	ClassDB::bind_method(D_METHOD("set_kusudama_limit_cone_center", "index", "cone_index", "center"), &SkeletonModification3DNBoneIK::set_kusudama_limit_cone_center);
-	ClassDB::bind_method(D_METHOD("get_kusudama_limit_cone_center", "index", "cone_index"), &SkeletonModification3DNBoneIK::set_kusudama_limit_cone_center);
+	ClassDB::bind_method(D_METHOD("get_kusudama_limit_cone_center", "index", "cone_index"), &SkeletonModification3DNBoneIK::get_kusudama_limit_cone_center);
 	ClassDB::bind_method(D_METHOD("set_kusudama_limit_cone_count", "index", "count"), &SkeletonModification3DNBoneIK::set_kusudama_limit_cone_count);
 	ClassDB::bind_method(D_METHOD("get_kusudama_limit_cone_count", "index"), &SkeletonModification3DNBoneIK::get_kusudama_limit_cone_count);
 	ClassDB::bind_method(D_METHOD("set_kusudama_twist", "index", "limit"), &SkeletonModification3DNBoneIK::set_kusudama_twist);
