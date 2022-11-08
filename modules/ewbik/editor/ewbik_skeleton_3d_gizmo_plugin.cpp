@@ -442,16 +442,18 @@ void fragment() {
 
 				const Ref<Material> material_primary = get_material("lines_primary", p_gizmo);
 				const Ref<Material> material_secondary = get_material("lines_secondary", p_gizmo);
+				Basis mesh_orientation = Basis::from_euler(Vector3(Math::deg_to_rad(90.0f), 0, 0));
 				for (int32_t cone_i = 0; cone_i < kusudama_limit_cones.size(); cone_i = cone_i + (3 * 4)) {
 					Vector3 center = Vector3(kusudama_limit_cones[cone_i + 0], kusudama_limit_cones[cone_i + 1], kusudama_limit_cones[cone_i + 2]);
-					Basis mesh_orientation = Basis::from_euler(Vector3(Math::deg_to_rad(90.0f), 0, 0));
 					Transform3D center_relative_to_mesh = Transform3D(Quaternion(Vector3(0, 1, 0), center)) * mesh_orientation;
-					Transform3D handle_relative_to_mesh;
-					handle_relative_to_mesh.origin = center * radius;
-					Transform3D handle_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_relative_to_mesh;
-					Transform3D handle_relative_to_universe = skeleton->get_global_transform() * handle_relative_to_skeleton;
-					Transform3D handle_relative_to_node = selected_node_relative_to_the_universe.affine_inverse() * handle_relative_to_universe;
-					handles.push_back(handle_relative_to_node.origin);
+					{
+						Transform3D handle_relative_to_mesh;
+						handle_relative_to_mesh.origin = center * radius;
+						Transform3D handle_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_relative_to_mesh;
+						Transform3D handle_relative_to_universe = skeleton->get_global_transform() * handle_relative_to_skeleton;
+						Transform3D handle_relative_to_node = selected_node_relative_to_the_universe.affine_inverse() * handle_relative_to_universe;
+						handles.push_back(handle_relative_to_node.origin);
+					}
 					Vector<Vector3> points_primary;
 					Vector<Vector3> points_secondary;
 
@@ -469,6 +471,16 @@ void fragment() {
 
 						kusudama_surface_tool->set_bones(bones);
 						kusudama_surface_tool->set_weights(weights);
+
+						if (circle_i == 0) {
+							Transform3D handle_border_relative_to_mesh;
+							handle_border_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
+							Transform3D handle_border_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_border_relative_to_mesh;
+							Transform3D handle_border_relative_to_universe = skeleton->get_global_transform() * handle_border_relative_to_skeleton;
+							Transform3D handle_border_relative_to_node = selected_node_relative_to_the_universe.affine_inverse() * handle_border_relative_to_universe;
+							handles.push_back(handle_border_relative_to_node.origin);
+						}
+
 						kusudama_surface_tool->add_vertex(center_relative_to_mesh.xform(Vector3(a.x, a.y, -d)));
 						kusudama_surface_tool->set_bones(bones);
 						kusudama_surface_tool->set_weights(weights);
@@ -497,6 +509,7 @@ void fragment() {
 				// Add the bone's children to the list of bones to be processed.
 				bones_to_process.push_back(child_bones_vector[child_i]);
 			}
+			// TODO: Use several colors for the dots and match the color of the lines.
 			p_gizmo->add_handles(handles, get_material("handles"), Vector<int>(), true, true);
 		}
 		notify_property_list_changed();

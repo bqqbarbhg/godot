@@ -71,7 +71,7 @@ public:
 	EWBIK3DGizmoPlugin() {
 		// Enable vertex colors for the materials below as the gizmo color depends on the light color.
 		create_material("lines_primary", Color(1, 1, 1), false, true, true);
-		create_material("lines_secondary", Color(1, 1, 1, 0.35), false, true, true);
+		create_material("lines_secondary", Color(1, 1, 1), false, true, true);
 
 		create_handle_material("handles");
 		create_handle_material("handles_billboard", true);
