@@ -636,6 +636,9 @@ void SkeletonModification3DNBoneIK::execute(real_t delta) {
 	}
 	if (segmented_skeleton.is_null() || is_dirty) {
 		skeleton_changed(get_skeleton());
+		if (debug_skeleton) {
+			debug_skeleton = false;
+		}
 		is_dirty = false;
 	}
 	if (bone_list.size()) {
@@ -716,9 +719,6 @@ void SkeletonModification3DNBoneIK::skeleton_changed(Skeleton3D *p_skeleton) {
 		}
 		constraint->update_tangent_radii();
 		constraint->update_rotational_freedom();
-	}
-	if (debug_skeleton) {
-		debug_skeleton = false;
 	}
 }
 
