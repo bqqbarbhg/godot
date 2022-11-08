@@ -368,8 +368,8 @@ void IKBoneSegment::recursive_create_penalty_array(Ref<IKBoneSegment> p_bone_seg
 	} else {
 		real_t current_falloff = 1.0;
 		if (p_bone_segment->is_pinned()) {
-			Ref<IKBone3D> tip = p_bone_segment->get_tip();
-			Ref<IKEffector3D> pin = tip->get_pin();
+			Ref<IKBone3D> current_tip = p_bone_segment->get_tip();
+			Ref<IKEffector3D> pin = current_tip->get_pin();
 			real_t weight = pin->get_weight();
 			Vector<real_t> inner_weight_array;
 			inner_weight_array.push_back(weight * p_falloff);
@@ -404,7 +404,7 @@ void IKBoneSegment::recursive_create_penalty_array(Ref<IKBoneSegment> p_bone_seg
 				inner_weight_array.push_back(sub_target_weight);
 			}
 			r_penalty_array.push_back(inner_weight_array);
-			r_pinned_bones.push_back(tip);
+			r_pinned_bones.push_back(current_tip);
 			current_falloff = pin->get_depth_falloff();
 		}
 		for (Ref<IKBoneSegment> s : p_bone_segment->get_child_segments()) {
