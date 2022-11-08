@@ -56,7 +56,7 @@ class SkeletonModification3DNBoneIK : public SkeletonModification3D {
 	float MAX_KUSUDAMA_LIMIT_CONES = 30;
 	int32_t max_ik_iterations = 10;
 	float default_damp = Math::deg_to_rad(5.0f);
-	bool debug_skeleton = false;
+	bool debug_skeleton = true;
 	Ref<IKNode3D> root_transform = Ref<IKNode3D>(memnew(IKNode3D));
 	bool is_dirty = true;
 	NodePath skeleton_node_path = NodePath("..");

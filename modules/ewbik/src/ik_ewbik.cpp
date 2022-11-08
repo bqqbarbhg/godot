@@ -717,6 +717,9 @@ void SkeletonModification3DNBoneIK::skeleton_changed(Skeleton3D *p_skeleton) {
 		constraint->update_tangent_radii();
 		constraint->update_rotational_freedom();
 	}
+	if (debug_skeleton) {
+		debug_skeleton = false;
+	}
 }
 
 StringName SkeletonModification3DNBoneIK::get_root_bone() const {
