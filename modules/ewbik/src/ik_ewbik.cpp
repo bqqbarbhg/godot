@@ -68,12 +68,12 @@ void SkeletonModification3DNBoneIK::add_pin(const StringName &p_name, const Node
 
 void SkeletonModification3DNBoneIK::set_pin_bone(int32_t p_pin_index, const String &p_bone) {
 	ERR_FAIL_INDEX(p_pin_index, pins.size());
-	Ref<IKEffectorTemplate> data = pins[p_pin_index];
-	if (data.is_null()) {
-		data.instantiate();
-		pins.write[p_pin_index] = data;
+	Ref<IKEffectorTemplate> effector_template = pins[p_pin_index];
+	if (effector_template.is_null()) {
+		effector_template.instantiate();
+		pins.write[p_pin_index] = effector_template;
 	}
-	data->set_name(p_bone);
+	effector_template->set_name(p_bone);
 	notify_property_list_changed();
 	skeleton_changed(get_skeleton());
 }
