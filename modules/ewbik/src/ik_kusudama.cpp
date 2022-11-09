@@ -363,9 +363,6 @@ void IKKusudama::set_axes_to_orientation_snap(Ref<IKNode3D> to_set, Ref<IKNode3D
 	}
 }
 
-void IKKusudama::set_axes_to_soft_orientation_snap(Ref<IKNode3D> to_set, Ref<IKNode3D> bone_direction, Ref<IKNode3D> limiting_axes, double cos_half_angle_dampen) {
-}
-
 Ref<IKNode3D> IKKusudama::limiting_axes() {
 	// if(inverted) return inverseLimitingAxes;
 	return _limiting_axes;

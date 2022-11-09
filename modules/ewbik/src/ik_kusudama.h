@@ -99,14 +99,6 @@ public:
 	Ref<IKRay3D> bone_ray = Ref<IKRay3D>(memnew(IKRay3D()));
 	Ref<IKRay3D> constrained_ray = Ref<IKRay3D>(memnew(IKRay3D()));
 
-	/**
-	 * Presumes the input axes are the bone's localAxes, and rotates
-	 * them to satisfy the snap limits.
-	 *
-	 * @param to_set
-	 */
-	virtual void set_axes_to_soft_orientation_snap(Ref<IKNode3D> to_set, Ref<IKNode3D> bone_direction, Ref<IKNode3D> limiting_axes, double cos_half_angle_dampen);
-
 public:
 	/**
 	 * Presumes the input axes are the bone's localAxes, and rotates
