@@ -304,7 +304,7 @@ Vector3 IKKusudama::local_point_on_path_sequence(Vector3 in_point, Ref<IKNode3D>
  * the point is outside of the boundary, but does not signify anything about how far from the boundary the point is.
  * @return the original point, if it's in limits, or the closest point which is in limits.
  */
-Vector3 IKKusudama::_local_point_in_limits(Vector3 in_point, Vector<double> &in_bounds) {
+Vector3 IKKusudama::get_local_point_in_limits(Vector3 in_point, Vector<double> &in_bounds) {
 	Vector3 point = in_point.normalized();
 	real_t closest_cos = -2.0;
 	in_bounds.write[0] = -1;
@@ -353,7 +353,7 @@ void IKKusudama::set_axes_to_orientation_snap(Ref<IKNode3D> to_set, Ref<IKNode3D
 	bone_ray->p1(limiting_axes->get_global_transform().origin);
 	bone_ray->p2(to_set->get_global_transform().xform(Vector3(0.0, 1.0, 0.0)));
 	Vector3 bone_tip = limiting_axes->to_local(bone_ray->p2());
-	Vector3 in_limits = _local_point_in_limits(bone_tip, in_bounds);
+	Vector3 in_limits = get_local_point_in_limits(bone_tip, in_bounds);
 	if (in_bounds[0] < 0 && !Math::is_nan(in_limits.x)) {
 		constrained_ray->p1(bone_ray->p1());
 		constrained_ray->p2(limiting_axes->to_global(in_limits));
