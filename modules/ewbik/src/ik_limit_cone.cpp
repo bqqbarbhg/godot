@@ -301,8 +301,7 @@ IKLimitCone::IKLimitCone(Vector3 &direction, double rad, Ref<IKKusudama> attache
 	parent_kusudama = attached_to;
 	tangent_circle_center_next_1 = Vector3(0.0f, -1.0f, 0.0f);
 	tangent_circle_center_next_2 = Vector3(0.0f, 1.0f, 0.0f);
-	this->radius = MAX(DBL_TRUE_MIN, rad);
-	this->radius_cosine = cos(radius);
+	set_radius(MAX(DBL_TRUE_MIN, rad));
 	this->control_point = direction.normalized();
 }
 
@@ -373,9 +372,6 @@ Vector3 IKLimitCone::closest_point_on_closest_cone(Ref<IKLimitCone> next, Vector
 Vector3 IKLimitCone::closest_to_cone(Vector3 input, Vector<double> &in_bounds) const {
 	if (input.dot(this->get_control_point()) > this->get_radius_cosine()) {
 		in_bounds.write[0] = 1.0;
-		return input;
-	}
-	if (Math::is_nan(input.x) || Math::is_nan(input.y) || Math::is_nan(input.z)) {
 		return Vector3(NAN, NAN, NAN);
 	}
 	Vector3 axis = this->get_control_point().cross(input).normalized();

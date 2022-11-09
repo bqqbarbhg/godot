@@ -32,6 +32,7 @@
 #include "core/core_string_names.h"
 #include "core/error/error_macros.h"
 #include "ik_bone_3d.h"
+#include "ik_kusudama.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_node.h"
@@ -688,9 +689,11 @@ void SkeletonModification3DNBoneIK::skeleton_changed(Skeleton3D *p_skeleton) {
 			bone_direction_transform->set_transform(Transform3D(Basis(), ik_bone_3d->get_bone_direction_transform()->get_transform().origin));
 			Ref<IKKusudama> constraint = Ref<IKKusudama>(memnew(IKKusudama(ik_bone_3d)));
 			const Vector2 axial_limit = get_kusudama_twist(constraint_i);
+			constraint->enable_orientational_limits();
 			for (int32_t cone_i = 0; cone_i < kusudama_limit_cone_count[constraint_i]; cone_i++) {
-				if (cone_i == 0) {
-					constraint->enable_orientational_limits();
+				Ref<IKLimitCone> previous_cone;
+				if (cone_i > 0) {
+					previous_cone = constraint->get_limit_cones()[cone_i - 1];
 				}
 				Vector4 cone = kusudama_limit_cones[constraint_i][cone_i];
 				constraint->add_limit_cone(Vector3(cone.x, cone.y, cone.z), cone.w);

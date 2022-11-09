@@ -116,8 +116,6 @@ public:
 	 */
 	virtual void set_axes_to_orientation_snap(Ref<IKNode3D> to_set, Ref<IKNode3D> limiting_axes, double p_dampen, double p_cos_half_angle_dampen);
 
-	virtual bool is_in_global_pose_orientation_limits(Ref<IKNode3D> global_axes, Ref<IKNode3D> limiting_axes);
-
 	/**
 	 * Kusudama constraints decompose the bone orientation into a swing component, and a twist component.
 	 * The "Swing" component is the final direction of the bone. The "Twist" component represents how much
@@ -174,10 +172,8 @@ public:
 	 * Add a IKLimitCone to the Kusudama.
 	 * @param new_point where on the Kusudama to add the LimitCone (in Kusudama's local coordinate frame defined by its bone's majorRotationAxes))
 	 * @param radius the radius of the limitCone
-	 * @param previous the LimitCone adjacent to this one (may be null if LimitCone is not supposed to be between two existing LimitCones)
-	 * @param next the other LimitCone adjacent to this one (may be null if LimitCone is not supposed to be between two existing LimitCones)
 	 */
-	virtual void add_limit_cone(Vector3 new_point, double radius, Ref<IKLimitCone> previous = Ref<IKLimitCone>(), Ref<IKLimitCone> next = Ref<IKLimitCone>());
+	virtual void add_limit_cone(Vector3 new_point, double radius);
 
 	virtual void remove_limit_cone(Ref<IKLimitCone> limitCone);
 
