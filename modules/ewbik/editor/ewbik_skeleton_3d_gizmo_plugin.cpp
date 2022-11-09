@@ -274,6 +274,7 @@ void fragment() {
 )");
 		int bones_to_process_i = 0;
 		Vector<Vector3> handles;
+		HashSet<BoneId> created_gizmo_mesh;
 		while (bones_to_process_i < bones_to_process.size()) {
 			int current_bone_idx = bones_to_process[bones_to_process_i];
 			bones_to_process_i++;
@@ -306,6 +307,11 @@ void fragment() {
 					bones_to_process.push_back(child_bone_idx);
 					continue;
 				}
+				if (created_gizmo_mesh.has(current_bone_idx)) {
+					bones_to_process.push_back(child_bone_idx);
+					continue;
+				}
+				created_gizmo_mesh.insert(current_bone_idx);
 
 				PackedFloat32Array kusudama_limit_cones;
 				kusudama_limit_cones.resize(KUSUDAMA_MAX_CONES * 4);
