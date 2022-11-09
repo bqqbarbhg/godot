@@ -68,6 +68,10 @@ void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 	if (!node_3d) {
 		return;
 	}
+	if (!cast_to<SkeletonModification3DNBoneIK>(node_3d)) {
+		p_gizmo->clear();
+		return;
+	}
 	Node *owner_node = node_3d->get_owner();
 	if (!owner_node) {
 		return;
@@ -461,7 +465,6 @@ void fragment() {
 					for (int circle_i = 0; circle_i < 120; circle_i++) {
 						// Draw a circle
 						const float ra = Math::deg_to_rad((float)(circle_i * 3));
-						const float rb = Math::deg_to_rad((float)((circle_i + 1) * 3));
 						const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
 						if (circle_i == 0) {
 							Transform3D handle_border_relative_to_mesh;
