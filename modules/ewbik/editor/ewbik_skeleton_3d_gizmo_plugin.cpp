@@ -64,6 +64,10 @@ void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 	if (!p_gizmo) {
 		return;
 	}
+	if (!p_gizmo->is_selected()) {
+		p_gizmo->clear();
+		return;
+	}
 	Node3D *node_3d = p_gizmo->get_node_3d();
 	if (!node_3d) {
 		return;
