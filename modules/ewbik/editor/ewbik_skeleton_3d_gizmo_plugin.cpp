@@ -283,37 +283,31 @@ void fragment() {
 			bones_to_process_i++;
 			Color current_bone_color = bone_color;
 			Vector<int> child_bones_vector = skeleton->get_bone_children(current_bone_idx);
-			int child_bones_size = child_bones_vector.size();
 			Ref<ArrayMesh> mesh;
-			for (int child_i = 0; child_i < child_bones_size; child_i++) {
-				// Something wrong.
-				if (child_bones_vector[child_i] < 0) {
-					continue;
-				}
-				int child_bone_idx = child_bones_vector[child_i];
+			for (int child_bone_idx : child_bones_vector) {
 				Vector3 v0 = skeleton->get_bone_global_rest(current_bone_idx).origin;
 				Vector3 v1 = skeleton->get_bone_global_rest(child_bone_idx).origin;
 				real_t dist = v0.distance_to(v1);
 				String bone_name = skeleton->get_bone_name(current_bone_idx);
 				BoneId parent_idx = skeleton->get_bone_parent(current_bone_idx);
 				if (parent_idx == -1) {
-					bones_to_process.push_back(child_bones_vector[child_i]);
+					bones_to_process.push_back(child_bone_idx);
 					continue;
 				}
 				bones[0] = parent_idx;
 				Ref<IKBoneSegment> bone_segment = ewbik->get_segmented_skeleton();
 				if (bone_segment.is_null()) {
-					bones_to_process.push_back(child_bones_vector[child_i]);
+					bones_to_process.push_back(child_bone_idx);
 					continue;
 				}
 				Ref<IKBone3D> ik_bone = bone_segment->get_ik_bone(current_bone_idx);
 				if (ik_bone.is_null() || ik_bone->get_bone_id() != current_bone_idx) {
-					bones_to_process.push_back(child_bones_vector[child_i]);
+					bones_to_process.push_back(child_bone_idx);
 					continue;
 				}
 				Ref<IKKusudama> ik_kusudama = ik_bone->get_constraint();
 				if (ik_kusudama.is_null()) {
-					bones_to_process.push_back(child_bones_vector[child_i]);
+					bones_to_process.push_back(child_bone_idx);
 					continue;
 				}
 
@@ -492,7 +486,7 @@ void fragment() {
 				// END cone
 
 				// Add the bone's children to the list of bones to be processed.
-				bones_to_process.push_back(child_bones_vector[child_i]);
+				bones_to_process.push_back(child_bone_idx);
 			}
 			// TODO: Use several colors for the dots and match the color of the lines.
 			p_gizmo->add_handles(handles, get_material("handles"), Vector<int>(), true, true);
