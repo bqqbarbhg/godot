@@ -367,3 +367,41 @@ Ref<IKNode3D> IKKusudama::limiting_axes() {
 	// if(inverted) return inverseLimitingAxes;
 	return _limiting_axes;
 }
+void IKKusudama::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_limit_cones"), &IKKusudama::get_limit_cones);
+	ClassDB::bind_method(D_METHOD("set_limit_cones", "limit_cones"), &IKKusudama::set_limit_cones);
+}
+void IKKusudama::set_limit_cones(TypedArray<IKLimitCone> p_cones) {
+	limit_cones = p_cones;
+}
+void IKKusudama::get_swing_twist(
+		Quaternion p_rotation,
+		Vector3 p_axis,
+		Quaternion &r_swing,
+		Quaternion &r_twist) {
+	Quaternion rotation = p_rotation;
+	rotation.x *= -1;
+	rotation.y *= -1;
+	rotation.z *= -1;
+	Vector3 quaternion_axis;
+	quaternion_axis.x = rotation.x;
+	quaternion_axis.y = rotation.y;
+	quaternion_axis.z = rotation.z;
+	const float d = quaternion_axis.dot(p_axis);
+	r_twist = Quaternion(p_axis.x * d, p_axis.y * d, p_axis.z * d, rotation.w).normalized();
+	if (d < 0) {
+		r_twist *= -1.0f;
+	}
+	r_swing = r_twist;
+	r_swing.x *= -1;
+	r_swing.y *= -1;
+	r_swing.z *= -1;
+	r_swing = r_twist * p_rotation;
+	r_swing.normalize();
+	r_swing.x *= -1;
+	r_swing.y *= -1;
+	r_swing.z *= -1;
+	r_twist.x *= -1;
+	r_twist.y *= -1;
+	r_twist.z *= -1;
+}

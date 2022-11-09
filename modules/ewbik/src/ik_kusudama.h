@@ -77,10 +77,7 @@ protected:
 	Ref<IKBone3D> _attached_to;
 
 protected:
-	static void _bind_methods() {
-		ClassDB::bind_method(D_METHOD("get_limit_cones"), &IKKusudama::get_limit_cones);
-		ClassDB::bind_method(D_METHOD("set_limit_cones", "limit_cones"), &IKKusudama::set_limit_cones);
-	}
+	static void _bind_methods();
 
 public:
 	virtual ~IKKusudama() {
@@ -251,11 +248,8 @@ protected:
 public:
 	virtual TypedArray<IKLimitCone> get_limit_cones() const;
 
-	virtual void set_limit_cones(TypedArray<IKLimitCone> p_cones) {
-		limit_cones = p_cones;
-	}
+	virtual void set_limit_cones(TypedArray<IKLimitCone> p_cones);
 
-public:
 	/**
 	 * Get the swing rotation and twist rotation for the specified axis. The twist rotation represents the rotation around the specified axis. The swing rotation represents the rotation of the specified
 	 * axis itself, which is the rotation around an axis perpendicular to the specified axis. The swing and twist rotation can be
@@ -270,33 +264,7 @@ public:
 			Quaternion p_rotation,
 			Vector3 p_axis,
 			Quaternion &r_swing,
-			Quaternion &r_twist) {
-		Quaternion rotation = p_rotation;
-		rotation.x *= -1;
-		rotation.y *= -1;
-		rotation.z *= -1;
-		Vector3 quaternion_axis;
-		quaternion_axis.x = rotation.x;
-		quaternion_axis.y = rotation.y;
-		quaternion_axis.z = rotation.z;
-		const float d = quaternion_axis.dot(p_axis);
-		r_twist = Quaternion(p_axis.x * d, p_axis.y * d, p_axis.z * d, rotation.w).normalized();
-		if (d < 0) {
-			r_twist *= -1.0f;
-		}
-		r_swing = r_twist;
-		r_swing.x *= -1;
-		r_swing.y *= -1;
-		r_swing.z *= -1;
-		r_swing = r_twist * p_rotation;
-		r_swing.normalize();
-		r_swing.x *= -1;
-		r_swing.y *= -1;
-		r_swing.z *= -1;
-		r_twist.x *= -1;
-		r_twist.y *= -1;
-		r_twist.z *= -1;
-	}
+			Quaternion &r_twist);
 };
 
 #endif // IK_KUSUDAMA_H

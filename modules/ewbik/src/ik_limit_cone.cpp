@@ -416,3 +416,19 @@ Vector3 IKLimitCone::get_on_path_sequence(Ref<IKLimitCone> next, Vector3 input) 
 	}
 	return Vector3(NAN, NAN, NAN);
 }
+Quaternion IKLimitCone::quaternion_set_axis_angle(Vector3 axis, real_t angle) {
+	real_t norm = axis.length();
+	if (norm == 0) {
+		ERR_PRINT_ONCE("Axis doesn't have a direction.");
+		return Quaternion();
+	}
+
+	real_t halfAngle = -0.5 * angle;
+	real_t coeff = sin(halfAngle) / norm;
+
+	real_t x = coeff * axis.x;
+	real_t y = coeff * axis.y;
+	real_t z = coeff * axis.z;
+	real_t w = cos(halfAngle);
+	return Quaternion(x * -1, y * -1, z * -1, w);
+}
