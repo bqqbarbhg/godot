@@ -249,10 +249,9 @@ vec4 color_allowed(in vec3 normal_dir,  in int cone_counts, in float boundary_wi
 		}
 	}
 	vec4 result = vert_model_color;
-	if (current_condition != 0 && current_condition != 1) {
-		float on_tan_boundary = abs(current_condition) == 2 ? -0.3 : 0.0;
-		float on_cone_boundary = abs(current_condition) == 1 ? -0.3 : 0.0;
-		result += vec4(0.0, on_cone_boundary, on_tan_boundary, 0.0);
+	if (current_condition != 0 && current_condition != 2) {
+		float on_cone_boundary = current_condition == 1 ? -0.3 : 0.0;
+		result += vec4(0.0, on_cone_boundary, 0, 0.0);
 	} else {
 		return vec4(0.0, 0.0, 0.0, 0.0);
 	}
