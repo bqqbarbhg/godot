@@ -259,7 +259,7 @@ void vertex() {
 void fragment() {
 	vec4 result_color_allowed = vec4(0.0, 0.0, 0.0, 0.0);
 	if (cone_sequence.length() == 30) {
-		result_color_allowed = color_allowed(normal_model_dir, cone_count, 0.0);
+		result_color_allowed = color_allowed(normal_model_dir, cone_count, 0.02);
 	}
 	ALBEDO = kusudama_color.rgb;
 	if (result_color_allowed.a == 0.0) {
@@ -428,9 +428,6 @@ void fragment() {
 				p_gizmo->add_mesh(kusudama_surface_tool->commit(Ref<Mesh>(), RS::ARRAY_CUSTOM_RGBA_HALF << RS::ARRAY_FORMAT_CUSTOM0_SHIFT), kusudama_material, constraint_relative_to_the_node, skeleton->register_skin(skeleton->create_skin_from_rest_transforms()));
 
 				// START Create a cone visualization.
-				Ref<SurfaceTool> cone_circle_surface_tool;
-				cone_circle_surface_tool.instantiate();
-				cone_circle_surface_tool->begin(Mesh::PRIMITIVE_LINES);
 				Ref<SurfaceTool> cone_sides_surface_tool;
 				cone_sides_surface_tool.instantiate();
 				cone_sides_surface_tool->begin(Mesh::PRIMITIVE_LINES);
@@ -440,7 +437,7 @@ void fragment() {
 
 				const Ref<Material> material_primary = get_material("lines_primary", p_gizmo);
 				const Ref<Material> material_secondary = get_material("lines_secondary", p_gizmo);
-				const Ref<Material> material_tertiary = get_material("lines_tertiary", p_gizmo);
+				const Ref<StandardMaterial3D> material_tertiary = get_material("lines_tertiary", p_gizmo);
 				Basis mesh_orientation = Basis::from_euler(Vector3(Math::deg_to_rad(90.0f), 0, 0));
 				for (int32_t cone_i = 0; cone_i < kusudama_limit_cones.size(); cone_i = cone_i + (3 * 4)) {
 					Vector3 center = Vector3(kusudama_limit_cones[cone_i + 0], kusudama_limit_cones[cone_i + 1], kusudama_limit_cones[cone_i + 2]);
@@ -467,10 +464,6 @@ void fragment() {
 						const float rb = Math::deg_to_rad((float)((circle_i + 1) * 3));
 						const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
 						const Point2 b = Vector2(Math::sin(rb), Math::cos(rb)) * w;
-
-						cone_circle_surface_tool->set_bones(bones);
-						cone_circle_surface_tool->set_weights(weights);
-
 						if (circle_i == 0) {
 							Transform3D handle_border_relative_to_mesh;
 							handle_border_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
@@ -479,12 +472,6 @@ void fragment() {
 							Transform3D handle_border_relative_to_node = selected_node_relative_to_the_universe.affine_inverse() * handle_border_relative_to_universe;
 							handles.push_back(handle_border_relative_to_node.origin);
 						}
-
-						cone_circle_surface_tool->add_vertex(center_relative_to_mesh.xform(Vector3(a.x, a.y, -d)));
-						cone_circle_surface_tool->set_bones(bones);
-						cone_circle_surface_tool->set_weights(weights);
-						cone_circle_surface_tool->add_vertex(center_relative_to_mesh.xform(Vector3(b.x, b.y, -d)));
-
 						if (circle_i % 15 == 0) {
 							// Draw 8 lines from the cone origin to the sides of the circle
 							cone_sides_surface_tool->set_bones(bones);
@@ -495,14 +482,7 @@ void fragment() {
 							cone_sides_surface_tool->add_vertex(center_relative_to_mesh.xform(Vector3()));
 						}
 					}
-					cone_circle_surface_tool->set_bones(bones);
-					cone_circle_surface_tool->set_weights(weights);
-					cone_circle_surface_tool->add_vertex(center_relative_to_mesh.xform(Vector3(0, 0, -r)));
-					cone_circle_surface_tool->set_bones(bones);
-					cone_circle_surface_tool->set_weights(weights);
-					cone_circle_surface_tool->add_vertex(center_relative_to_mesh.xform(Vector3()));
 				}
-				p_gizmo->add_mesh(cone_circle_surface_tool->commit(), material_secondary, constraint_relative_to_the_node, skeleton->register_skin(skeleton->create_skin_from_rest_transforms()));
 				p_gizmo->add_mesh(cone_sides_surface_tool->commit(), material_tertiary, constraint_relative_to_the_node, skeleton->register_skin(skeleton->create_skin_from_rest_transforms()));
 				// END cone
 

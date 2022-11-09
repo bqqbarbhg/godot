@@ -73,7 +73,7 @@ public:
 		// Enable vertex colors for the materials below as the gizmo color depends on the light color.
 		create_material("lines_primary", bone_color, false, true, true);
 		create_material("lines_secondary", Color(0, 0.63529413938522, 0.90980392694473), false, true, true);
-		create_material("lines_tertiary", Color(0.93725490570068, 0.19215686619282, 0.22352941334248), false, true, true);
+		create_material("lines_tertiary", Color(0.93725490570068, 0.19215686619282, 0.22352941334248), true, true, true);
 
 		// Need a textured2d handle for yellow dot, blue dot and turqouise dot and be icons.
 		create_handle_material("handles");
