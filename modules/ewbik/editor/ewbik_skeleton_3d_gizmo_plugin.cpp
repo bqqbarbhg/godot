@@ -245,9 +245,6 @@ vec4 color_allowed(in vec3 normal_dir,  in int cone_counts, in float boundary_wi
 		float on_tan_boundary = abs(current_condition) == 2 ? -0.3 : 0.0;
 		float on_cone_boundary = abs(current_condition) == 1 ? -0.3 : 0.0;
 		result += vec4(0.0, on_cone_boundary, on_tan_boundary, 0.0);
-		if (current_condition > 0) {
-			result.w = 0.3;
-		}
 	} else {
 		return vec4(0.0, 0.0, 0.0, 0.0);
 	}
@@ -262,7 +259,7 @@ void vertex() {
 void fragment() {
 	vec4 result_color_allowed = vec4(0.0, 0.0, 0.0, 0.0);
 	if (cone_sequence.length() == 30) {
-		result_color_allowed = color_allowed(normal_model_dir, cone_count, 0.02);
+		result_color_allowed = color_allowed(normal_model_dir, cone_count, 0.0);
 	}
 	ALBEDO = kusudama_color.rgb;
 	if (result_color_allowed.a == 0.0) {
