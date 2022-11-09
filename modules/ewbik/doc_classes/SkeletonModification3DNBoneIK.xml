@@ -11,7 +11,6 @@
 	</description>
 	<tutorials>
 		<link title="Everything will be IK">https://github.com/EGjoni/Everything-Will-Be-IK</link>
-		<link title="Java SkeletonModification3DNBoneIK">https://github.com/fire/java-ewbik</link>
 	</tutorials>
 	<methods>
 		<method name="get_constraint_count" qualifiers="const">
