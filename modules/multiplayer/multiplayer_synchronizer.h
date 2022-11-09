@@ -78,7 +78,7 @@ public:
 	void set_net_id(uint32_t p_net_id);
 
 	bool update_outbound_sync_time(uint64_t p_msec);
-	bool update_inbound_sync_time(uint16_t p_network_time);
+	bool update_inbound_sync_time(uint16_t p_network_time, bool p_force);
 
 	PackedStringArray get_configuration_warnings() const override;
 

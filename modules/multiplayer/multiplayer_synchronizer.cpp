@@ -129,8 +129,8 @@ bool MultiplayerSynchronizer::update_outbound_sync_time(uint64_t p_msec) {
 	return false;
 }
 
-bool MultiplayerSynchronizer::update_inbound_sync_time(uint16_t p_network_time) {
-	if (p_network_time <= last_inbound_sync && last_inbound_sync - p_network_time < 32767) {
+bool MultiplayerSynchronizer::update_inbound_sync_time(uint16_t p_network_time, bool p_force) {
+	if (!p_force && p_network_time <= last_inbound_sync && last_inbound_sync - p_network_time < 32767) {
 		return false;
 	}
 	last_inbound_sync = p_network_time;

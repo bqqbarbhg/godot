@@ -66,6 +66,7 @@ private:
 		HashMap<uint32_t, ObjectID> recv_sync_ids;
 		HashMap<uint32_t, ObjectID> recv_nodes;
 		uint16_t last_sent_sync = 0;
+		uint16_t last_receive_sync = 0;
 	};
 
 	// Replication state.
@@ -116,6 +117,8 @@ public:
 	Error on_replication_start(Object *p_obj, Variant p_config);
 	Error on_replication_stop(Object *p_obj, Variant p_config);
 	void on_network_process();
+
+	uint16_t get_last_receive_sync_for_peer(int p_peer);
 
 	Error on_spawn_receive(int p_from, const uint8_t *p_buffer, int p_buffer_len);
 	Error on_despawn_receive(int p_from, const uint8_t *p_buffer, int p_buffer_len);

@@ -188,6 +188,15 @@ Error SceneReplicationInterface::on_replication_start(Object *p_obj, Variant p_c
 	sync->connect("visibility_changed", callable_mp(this, &SceneReplicationInterface::_visibility_changed).bind(sync->get_instance_id()));
 	_update_sync_visibility(0, sync);
 
+	// Update the sync time of this new object to match the last update from the authority's peer.
+	if (!sync->is_multiplayer_authority()) {
+		int authority = sync->get_multiplayer_authority();
+		if (peers_info.has(authority)) {
+			PeerInfo peer_info = peers_info.get(authority);
+			sync->update_inbound_sync_time(peer_info.last_receive_sync, true);
+		}
+	}
+
 	if (pending_spawn == p_obj->get_instance_id() && sync->get_multiplayer_authority() == pending_spawn_remote) {
 		// Try to apply synchronizer Net ID
 		ERR_FAIL_COND_V_MSG(pending_sync_net_ids.is_empty(), ERR_INVALID_DATA, vformat("The MultiplayerSynchronizer at path \"%s\" is unable to process the pending spawn since it has no network ID. This might happen when changing the multiplayer authority during the \"_ready\" callback. Make sure to only change the authority of multiplayer synchronizers during \"_enter_tree\" or the \"_spawn_custom\" callback of their multiplayer spawner.", sync->get_path()));
@@ -473,6 +482,14 @@ Error SceneReplicationInterface::_make_despawn_packet(Node *p_node, int &r_len) 
 	return OK;
 }
 
+uint16_t SceneReplicationInterface::get_last_receive_sync_for_peer(int p_peer) {
+	if (peers_info.has(p_peer)) {
+		return peers_info.get(p_peer).last_receive_sync;
+	}
+
+	return 0;
+}
+
 Error SceneReplicationInterface::on_spawn_receive(int p_from, const uint8_t *p_buffer, int p_buffer_len) {
 	ERR_FAIL_COND_V_MSG(p_buffer_len < 18, ERR_INVALID_DATA, "Invalid spawn packet received");
 	int ofs = 1; // The spawn/despawn command.
@@ -650,6 +667,16 @@ void SceneReplicationInterface::_send_sync(int p_peer, const HashSet<ObjectID> p
 Error SceneReplicationInterface::on_sync_receive(int p_from, const uint8_t *p_buffer, int p_buffer_len) {
 	ERR_FAIL_COND_V_MSG(p_buffer_len < 11, ERR_INVALID_DATA, "Invalid sync packet received");
 	uint16_t time = decode_uint16(&p_buffer[1]);
+
+	if (peers_info.has(p_from)) {
+		PeerInfo peer_info = peers_info.get(p_from);
+		peer_info.last_receive_sync = time;
+
+		if (!(time <= peer_info.last_receive_sync && peer_info.last_receive_sync - time < 32767)) {
+			peer_info.last_receive_sync = time;
+		}
+	}
+
 	int ofs = 3;
 	while (ofs + 8 < p_buffer_len) {
 		uint32_t net_id = decode_uint32(&p_buffer[ofs]);
@@ -672,7 +699,7 @@ Error SceneReplicationInterface::on_sync_receive(int p_from, const uint8_t *p_bu
 		if (sync->get_multiplayer_authority() != p_from || !node) {
 			ERR_CONTINUE(true);
 		}
-		if (!sync->update_inbound_sync_time(time)) {
+		if (!sync->update_inbound_sync_time(time, false)) {
 			// State is too old.
 			ofs += size;
 			continue;
