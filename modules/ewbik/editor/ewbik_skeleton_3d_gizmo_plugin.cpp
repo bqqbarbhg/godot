@@ -241,7 +241,7 @@ vec4 color_allowed(in vec3 normal_dir,  in int cone_counts, in float boundary_wi
 		}
 	}
 	vec4 result = vert_model_color;
-	if (current_condition != 0) {
+	if (current_condition != 0 && current_condition != 1) {
 		float on_tan_boundary = abs(current_condition) == 2 ? -0.3 : 0.0;
 		float on_cone_boundary = abs(current_condition) == 1 ? -0.3 : 0.0;
 		result += vec4(0.0, on_cone_boundary, on_tan_boundary, 0.0);
@@ -463,7 +463,6 @@ void fragment() {
 						const float ra = Math::deg_to_rad((float)(circle_i * 3));
 						const float rb = Math::deg_to_rad((float)((circle_i + 1) * 3));
 						const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
-						const Point2 b = Vector2(Math::sin(rb), Math::cos(rb)) * w;
 						if (circle_i == 0) {
 							Transform3D handle_border_relative_to_mesh;
 							handle_border_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
