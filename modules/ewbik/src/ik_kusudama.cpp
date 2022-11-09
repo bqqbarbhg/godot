@@ -351,7 +351,7 @@ Vector3 IKKusudama::_local_point_in_limits(Vector3 in_point, Vector<double> &in_
 void IKKusudama::set_axes_to_orientation_snap(Ref<IKNode3D> to_set, Ref<IKNode3D> limiting_axes, double p_dampening, double p_cos_half_angle_dampen) {
 	Vector<double> in_bounds = { 1.0 };
 	bone_ray->p1(limiting_axes->get_global_transform().origin);
-	bone_ray->p2(to_set->get_global_transform().xform(Vector3(0.0,1.0,0.0)));
+	bone_ray->p2(to_set->get_global_transform().xform(Vector3(0.0, 1.0, 0.0)));
 	Vector3 bone_tip = limiting_axes->to_local(bone_ray->p2());
 	Vector3 in_limits = _local_point_in_limits(bone_tip, in_bounds);
 	if (in_bounds[0] < 0 && !Math::is_nan(in_limits.x)) {
