@@ -580,7 +580,7 @@ void SkeletonModification3DNBoneIK::set_kusudama_limit_cone_center(int32_t p_eff
 }
 
 Vector2 SkeletonModification3DNBoneIK::get_kusudama_twist(int32_t p_index) const {
-	ERR_FAIL_INDEX_V(p_index, kusudama_twist.size(), Vector2(Math::deg_to_rad(360.0f), Math::deg_to_rad(-360.0f)));
+	ERR_FAIL_INDEX_V(p_index, kusudama_twist.size(), Vector2(Math::deg_to_rad(-720.0f), Math::deg_to_rad(720.0f)));
 	return kusudama_twist[p_index];
 }
 
