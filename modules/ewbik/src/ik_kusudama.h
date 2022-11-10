@@ -118,8 +118,6 @@ public:
 	 */
 	virtual void set_axial_limits(double min_angle, double in_range);
 
-	// protected CartesianAxes limitLocalAxes;
-
 	/**
 	 *
 	 * @param to_set
@@ -127,10 +125,6 @@ public:
 	 * @return radians of the twist required to snap bone into twist limits (0 if bone is already in twist limits)
 	 */
 	virtual void set_snap_to_twist_limit(Ref<IKNode3D> to_set, Ref<IKNode3D> limiting_axes, float p_dampening, float p_cos_half_dampen);
-
-	virtual double angle_to_twist_center(Ref<IKNode3D> to_set, Ref<IKNode3D> limiting_axes);
-
-	virtual bool in_twist_limits(Ref<IKNode3D> bone_axes, Ref<IKNode3D> limiting_axes);
 
 	virtual double signed_angle_difference(double min_angle, double p_super);
 
@@ -215,7 +209,7 @@ public:
 	double unit_area = 4 * Math_PI;
 
 	/**
-	 * TODO: // this functionality is not yet fully implemented It always returns an overly simplistic representation
+	 * TODO: This functionality is not yet fully implemented It always returns an overly simplistic representation
 	 * not in line with what is described below.
 	 *
 	 * @return an (approximate) measure of the amount of rotational
