@@ -83,26 +83,28 @@ void IKKusudama::set_axial_limits(double min_angle, double in_range) {
 }
 
 void IKKusudama::set_snap_to_twist_limit(Ref<IKNode3D> to_set, Ref<IKNode3D> limiting_axes, float p_dampening, float p_cos_half_dampen) {
-	Basis inv_rot = limiting_axes->get_global_transform().basis.get_quaternion().inverse();
-	Basis align_rot = inv_rot * to_set->get_global_transform().basis;
-	Quaternion swing;
-	Quaternion twist;
-	get_swing_twist(align_rot.get_rotation_quaternion(), Vector3(0, 1, 0), swing, twist);
-	double angle_delta_2 = twist.get_angle() * twist.get_axis().y * -1;
-	angle_delta_2 = to_tau(angle_delta_2);
-	double from_min_to_angle_delta = to_tau(signed_angle_difference(angle_delta_2, Math_TAU - get_min_axial_angle()));
-	if (!(from_min_to_angle_delta < Math_TAU - range_angle)) {
+	if (!is_axially_constrained()) {
 		return;
 	}
-	double dist_to_min = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - get_min_axial_angle()));
-	double dist_to_max = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - (get_min_axial_angle() + range_angle)));
-	double turn_diff = 1;
-	Vector3 axis_y = to_set->get_global_transform().basis.get_column(Vector3::AXIS_Y);
-	if (dist_to_min < dist_to_max) {
-		turn_diff = turn_diff * (from_min_to_angle_delta);
-	} else {
-		turn_diff = turn_diff * (range_angle - (Math_TAU - from_min_to_angle_delta));
+	Quaternion limit_axes_rot = limiting_axes->get_global_transform().basis.get_quaternion().inverse();
+	Quaternion align_rot = limit_axes_rot * to_set->get_global_transform().basis.get_rotation_quaternion();
+	Quaternion swing;
+	Quaternion twist;
+	get_swing_twist(align_rot, Vector3(0, 1, 0), swing, twist);
+	double angle_delta_2 = twist.get_angle() * twist.get_axis().y * -1;
+	angle_delta_2 = to_tau(angle_delta_2);
+	double from_min_to_angle_delta = to_tau(signed_angle_difference(angle_delta_2, Math_TAU - min_axial_angle));
+	double turn_diff = 1.0;
+	if (from_min_to_angle_delta < Math_TAU - range_angle) {
+		double dist_to_min = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - min_axial_angle));
+		double dist_to_max = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - (min_axial_angle + range_angle)));
+		if (dist_to_min < dist_to_max) {
+			turn_diff = turn_diff * from_min_to_angle_delta;
+		} else {
+			turn_diff = turn_diff * (range_angle - (Math_TAU - from_min_to_angle_delta));
+		}
 	}
+	Vector3 axis_y = to_set->get_global_transform().basis.get_column(Vector3::AXIS_Y);
 	to_set->rotate_local_with_global(Quaternion(axis_y, turn_diff));
 }
 

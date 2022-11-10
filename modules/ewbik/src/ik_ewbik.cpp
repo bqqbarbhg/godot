@@ -241,7 +241,9 @@ void SkeletonModification3DNBoneIK::_get_property_list(List<PropertyInfo> *p_lis
 		}
 		p_list->push_back(bone_name);
 		p_list->push_back(
-				PropertyInfo(Variant::VECTOR2, "constraints/" + itos(constraint_i) + "/kusudama_twist", PROPERTY_HINT_RANGE, "-360.0,360.0,0.1,radians,or_less,or_greater"));
+				PropertyInfo(Variant::FLOAT, "constraints/" + itos(constraint_i) + "/kusudama_twist_from", PROPERTY_HINT_RANGE, "-360.0,360.0,0.1,radians,or_less,or_greater"));
+		p_list->push_back(
+				PropertyInfo(Variant::FLOAT, "constraints/" + itos(constraint_i) + "/kusudama_twist_to", PROPERTY_HINT_RANGE, "-360.0,360.0,0.1,radians,or_less,or_greater"));
 		p_list->push_back(
 				PropertyInfo(Variant::INT, "constraints/" + itos(constraint_i) + "/kusudama_limit_cone_count",
 						PROPERTY_HINT_RANGE, "0,30,1", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_ARRAY,
@@ -294,8 +296,11 @@ bool SkeletonModification3DNBoneIK::_get(const StringName &p_name, Variant &r_re
 			ERR_FAIL_INDEX_V(index, constraint_names.size(), false);
 			r_ret = constraint_names[index];
 			return true;
-		} else if (what == "kusudama_twist") {
-			r_ret = get_kusudama_twist(index);
+		} else if (what == "kusudama_twist_from") {
+			r_ret = get_kusudama_twist(index).x;
+			return true;
+		} else if (what == "kusudama_twist_to") {
+			r_ret = get_kusudama_twist(index).y;
 			return true;
 		} else if (what == "kusudama_limit_cone_count") {
 			r_ret = get_kusudama_limit_cone_count(index);
@@ -358,8 +363,13 @@ bool SkeletonModification3DNBoneIK::_set(const StringName &p_name, const Variant
 			}
 			set_constraint_name(index, p_value);
 			return true;
-		} else if (what == "kusudama_twist") {
-			set_kusudama_twist(index, p_value);
+		} else if (what == "kusudama_twist_from") {
+			Vector2 kusudama_twist = get_kusudama_twist(index);
+			set_kusudama_twist(index, Vector2(p_value, kusudama_twist.y));
+			return true;
+		} else if (what == "kusudama_twist_to") {
+			Vector2 kusudama_twist = get_kusudama_twist(index);
+			set_kusudama_twist(index, Vector2(kusudama_twist.x, p_value));
 			return true;
 		} else if (what == "kusudama_limit_cone_count") {
 			set_kusudama_limit_cone_count(index, p_value);
