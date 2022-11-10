@@ -253,64 +253,36 @@ void EWBIK3DGizmoPlugin::create_gizmo_mesh_handles(BoneId current_bone_idx, Bone
 		kusudama_material->set_shader_parameter("cone_count", cone_count);
 		kusudama_material->set_shader_parameter("kusudama_color", current_bone_color);
 		p_gizmo->add_mesh(
-			kusudama_surface_tool->commit(Ref<Mesh>(), RS::ARRAY_CUSTOM_RGBA_HALF << RS::ARRAY_FORMAT_CUSTOM0_SHIFT), 
-			kusudama_material, ewbik_skeleton->get_global_transform(), ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
+				kusudama_surface_tool->commit(Ref<Mesh>(), RS::ARRAY_CUSTOM_RGBA_HALF << RS::ARRAY_FORMAT_CUSTOM0_SHIFT),
+				kusudama_material, ewbik_skeleton->get_global_transform(), ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
 		// END Create a kusudama ball visualization.
 	}
 	{
-		// START Create a cone visualization.
 		Ref<SurfaceTool> cone_sides_surface_tool;
 		cone_sides_surface_tool.instantiate();
 		cone_sides_surface_tool->begin(Mesh::PRIMITIVE_LINES);
-		const Ref<Material> material_primary = get_material("lines_primary", p_gizmo);
-		const Ref<Material> material_secondary = get_material("lines_secondary", p_gizmo);
-		const Ref<StandardMaterial3D> material_tertiary = get_material("lines_tertiary", p_gizmo);
-		Basis mesh_orientation = Basis::from_euler(Vector3(Math::deg_to_rad(90.0f), 0, 0));
 		for (int32_t cone_i = 0; cone_i < kusudama_limit_cones.size(); cone_i = cone_i + (3 * 4)) {
 			Vector3 center = Vector3(kusudama_limit_cones[cone_i + 0], kusudama_limit_cones[cone_i + 1], kusudama_limit_cones[cone_i + 2]);
+			Basis mesh_orientation = Basis::from_euler(Vector3(Math::deg_to_rad(90.0f), 0, 0));
 			Transform3D center_relative_to_mesh = Transform3D(Quaternion(Vector3(0, 1, 0), center)) * mesh_orientation;
-			{
-				Transform3D handle_relative_to_mesh;
-				handle_relative_to_mesh.origin = center * radius;
-				Transform3D handle_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_relative_to_mesh;
-				Transform3D handle_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_relative_to_skeleton;
-				handles.push_back(handle_relative_to_universe.origin);
-			}
-			Vector<Vector3> points_primary;
-			Vector<Vector3> points_secondary;
-
+			Transform3D handle_relative_to_mesh;
+			handle_relative_to_mesh.origin = center * radius;
+			Transform3D handle_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_relative_to_mesh;
+			Transform3D handle_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_relative_to_skeleton;
+			handles.push_back(handle_relative_to_universe.origin);
 			float r = radius;
 			float cone_radius = kusudama_limit_cones[cone_i + 3];
 			float w = r * Math::sin(cone_radius);
 			float d = r * Math::cos(cone_radius);
-
-			for (int circle_i = 0; circle_i < 120; circle_i++) {
-				// Draw a circle
-				const float ra = Math::deg_to_rad((float)(circle_i * 3));
-				const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
-				if (circle_i == 0) {
-					Transform3D handle_border_relative_to_mesh;
-					handle_border_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
-					Transform3D handle_border_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_border_relative_to_mesh;
-					Transform3D handle_border_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_border_relative_to_skeleton;
-					handles.push_back(handle_border_relative_to_universe.origin);
-				}
-				if (circle_i % 15 == 0) {
-					// Draw 8 lines from the cone origin to the sides of the circle
-					cone_sides_surface_tool->set_bones(bones);
-					cone_sides_surface_tool->set_weights(weights);
-					cone_sides_surface_tool->add_vertex((center_relative_to_mesh).xform(Vector3(a.x, a.y, -d)));
-					cone_sides_surface_tool->set_bones(bones);
-					cone_sides_surface_tool->set_weights(weights);
-					cone_sides_surface_tool->add_vertex((center_relative_to_mesh).xform(Vector3()));
-				}
-			}
+			const float ra = Math::deg_to_rad((float)(0 * 3));
+			const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
+			Transform3D handle_border_relative_to_mesh;
+			handle_border_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
+			Transform3D handle_border_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_border_relative_to_mesh;
+			Transform3D handle_border_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_border_relative_to_skeleton;
+			handles.push_back(handle_border_relative_to_universe.origin);
 		}
-		p_gizmo->add_mesh(cone_sides_surface_tool->commit(),
-		material_tertiary, 
-		constraint_relative_to_the_universe, 
-		ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
-	} // END cone
+	}
 	// TODO: Use several colors for the dots and match the color of the lines.
 	p_gizmo->add_handles(handles, get_material("handles"), Vector<int>(), true, true);
 }
