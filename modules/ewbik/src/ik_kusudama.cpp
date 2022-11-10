@@ -91,8 +91,7 @@ void IKKusudama::set_snap_to_twist_limit(Ref<IKNode3D> to_set, Ref<IKNode3D> lim
 	Quaternion twist;
 	get_swing_twist(align_rot, Vector3(0, 1, 0), swing, twist);
 	double angle_delta_2 = twist.get_angle() * twist.get_axis().y * -1;
-	angle_delta_2 = to_tau(angle_delta_2);
-	double from_min_to_angle_delta = to_tau(signed_angle_difference(angle_delta_2, Math_TAU - min_axial_angle));
+	double from_min_to_angle_delta = signed_angle_difference(angle_delta_2, Math_TAU - min_axial_angle);
 	double turn_diff = 1.0;
 	if (from_min_to_angle_delta < Math_TAU - range_angle) {
 		double dist_to_min = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - min_axial_angle));
@@ -328,23 +327,28 @@ void IKKusudama::set_axes_to_orientation_snap(Ref<IKNode3D> to_set, Ref<IKNode3D
 Ref<IKNode3D> IKKusudama::limiting_axes() {
 	return _limiting_axes;
 }
+
 void IKKusudama::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_limit_cones"), &IKKusudama::get_limit_cones);
 	ClassDB::bind_method(D_METHOD("set_limit_cones", "limit_cones"), &IKKusudama::set_limit_cones);
 }
+
 void IKKusudama::set_limit_cones(TypedArray<IKLimitCone> p_cones) {
 	limit_cones = p_cones;
 }
+
 void IKKusudama::get_swing_twist(
 		Quaternion p_rotation,
 		Vector3 p_axis,
 		Quaternion &r_swing,
 		Quaternion &r_twist) {
+	// Align flip phases.
+	Quaternion rotation = Basis(p_rotation).get_rotation_quaternion();
 	// https://allenchou.net/2018/05/game-math-swing-twist-interpolation-sterp/
-	Vector3 rotation = Vector3(p_rotation.x, p_rotation.y, p_rotation.z);
-	if (rotation.length_squared() < FLT_EPSILON) {
-		// The rotation is a singularity
-		Vector3 rotated_twist_axis = p_rotation.xform(p_axis);
+	Vector3 axis = Vector3(rotation.x, rotation.y, rotation.z);
+	if (axis.length_squared() < FLT_EPSILON) {
+		// The rotation is a singularity.
+		Vector3 rotated_twist_axis = rotation.xform(p_axis);
 		Vector3 swing_axis = p_axis.cross(rotated_twist_axis);
 		// Rotate by a 180 degrees.
 		if (swing_axis.length_squared() > FLT_EPSILON) {
@@ -358,9 +362,9 @@ void IKKusudama::get_swing_twist(
 		r_twist = Quaternion(p_axis, 180.0f);
 		return;
 	}
-	Vector3 project = rotation.project(p_axis);
-	r_twist = Quaternion(project.x, project.y, project.z, p_rotation.w);
+	Vector3 project = axis.project(p_axis);
+	r_twist = Quaternion(project.x, project.y, project.z, rotation.w);
 	r_twist.normalize();
-	r_swing = p_rotation * r_twist.inverse();
+	r_swing = rotation * r_twist.inverse();
 	r_swing.normalize();
 }
