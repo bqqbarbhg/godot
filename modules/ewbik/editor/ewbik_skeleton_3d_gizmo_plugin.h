@@ -68,9 +68,6 @@ public:
 	bool has_gizmo(Node3D *p_spatial) override;
 	String get_gizmo_name() const override;
 	void redraw(EditorNode3DGizmo *p_gizmo) override;
-	int get_priority() const override {
-		return -2;
-	}
 	EWBIK3DGizmoPlugin() {
 		// Enable vertex colors for the materials below as the gizmo color depends on the light color.
 		create_material("lines_primary", Color(0.93725490570068, 0.19215686619282, 0.22352941334248), true, true, true);
