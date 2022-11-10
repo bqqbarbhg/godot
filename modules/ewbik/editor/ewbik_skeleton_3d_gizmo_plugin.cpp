@@ -314,8 +314,8 @@ void fragment() {
 				}
 				created_gizmo_mesh.insert(current_bone_idx);
 				Transform3D constraint_relative_to_the_skeleton = ik_bone->get_constraint_transform()->get_global_transform();
-				Transform3D selected_node_relative_to_the_universe = ewbik->get_global_transform();
 				Transform3D constraint_relative_to_the_universe = skeleton->get_global_transform() * constraint_relative_to_the_skeleton;
+				Transform3D selected_node_relative_to_the_universe = ewbik->get_global_transform();
 				Transform3D constraint_relative_to_the_node = selected_node_relative_to_the_universe.affine_inverse() * constraint_relative_to_the_universe;
 
 				PackedFloat32Array kusudama_limit_cones;
@@ -432,7 +432,8 @@ void fragment() {
 					p_gizmo->add_mesh(kusudama_surface_tool->commit(Ref<Mesh>(), RS::ARRAY_CUSTOM_RGBA_HALF << RS::ARRAY_FORMAT_CUSTOM0_SHIFT), kusudama_material, constraint_relative_to_the_node, skeleton->register_skin(skeleton->create_skin_from_rest_transforms()));
 					// END Create a kusudama ball visualization.
 				}
-				{ // START Create a cone visualization.
+				{ 
+					// START Create a cone visualization.
 					Ref<SurfaceTool> cone_sides_surface_tool;
 					cone_sides_surface_tool.instantiate();
 					cone_sides_surface_tool->begin(Mesh::PRIMITIVE_LINES);
