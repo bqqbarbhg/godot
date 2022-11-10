@@ -68,15 +68,9 @@ public:
 	bool has_gizmo(Node3D *p_spatial) override;
 	String get_gizmo_name() const override;
 	void redraw(EditorNode3DGizmo *p_gizmo) override;
-	EWBIK3DGizmoPlugin() {
-		// Enable vertex colors for the materials below as the gizmo color depends on the light color.
-		create_material("lines_primary", Color(0.93725490570068, 0.19215686619282, 0.22352941334248), true, true, true);
-
-		// Need a textured2d handle for yellow dot, blue dot and turqouise dot and be icons.
-		create_handle_material("handles");
-		create_handle_material("handles_billboard", true);
-	}
-	void create_gizmo_mesh_handles(BoneId current_bone_idx, BoneId parent_idx, Ref<IKBone3D> ik_bone, EditorNode3DGizmo *p_gizmo, Color current_bone_color, Skeleton3D *ewbik_skeleton);
+	EWBIK3DGizmoPlugin();
+	void create_gizmo_mesh(BoneId current_bone_idx, Ref<IKBone3D> ik_bone, EditorNode3DGizmo *p_gizmo, Color current_bone_color, Skeleton3D *ewbik_skeleton);
+	void create_gizmo_handles(BoneId current_bone_idx, Ref<IKBone3D> ik_bone, EditorNode3DGizmo *p_gizmo, Color current_bone_color, Skeleton3D *ewbik_skeleton);
 };
 
 class EditorPluginEWBIK : public EditorPlugin {

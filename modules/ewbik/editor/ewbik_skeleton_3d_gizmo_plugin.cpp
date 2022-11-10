@@ -108,22 +108,22 @@ void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 		}
 		Color current_bone_color = bone_color;
 		for (BoneId current_bone_idx : processing_bones) {
-			BoneId parent_idx = ewbik_skeleton->get_bone_parent(current_bone_idx);
 			Ref<IKBone3D> ik_bone = bone_segment->get_ik_bone(current_bone_idx);
 			if (ik_bone.is_null() || ik_bone->get_bone_id() != current_bone_idx) {
 				continue;
 			}
-			create_gizmo_mesh_handles(current_bone_idx, parent_idx, ik_bone, p_gizmo, current_bone_color, ewbik_skeleton);
+			create_gizmo_mesh(current_bone_idx, ik_bone, p_gizmo, current_bone_color, ewbik_skeleton);
+			create_gizmo_handles(current_bone_idx, ik_bone, p_gizmo, current_bone_color, ewbik_skeleton);
 		}
 	}
 }
 
-void EWBIK3DGizmoPlugin::create_gizmo_mesh_handles(BoneId current_bone_idx, BoneId parent_idx,
-		Ref<IKBone3D> ik_bone, EditorNode3DGizmo *p_gizmo, Color current_bone_color, Skeleton3D *ewbik_skeleton) {
+void EWBIK3DGizmoPlugin::create_gizmo_mesh(BoneId current_bone_idx, Ref<IKBone3D> ik_bone, EditorNode3DGizmo *p_gizmo, Color current_bone_color, Skeleton3D *ewbik_skeleton) {
 	Ref<IKKusudama> ik_kusudama = ik_bone->get_constraint();
 	if (ik_kusudama.is_null()) {
 		return;
 	}
+	BoneId parent_idx = ewbik_skeleton->get_bone_parent(current_bone_idx);
 	Vector<Vector3> handles;
 	LocalVector<int> bones;
 	LocalVector<float> weights;
@@ -172,120 +172,176 @@ void EWBIK3DGizmoPlugin::create_gizmo_mesh_handles(BoneId current_bone_idx, Bone
 	Vector3 v1 = ewbik_skeleton->get_bone_global_rest(parent_idx).origin;
 	real_t dist = v0.distance_to(v1);
 	float radius = dist / 5.0;
-	{ // BEGIN Create a kusudama ball visualization.
-		// Code copied from the SphereMesh.
-		float height = dist / 2.5;
-		int rings = 64;
+	// Code copied from the SphereMesh.
+	float height = dist / 2.5;
+	int rings = 64;
 
-		int i, j, prevrow, thisrow, point;
-		float x, y, z;
+	int i, j, prevrow, thisrow, point;
+	float x, y, z;
 
-		float scale = height * 0.5;
+	float scale = height * 0.5;
 
-		Vector<Vector3> points;
-		Vector<Vector3> normals;
-		Vector<int> indices;
-		point = 0;
+	Vector<Vector3> points;
+	Vector<Vector3> normals;
+	Vector<int> indices;
+	point = 0;
 
-		thisrow = 0;
-		prevrow = 0;
-		for (j = 0; j <= (rings + 1); j++) {
-			int radial_segments = 32;
-			float v = j;
-			float w;
+	thisrow = 0;
+	prevrow = 0;
+	for (j = 0; j <= (rings + 1); j++) {
+		int radial_segments = 32;
+		float v = j;
+		float w;
 
-			v /= (rings + 1);
-			w = sin(Math_PI * v);
-			y = scale * cos(Math_PI * v);
+		v /= (rings + 1);
+		w = sin(Math_PI * v);
+		y = scale * cos(Math_PI * v);
 
-			for (i = 0; i <= radial_segments; i++) {
-				float u = i;
-				u /= radial_segments;
+		for (i = 0; i <= radial_segments; i++) {
+			float u = i;
+			u /= radial_segments;
 
-				x = sin(u * Math_TAU);
-				z = cos(u * Math_TAU);
+			x = sin(u * Math_TAU);
+			z = cos(u * Math_TAU);
 
-				Vector3 p = Vector3(x * radius * w, y, z * radius * w);
-				points.push_back(p);
-				Vector3 normal = Vector3(x * w * scale, radius * (y / scale), z * w * scale);
-				normals.push_back(normal.normalized());
-				point++;
+			Vector3 p = Vector3(x * radius * w, y, z * radius * w);
+			points.push_back(p);
+			Vector3 normal = Vector3(x * w * scale, radius * (y / scale), z * w * scale);
+			normals.push_back(normal.normalized());
+			point++;
 
-				if (i > 0 && j > 0) {
-					indices.push_back(prevrow + i - 1);
-					indices.push_back(prevrow + i);
-					indices.push_back(thisrow + i - 1);
+			if (i > 0 && j > 0) {
+				indices.push_back(prevrow + i - 1);
+				indices.push_back(prevrow + i);
+				indices.push_back(thisrow + i - 1);
 
-					indices.push_back(prevrow + i);
-					indices.push_back(thisrow + i);
-					indices.push_back(thisrow + i - 1);
-				};
+				indices.push_back(prevrow + i);
+				indices.push_back(thisrow + i);
+				indices.push_back(thisrow + i - 1);
 			};
+		};
 
-			prevrow = thisrow;
-			thisrow = point;
-		}
-		Ref<SurfaceTool> kusudama_surface_tool;
-		kusudama_surface_tool.instantiate();
-		kusudama_surface_tool->begin(Mesh::PRIMITIVE_TRIANGLES);
-		const int32_t MESH_CUSTOM_0 = 0;
-		kusudama_surface_tool->set_custom_format(MESH_CUSTOM_0, SurfaceTool::CustomFormat::CUSTOM_RGBA_HALF);
-		for (int32_t point_i = 0; point_i < points.size(); point_i++) {
-			kusudama_surface_tool->set_bones(bones);
-			kusudama_surface_tool->set_weights(weights);
-			Color c;
-			c.r = normals[point_i].x;
-			c.g = normals[point_i].y;
-			c.b = normals[point_i].z;
-			c.a = 0;
-			kusudama_surface_tool->set_custom(MESH_CUSTOM_0, c);
-			kusudama_surface_tool->set_normal(normals[point_i]);
-			kusudama_surface_tool->add_vertex(constraint_relative_to_the_universe.xform(points[point_i]));
-		}
-		for (int32_t index_i : indices) {
-			kusudama_surface_tool->add_index(index_i);
-		}
-		Ref<ShaderMaterial> kusudama_material;
-		kusudama_material.instantiate();
-		kusudama_material->set_shader(kusudama_shader);
-		kusudama_material->set_shader_parameter("cone_sequence", kusudama_limit_cones);
-		int32_t cone_count = kusudama->get_limit_cones().size();
-		kusudama_material->set_shader_parameter("cone_count", cone_count);
-		kusudama_material->set_shader_parameter("kusudama_color", current_bone_color);
-		p_gizmo->add_mesh(
-				kusudama_surface_tool->commit(Ref<Mesh>(), RS::ARRAY_CUSTOM_RGBA_HALF << RS::ARRAY_FORMAT_CUSTOM0_SHIFT),
-				kusudama_material, ewbik_skeleton->get_global_transform(), ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
-		// END Create a kusudama ball visualization.
+		prevrow = thisrow;
+		thisrow = point;
 	}
-	{
-		Ref<SurfaceTool> cone_sides_surface_tool;
-		cone_sides_surface_tool.instantiate();
-		cone_sides_surface_tool->begin(Mesh::PRIMITIVE_LINES);
-		for (int32_t cone_i = 0; cone_i < kusudama_limit_cones.size(); cone_i = cone_i + (3 * 4)) {
-			Vector3 center = Vector3(kusudama_limit_cones[cone_i + 0], kusudama_limit_cones[cone_i + 1], kusudama_limit_cones[cone_i + 2]);
-			if (Math::is_zero_approx(center.length())) {
-				break;
-			}
-			Basis mesh_orientation = Basis::from_euler(Vector3(Math::deg_to_rad(90.0f), 0, 0));
-			Transform3D center_relative_to_mesh = Transform3D(Quaternion(Vector3(0, 1, 0), center)) * mesh_orientation;
-			Transform3D handle_relative_to_mesh;
-			handle_relative_to_mesh.origin = center * radius;
-			Transform3D handle_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_relative_to_mesh;
-			Transform3D handle_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_relative_to_skeleton;
-			handles.push_back(handle_relative_to_universe.origin);
-			float r = radius;
-			float cone_radius = kusudama_limit_cones[cone_i + 3];
-			float w = r * Math::sin(cone_radius);
-			float d = r * Math::cos(cone_radius);
-			const float ra = Math::deg_to_rad((float)(0 * 3));
-			const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
-			Transform3D handle_border_relative_to_mesh;
-			handle_border_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
-			Transform3D handle_border_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_border_relative_to_mesh;
-			Transform3D handle_border_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_border_relative_to_skeleton;
-			handles.push_back(handle_border_relative_to_universe.origin);
-		}
+	Ref<SurfaceTool> surface_tool;
+	surface_tool.instantiate();
+	surface_tool->begin(Mesh::PRIMITIVE_TRIANGLES);
+	const int32_t MESH_CUSTOM_0 = 0;
+	surface_tool->set_custom_format(MESH_CUSTOM_0, SurfaceTool::CustomFormat::CUSTOM_RGBA_HALF);
+	for (int32_t point_i = 0; point_i < points.size(); point_i++) {
+		surface_tool->set_bones(bones);
+		surface_tool->set_weights(weights);
+		Color c;
+		c.r = normals[point_i].x;
+		c.g = normals[point_i].y;
+		c.b = normals[point_i].z;
+		c.a = 0;
+		surface_tool->set_custom(MESH_CUSTOM_0, c);
+		surface_tool->set_normal(normals[point_i]);
+		surface_tool->add_vertex(constraint_relative_to_the_universe.xform(points[point_i]));
 	}
-	// TODO: Use several colors for the dots and match the color of the lines.
+	for (int32_t index_i : indices) {
+		surface_tool->add_index(index_i);
+	}
+	Ref<ShaderMaterial> kusudama_material;
+	kusudama_material.instantiate();
+	kusudama_material->set_shader(kusudama_shader);
+	kusudama_material->set_shader_parameter("cone_sequence", kusudama_limit_cones);
+	int32_t cone_count = kusudama->get_limit_cones().size();
+	kusudama_material->set_shader_parameter("cone_count", cone_count);
+	kusudama_material->set_shader_parameter("kusudama_color", current_bone_color);
+	p_gizmo->add_mesh(
+			surface_tool->commit(Ref<Mesh>(), RS::ARRAY_CUSTOM_RGBA_HALF << RS::ARRAY_FORMAT_CUSTOM0_SHIFT),
+			kusudama_material, ewbik_skeleton->get_global_transform(), ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
+}
+
+EWBIK3DGizmoPlugin::EWBIK3DGizmoPlugin() {
+	// Enable vertex colors for the materials below as the gizmo color depends on the light color.
+	create_material("lines_primary", Color(0.93725490570068, 0.19215686619282, 0.22352941334248), true, true, true);
+	// Need a textured2d handle for yellow dot, blue dot and turqouise dot and be icons.
+	create_handle_material("handles");
+	create_handle_material("handles_billboard", true);
+}
+void EWBIK3DGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBone3D> ik_bone, EditorNode3DGizmo *p_gizmo, Color current_bone_color, Skeleton3D *ewbik_skeleton) {
+	Ref<IKKusudama> ik_kusudama = ik_bone->get_constraint();
+	if (ik_kusudama.is_null()) {
+		return;
+	}
+	BoneId parent_idx = ewbik_skeleton->get_bone_parent(current_bone_idx);
+	Vector<Vector3> handles;
+	LocalVector<int> bones;
+	LocalVector<float> weights;
+	bones.resize(4);
+	weights.resize(4);
+	for (int i = 0; i < 4; i++) {
+		bones[i] = 0;
+		weights[i] = 0;
+	}
+	bones[0] = parent_idx;
+	weights[0] = 1;
+	Transform3D constraint_relative_to_the_skeleton = ik_bone->get_constraint_transform()->get_global_transform();
+	PackedFloat32Array kusudama_limit_cones;
+	Ref<IKKusudama> kusudama = ik_bone->get_constraint();
+	kusudama_limit_cones.resize(KUSUDAMA_MAX_CONES * 4);
+	kusudama_limit_cones.fill(0.0f);
+	int out_idx = 0;
+	const TypedArray<IKLimitCone> &limit_cones = ik_kusudama->get_limit_cones();
+	for (int32_t cone_i = 0; cone_i < limit_cones.size(); cone_i++) {
+		Ref<IKLimitCone> limit_cone = limit_cones[cone_i];
+		Vector3 control_point = limit_cone->get_control_point();
+		kusudama_limit_cones.write[out_idx + 0] = control_point.x;
+		kusudama_limit_cones.write[out_idx + 1] = control_point.y;
+		kusudama_limit_cones.write[out_idx + 2] = control_point.z;
+		float radius = limit_cone->get_radius();
+		kusudama_limit_cones.write[out_idx + 3] = radius;
+		out_idx += 4;
+
+		Vector3 tangent_center_1 = limit_cone->get_tangent_circle_center_next_1();
+		kusudama_limit_cones.write[out_idx + 0] = tangent_center_1.x;
+		kusudama_limit_cones.write[out_idx + 1] = tangent_center_1.y;
+		kusudama_limit_cones.write[out_idx + 2] = tangent_center_1.z;
+		float tangent_radius = limit_cone->get_tangent_circle_radius_next();
+		kusudama_limit_cones.write[out_idx + 3] = tangent_radius;
+		out_idx += 4;
+
+		Vector3 tangent_center_2 = limit_cone->get_tangent_circle_center_next_2();
+		kusudama_limit_cones.write[out_idx + 0] = tangent_center_2.x;
+		kusudama_limit_cones.write[out_idx + 1] = tangent_center_2.y;
+		kusudama_limit_cones.write[out_idx + 2] = tangent_center_2.z;
+		kusudama_limit_cones.write[out_idx + 3] = tangent_radius;
+		out_idx += 4;
+	}
+	Vector3 v0 = ewbik_skeleton->get_bone_global_rest(current_bone_idx).origin;
+	Vector3 v1 = ewbik_skeleton->get_bone_global_rest(parent_idx).origin;
+	real_t dist = v0.distance_to(v1);
+	float radius = dist / 5.0;
+	Ref<SurfaceTool> surface_tool;
+	surface_tool.instantiate();
+	surface_tool->begin(Mesh::PRIMITIVE_LINES);
+	for (int32_t cone_i = 0; cone_i < kusudama_limit_cones.size(); cone_i = cone_i + (3 * 4)) {
+		Vector3 center = Vector3(kusudama_limit_cones[cone_i + 0], kusudama_limit_cones[cone_i + 1], kusudama_limit_cones[cone_i + 2]);
+		if (Math::is_zero_approx(center.length())) {
+			break;
+		}
+		Basis mesh_orientation = Basis::from_euler(Vector3(Math::deg_to_rad(90.0f), 0, 0));
+		Transform3D center_relative_to_mesh = Transform3D(Quaternion(Vector3(0, 1, 0), center)) * mesh_orientation;
+		Transform3D handle_relative_to_mesh;
+		handle_relative_to_mesh.origin = center * radius;
+		Transform3D handle_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_relative_to_mesh;
+		Transform3D handle_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_relative_to_skeleton;
+		handles.push_back(handle_relative_to_universe.origin);
+		float r = radius;
+		float cone_radius = kusudama_limit_cones[cone_i + 3];
+		float w = r * Math::sin(cone_radius);
+		float d = r * Math::cos(cone_radius);
+		const float ra = Math::deg_to_rad((float)(0 * 3));
+		const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
+		Transform3D handle_border_relative_to_mesh;
+		handle_border_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
+		Transform3D handle_border_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_border_relative_to_mesh;
+		Transform3D handle_border_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_border_relative_to_skeleton;
+		handles.push_back(handle_border_relative_to_universe.origin);
+	}
 	p_gizmo->add_handles(handles, get_material("handles"), Vector<int>(), true, true);
 }
