@@ -82,6 +82,29 @@ void IKKusudama::set_axial_limits(double min_angle, double in_range) {
 }
 
 void IKKusudama::set_snap_to_twist_limit(Ref<IKNode3D> to_set, Ref<IKNode3D> limiting_axes, float p_dampening, float p_cos_half_dampen) {
+	if (!is_axially_constrained()) {
+		return;
+	}
+	Quaternion limit_axes_rot = limiting_axes->get_global_transform().basis.get_quaternion().inverse();
+	Quaternion align_rot = limit_axes_rot * to_set->get_global_transform().basis.get_rotation_quaternion();
+	Quaternion swing;
+	Quaternion twist;
+	get_swing_twist(align_rot, Vector3(0, 1, 0), swing, twist);
+	double angle_delta_2 = twist.get_angle() * twist.get_axis().y * -1;
+	angle_delta_2 = to_tau(angle_delta_2);
+	double from_min_to_angle_delta = to_tau(signed_angle_difference(angle_delta_2, Math_TAU - min_axial_angle));
+	double turn_diff = 1.0;
+	if (from_min_to_angle_delta < Math_TAU - range_angle) {
+		double dist_to_min = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - min_axial_angle));
+		double dist_to_max = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - (min_axial_angle + range_angle)));
+		if (dist_to_min < dist_to_max) {
+			turn_diff = turn_diff * from_min_to_angle_delta;
+		} else {
+			turn_diff = turn_diff * (range_angle - (Math_TAU - from_min_to_angle_delta));
+		}
+	}
+	Vector3 axis_y = to_set->get_global_transform().basis.get_column(Vector3::AXIS_Y);
+	to_set->rotate_local_with_global(Quaternion(axis_y, turn_diff));
 }
 
 double IKKusudama::signed_angle_difference(double min_angle, double p_super) {
@@ -312,4 +335,33 @@ void IKKusudama::_bind_methods() {
 }
 void IKKusudama::set_limit_cones(TypedArray<IKLimitCone> p_cones) {
 	limit_cones = p_cones;
+}
+void IKKusudama::get_swing_twist(
+		Quaternion p_rotation,
+		Vector3 p_axis,
+		Quaternion &r_swing,
+		Quaternion &r_twist) {
+	// https://allenchou.net/2018/05/game-math-swing-twist-interpolation-sterp/
+	Vector3 rotation = Vector3(p_rotation.x, p_rotation.y, p_rotation.z);
+	if (rotation.length_squared() < FLT_EPSILON) {
+		// The rotation is a singularity
+		Vector3 rotated_twist_axis = p_rotation.xform(p_axis);
+		Vector3 swing_axis = p_axis.cross(rotated_twist_axis);
+		// Rotate by a 180 degrees.
+		if (swing_axis.length_squared() > FLT_EPSILON) {
+			double swing_angle = p_axis.angle_to(rotated_twist_axis);
+			r_swing = Quaternion(swing_axis, swing_angle);
+		} else {
+			// The rotation axis is parallel to the twist axis.
+			r_swing = Quaternion();
+		}
+		// Always twist 180 degree on the singularity.
+		r_twist = Quaternion(p_axis, 180.0f);
+		return;
+	}
+	Vector3 project = rotation.project(p_axis);
+	r_twist = Quaternion(project.x, project.y, project.z, p_rotation.w);
+	r_twist.normalize();
+	r_swing = p_rotation * r_twist.inverse();
+	r_swing.normalize();
 }
