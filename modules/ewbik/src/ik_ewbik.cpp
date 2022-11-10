@@ -383,7 +383,7 @@ bool SkeletonModification3DNBoneIK::_set(const StringName &p_name, const Variant
 	return false;
 }
 
-void SkeletonModification3DNBoneIK::_bind_methods() {	
+void SkeletonModification3DNBoneIK::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_dirty"), &SkeletonModification3DNBoneIK::set_dirty);
 	ClassDB::bind_method(D_METHOD("set_root_bone", "root_bone"), &SkeletonModification3DNBoneIK::set_root_bone);
 	ClassDB::bind_method(D_METHOD("get_root_bone"), &SkeletonModification3DNBoneIK::get_root_bone);
@@ -630,6 +630,9 @@ void SkeletonModification3DNBoneIK::execute(real_t delta) {
 		if (debug_skeleton) {
 			debug_skeleton = false;
 		}
+		if (is_dirty) {
+			get_skeleton()->update_gizmos();
+		}
 		is_dirty = false;
 		notify_property_list_changed();
 	}
@@ -733,11 +736,13 @@ void SkeletonModification3DNBoneIK::set_tip_bone(StringName p_bone) {
 	tip_bone = p_bone;
 	set_dirty();
 }
+
 real_t SkeletonModification3DNBoneIK::get_pin_weight(int32_t p_pin_index) const {
 	ERR_FAIL_INDEX_V(p_pin_index, pins.size(), 0.0);
 	const Ref<IKEffectorTemplate> effector_template = pins[p_pin_index];
 	return effector_template->get_weight();
 }
+
 void SkeletonModification3DNBoneIK::set_pin_weight(int32_t p_pin_index, const real_t &p_weight) {
 	ERR_FAIL_INDEX(p_pin_index, pins.size());
 	Ref<IKEffectorTemplate> effector_template = pins[p_pin_index];
@@ -765,7 +770,7 @@ void SkeletonModification3DNBoneIK::set_pin_direction_priorities(int32_t p_pin_i
 	effector_template->set_direction_priorities(p_priority_direction);
 	set_dirty();
 }
+
 void SkeletonModification3DNBoneIK::set_dirty() {
 	is_dirty = true;
-	update_gizmos();
 }

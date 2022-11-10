@@ -316,8 +316,6 @@ void fragment() {
 				Transform3D constraint_relative_to_the_skeleton = ewbik_skeleton->get_transform().affine_inverse() * ik_bone->get_constraint_transform()->get_global_transform();
 				Transform3D skeleton_node_relative_to_the_universe = ewbik_skeleton->get_global_transform();
 				Transform3D constraint_relative_to_the_universe = skeleton_node_relative_to_the_universe * constraint_relative_to_the_skeleton;
-				Transform3D selected_node_relative_to_the_universe = ewbik->get_global_transform();
-				Transform3D constraint_relative_to_the_node = selected_node_relative_to_the_universe.affine_inverse() * constraint_relative_to_the_universe;
 
 				PackedFloat32Array kusudama_limit_cones;
 				Ref<IKKusudama> kusudama = ik_bone->get_constraint();
@@ -418,7 +416,7 @@ void fragment() {
 						c.a = 0;
 						kusudama_surface_tool->set_custom(MESH_CUSTOM_0, c);
 						kusudama_surface_tool->set_normal(normals[point_i]);
-						kusudama_surface_tool->add_vertex(constraint_relative_to_the_node.xform(points[point_i]));
+						kusudama_surface_tool->add_vertex(points[point_i]);
 					}
 					for (int32_t index_i : indices) {
 						kusudama_surface_tool->add_index(index_i);
@@ -430,7 +428,7 @@ void fragment() {
 					int32_t cone_count = kusudama->get_limit_cones().size();
 					kusudama_material->set_shader_parameter("cone_count", cone_count);
 					kusudama_material->set_shader_parameter("kusudama_color", current_bone_color);
-					p_gizmo->add_mesh(kusudama_surface_tool->commit(Ref<Mesh>(), RS::ARRAY_CUSTOM_RGBA_HALF << RS::ARRAY_FORMAT_CUSTOM0_SHIFT), kusudama_material, Transform3D(), ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
+					p_gizmo->add_mesh(kusudama_surface_tool->commit(Ref<Mesh>(), RS::ARRAY_CUSTOM_RGBA_HALF << RS::ARRAY_FORMAT_CUSTOM0_SHIFT), kusudama_material, constraint_relative_to_the_universe, ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
 					// END Create a kusudama ball visualization.
 				}
 				{
@@ -454,8 +452,7 @@ void fragment() {
 							handle_relative_to_mesh.origin = center * radius;
 							Transform3D handle_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_relative_to_mesh;
 							Transform3D handle_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_relative_to_skeleton;
-							Transform3D handle_relative_to_node = selected_node_relative_to_the_universe.affine_inverse() * handle_relative_to_universe;
-							handles.push_back(handle_relative_to_node.origin);
+							handles.push_back(handle_relative_to_universe.origin);
 						}
 						Vector<Vector3> points_primary;
 						Vector<Vector3> points_secondary;
@@ -474,21 +471,20 @@ void fragment() {
 								handle_border_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
 								Transform3D handle_border_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_border_relative_to_mesh;
 								Transform3D handle_border_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_border_relative_to_skeleton;
-								Transform3D handle_border_relative_to_node = selected_node_relative_to_the_universe.affine_inverse() * handle_border_relative_to_universe;
-								handles.push_back(handle_border_relative_to_node.origin);
+								handles.push_back(handle_border_relative_to_universe.origin);
 							}
 							if (circle_i % 15 == 0) {
 								// Draw 8 lines from the cone origin to the sides of the circle
 								cone_sides_surface_tool->set_bones(bones);
 								cone_sides_surface_tool->set_weights(weights);
-								cone_sides_surface_tool->add_vertex((constraint_relative_to_the_node * center_relative_to_mesh).xform(Vector3(a.x, a.y, -d)));
+								cone_sides_surface_tool->add_vertex((center_relative_to_mesh).xform(Vector3(a.x, a.y, -d)));
 								cone_sides_surface_tool->set_bones(bones);
 								cone_sides_surface_tool->set_weights(weights);
-								cone_sides_surface_tool->add_vertex((constraint_relative_to_the_node * center_relative_to_mesh).xform(Vector3()));
+								cone_sides_surface_tool->add_vertex((center_relative_to_mesh).xform(Vector3()));
 							}
 						}
 					}
-					p_gizmo->add_mesh(cone_sides_surface_tool->commit(), material_tertiary, Transform3D(), ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
+					p_gizmo->add_mesh(cone_sides_surface_tool->commit(), material_tertiary, constraint_relative_to_the_universe, ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
 				} // END cone
 
 				// Add the bone's children to the list of bones to be processed.
