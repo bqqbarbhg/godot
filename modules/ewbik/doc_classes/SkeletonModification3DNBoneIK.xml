@@ -109,6 +109,11 @@
 			<description>
 			</description>
 		</method>
+		<method name="set_dirty">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
 		<method name="set_kusudama_limit_cone_center">
 			<return type="void" />
 			<param index="0" name="index" type="int" />
