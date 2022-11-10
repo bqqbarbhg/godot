@@ -461,6 +461,7 @@ void SkeletonModification3DNBoneIK::set_constraint_count(int32_t p_count) {
 		constraint_names.write[constraint_i] = String();
 		kusudama_limit_cone_count.write[constraint_i] = 0;
 		kusudama_limit_cones.write[constraint_i].resize(0);
+		kusudama_twist.write[constraint_i] = Vector2(Math::deg_to_rad(0.0f), Math::deg_to_rad(720.0f));
 	}
 	is_dirty = true;
 }
@@ -580,7 +581,7 @@ void SkeletonModification3DNBoneIK::set_kusudama_limit_cone_center(int32_t p_eff
 }
 
 Vector2 SkeletonModification3DNBoneIK::get_kusudama_twist(int32_t p_index) const {
-	ERR_FAIL_INDEX_V(p_index, kusudama_twist.size(), Vector2(Math::deg_to_rad(-720.0f), Math::deg_to_rad(720.0f)));
+	ERR_FAIL_INDEX_V(p_index, kusudama_twist.size(), Vector2(Math::deg_to_rad(0.0f), Math::deg_to_rad(720.0f)));
 	return kusudama_twist[p_index];
 }
 

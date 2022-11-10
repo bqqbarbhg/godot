@@ -64,12 +64,12 @@ protected:
 	 * Defined as some Angle in radians about the limiting_axes Y axis, 0 being equivalent to the
 	 * limiting_axes Z axis.
 	 */
-	double _min_axial_angle = -Math::deg_to_rad(720.0f);
+	double _min_axial_angle = 0.0;
 	/**
 	 * Defined as some Angle in radians about the limiting_axes Y axis, 0 being equivalent to the
 	 * min_axial_angle
 	 */
-	double range = Math::deg_to_rad(720.0f) * 2.0;
+	double range = Math::deg_to_rad(720.0f);
 
 	bool orientationally_constrained = false;
 	bool axially_constrained = false;
