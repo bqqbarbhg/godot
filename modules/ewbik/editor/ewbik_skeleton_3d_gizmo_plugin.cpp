@@ -87,8 +87,8 @@ void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 		if (cast_to<Skeleton3D>(node_3d) != ewbik_skeleton) {
 			continue;
 		}
-		if (!ewbik_skeleton->is_connected(SceneStringNames::get_singleton()->pose_updated, Callable(ewbik, "update_gizmos"))) {
-			ewbik_skeleton->connect(SceneStringNames::get_singleton()->pose_updated, Callable(ewbik, "update_gizmos"));
+		if (!ewbik_skeleton->is_connected(SceneStringNames::get_singleton()->pose_updated, Callable(p_gizmo, "update_gizmos"))) {
+			ewbik_skeleton->connect(SceneStringNames::get_singleton()->pose_updated, Callable(p_gizmo, "update_gizmos"));
 		}
 		Vector<int> bones_to_process = ewbik_skeleton->get_parentless_bones();
 		kusudama_shader.instantiate();
