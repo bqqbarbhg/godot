@@ -395,11 +395,11 @@ void IKKusudama::get_swing_twist(
 	r_swing.y *= -1;
 	r_swing.z *= -1;
 	r_swing = r_twist * p_rotation;
-	r_swing.normalize();
 	r_swing.x *= -1;
 	r_swing.y *= -1;
 	r_swing.z *= -1;
 	r_twist.x *= -1;
 	r_twist.y *= -1;
 	r_twist.z *= -1;
+	r_swing.normalize();
 }
