@@ -135,7 +135,8 @@ void EWBIK3DGizmoPlugin::create_gizmo_mesh_handles(BoneId current_bone_idx, Bone
 	}
 	bones[0] = parent_idx;
 	weights[0] = 1;
-	Transform3D constraint_relative_to_the_skeleton = ewbik_skeleton->get_global_transform() * ik_bone->get_constraint_transform()->get_global_transform();
+	Transform3D constraint_relative_to_the_skeleton = ik_bone->get_constraint_transform()->get_global_transform();
+	Transform3D constraint_relative_to_the_universe = ewbik_skeleton->get_global_transform() * constraint_relative_to_the_skeleton;
 	PackedFloat32Array kusudama_limit_cones;
 	Ref<IKKusudama> kusudama = ik_bone->get_constraint();
 	kusudama_limit_cones.resize(KUSUDAMA_MAX_CONES * 4);
@@ -239,7 +240,7 @@ void EWBIK3DGizmoPlugin::create_gizmo_mesh_handles(BoneId current_bone_idx, Bone
 			c.a = 0;
 			kusudama_surface_tool->set_custom(MESH_CUSTOM_0, c);
 			kusudama_surface_tool->set_normal(normals[point_i]);
-			kusudama_surface_tool->add_vertex(constraint_relative_to_the_skeleton.xform(points[point_i]));
+			kusudama_surface_tool->add_vertex(constraint_relative_to_the_universe.xform(points[point_i]));
 		}
 		for (int32_t index_i : indices) {
 			kusudama_surface_tool->add_index(index_i);
@@ -251,7 +252,9 @@ void EWBIK3DGizmoPlugin::create_gizmo_mesh_handles(BoneId current_bone_idx, Bone
 		int32_t cone_count = kusudama->get_limit_cones().size();
 		kusudama_material->set_shader_parameter("cone_count", cone_count);
 		kusudama_material->set_shader_parameter("kusudama_color", current_bone_color);
-		p_gizmo->add_mesh(kusudama_surface_tool->commit(Ref<Mesh>(), RS::ARRAY_CUSTOM_RGBA_HALF << RS::ARRAY_FORMAT_CUSTOM0_SHIFT), kusudama_material, Transform3D(), ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
+		p_gizmo->add_mesh(
+			kusudama_surface_tool->commit(Ref<Mesh>(), RS::ARRAY_CUSTOM_RGBA_HALF << RS::ARRAY_FORMAT_CUSTOM0_SHIFT), 
+			kusudama_material, ewbik_skeleton->get_global_transform(), ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
 		// END Create a kusudama ball visualization.
 	}
 	{
@@ -259,10 +262,6 @@ void EWBIK3DGizmoPlugin::create_gizmo_mesh_handles(BoneId current_bone_idx, Bone
 		Ref<SurfaceTool> cone_sides_surface_tool;
 		cone_sides_surface_tool.instantiate();
 		cone_sides_surface_tool->begin(Mesh::PRIMITIVE_LINES);
-		// Make the gizmo color as bright as possible for better visibility
-		Color color = bone_color;
-		color.set_ok_hsl(color.get_h(), color.get_s(), 1);
-
 		const Ref<Material> material_primary = get_material("lines_primary", p_gizmo);
 		const Ref<Material> material_secondary = get_material("lines_secondary", p_gizmo);
 		const Ref<StandardMaterial3D> material_tertiary = get_material("lines_tertiary", p_gizmo);
@@ -307,7 +306,10 @@ void EWBIK3DGizmoPlugin::create_gizmo_mesh_handles(BoneId current_bone_idx, Bone
 				}
 			}
 		}
-		p_gizmo->add_mesh(cone_sides_surface_tool->commit(), material_tertiary, Transform3D(), ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
+		p_gizmo->add_mesh(cone_sides_surface_tool->commit(),
+		material_tertiary, 
+		ewbik_skeleton->get_global_transform(), 
+		ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
 	} // END cone
 	// TODO: Use several colors for the dots and match the color of the lines.
 	p_gizmo->add_handles(handles, get_material("handles"), Vector<int>(), true, true);
