@@ -103,7 +103,7 @@
 			<description>
 			</description>
 		</method>
-		<method name="set_debug_skeleton">
+		<method name="queue_print_skeleton">
 			<return type="void" />
 			<param index="0" name="enable" type="bool" />
 			<description>

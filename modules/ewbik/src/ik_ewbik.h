@@ -56,7 +56,7 @@ class SkeletonModification3DNBoneIK : public SkeletonModification3D {
 	float MAX_KUSUDAMA_LIMIT_CONES = 30;
 	int32_t max_ik_iterations = 10;
 	float default_damp = Math::deg_to_rad(5.0f);
-	bool debug_skeleton = false;
+	bool queue_debug_skeleton = false;
 	Ref<IKNode3D> root_transform = Ref<IKNode3D>(memnew(IKNode3D));
 	bool is_dirty = true;
 	NodePath skeleton_node_path = NodePath("..");
@@ -85,7 +85,7 @@ public:
 	void set_time_budget_millisecond(const float &p_time_budget);
 	void add_pin(const StringName &p_name, const NodePath &p_target_node = NodePath());
 	void remove_pin(int32_t p_index);
-	void set_debug_skeleton(bool p_debug_skeleton);
+	void queue_print_skeleton(bool p_debug_skeleton);
 	void set_pin_count(int32_t p_value);
 	int32_t get_pin_count() const;
 	void set_pin_bone(int32_t p_pin_index, const String &p_bone);

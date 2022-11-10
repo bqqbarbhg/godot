@@ -426,7 +426,7 @@ void SkeletonModification3DNBoneIK::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_pin_bone_name", "index", "name"), &SkeletonModification3DNBoneIK::set_pin_bone_name);
 	ClassDB::bind_method(D_METHOD("get_pin_direction_priorities", "index"), &SkeletonModification3DNBoneIK::get_pin_direction_priorities);
 	ClassDB::bind_method(D_METHOD("set_pin_direction_priorities", "index", "priority"), &SkeletonModification3DNBoneIK::set_pin_direction_priorities);
-	ClassDB::bind_method(D_METHOD("set_debug_skeleton", "enable"), &SkeletonModification3DNBoneIK::set_debug_skeleton);
+	ClassDB::bind_method(D_METHOD("queue_print_skeleton", "enable"), &SkeletonModification3DNBoneIK::queue_print_skeleton);
 	ClassDB::bind_method(D_METHOD("get_default_damp"), &SkeletonModification3DNBoneIK::get_default_damp);
 	ClassDB::bind_method(D_METHOD("set_default_damp", "damp"), &SkeletonModification3DNBoneIK::set_default_damp);
 	ClassDB::bind_method(D_METHOD("get_pin_nodepath", "index"), &SkeletonModification3DNBoneIK::get_pin_nodepath);
@@ -444,8 +444,8 @@ SkeletonModification3DNBoneIK::SkeletonModification3DNBoneIK() {
 SkeletonModification3DNBoneIK::~SkeletonModification3DNBoneIK() {
 }
 
-void SkeletonModification3DNBoneIK::set_debug_skeleton(bool p_skeleton_debug) {
-	debug_skeleton = p_skeleton_debug;
+void SkeletonModification3DNBoneIK::queue_print_skeleton(bool p_skeleton_debug) {
+	queue_debug_skeleton = p_skeleton_debug;
 }
 
 float SkeletonModification3DNBoneIK::get_pin_depth_falloff(int32_t p_effector_index) const {
@@ -679,7 +679,7 @@ void SkeletonModification3DNBoneIK::skeleton_changed(Skeleton3D *p_skeleton) {
 	segmented_skeleton->get_root()->get_ik_transform()->set_parent(root_transform);
 	segmented_skeleton->generate_default_segments_from_root(pins, root_bone_index, tip_bone_index);
 	bone_list.clear();
-	segmented_skeleton->create_bone_list(bone_list, true, debug_skeleton);
+	segmented_skeleton->create_bone_list(bone_list, true, queue_debug_skeleton);
 	Vector<Vector<real_t>> weight_array;
 	segmented_skeleton->update_pinned_list(weight_array);
 	segmented_skeleton->recursive_create_headings_arrays_for(segmented_skeleton);
@@ -721,8 +721,8 @@ void SkeletonModification3DNBoneIK::skeleton_changed(Skeleton3D *p_skeleton) {
 		constraint->update_tangent_radii();
 		constraint->update_rotational_freedom();
 	}
-	if (debug_skeleton) {
-		debug_skeleton = false;
+	if (queue_debug_skeleton) {
+		queue_debug_skeleton = false;
 	}
 }
 
@@ -779,5 +779,4 @@ void SkeletonModification3DNBoneIK::set_pin_direction_priorities(int32_t p_pin_i
 }
 
 void SkeletonModification3DNBoneIK::set_dirty() {
-	is_dirty = true;
 }
