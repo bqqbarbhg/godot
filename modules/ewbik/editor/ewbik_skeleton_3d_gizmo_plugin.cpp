@@ -435,7 +435,7 @@ void fragment() {
 					Transform3D center_relative_to_mesh = Transform3D(Quaternion(Vector3(0, 1, 0), center)) * mesh_orientation;
 					{
 						Transform3D handle_relative_to_mesh;
-						handle_relative_to_mesh.origin = center; // * radius;
+						handle_relative_to_mesh.origin = center * radius;
 						Transform3D handle_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_relative_to_mesh;
 						Transform3D handle_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_relative_to_skeleton;
 						handles.push_back(handle_relative_to_universe.origin);
