@@ -779,4 +779,5 @@ void SkeletonModification3DNBoneIK::set_pin_direction_priorities(int32_t p_pin_i
 }
 
 void SkeletonModification3DNBoneIK::set_dirty() {
+	is_dirty = true;
 }
