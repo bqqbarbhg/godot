@@ -69,7 +69,7 @@ protected:
 	 * Defined as some Angle in radians about the limiting_axes Y axis, 0 being equivalent to the
 	 * min_axial_angle
 	 */
-	double range_angle = Math_TAU;
+	double range_angle = Math_TAU * 2.0;
 
 	bool orientationally_constrained = false;
 	bool axially_constrained = false;
