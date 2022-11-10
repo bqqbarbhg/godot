@@ -111,7 +111,7 @@ double IKKusudama::to_tau(double angle) {
 	if (angle < 0) {
 		result = (2 * Math_PI) + angle;
 	}
-	result = Math::fmod(result, (Math_PI * 2.0f));
+	result = mod(result, (Math_PI * 2.0f));
 	return result;
 }
 
