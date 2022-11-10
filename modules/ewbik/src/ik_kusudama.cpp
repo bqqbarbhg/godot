@@ -188,11 +188,11 @@ double IKKusudama::get_min_axial_angle() {
 	return min_axial_angle;
 }
 
-double IKKusudama::max_axial_angle() {
+double IKKusudama::get_max_axial_angle() {
 	return range_angle;
 }
 
-double IKKusudama::absolute_max_axial_angle() {
+double IKKusudama::get_absolute_max_axial_angle() {
 	return signed_angle_difference(range_angle + min_axial_angle, Math_TAU);
 }
 
@@ -357,7 +357,6 @@ void IKKusudama::set_axes_to_orientation_snap(Ref<IKNode3D> to_set, Ref<IKNode3D
 		constrained_ray->p2(limiting_axes->to_global(in_limits));
 		Quaternion rectified_rot = Quaternion(bone_ray->heading(), constrained_ray->heading()).normalized();
 		to_set->rotate_local_with_global(rectified_rot);
-		_ALLOW_DISCARD_ to_set->get_global_transform();
 	}
 }
 
