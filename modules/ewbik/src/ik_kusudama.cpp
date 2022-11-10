@@ -85,25 +85,29 @@ void IKKusudama::set_snap_to_twist_limit(Ref<IKNode3D> to_set, Ref<IKNode3D> lim
 	if (!is_axially_constrained()) {
 		return;
 	}
-	Quaternion limit_axes_rot = limiting_axes->get_global_transform().basis.get_quaternion().inverse();
-	Quaternion align_rot = limit_axes_rot * to_set->get_global_transform().basis.get_rotation_quaternion();
+	Basis inv_rot = limiting_axes->get_global_transform().basis.inverse();
+	Basis align_rot = inv_rot * to_set->get_global_transform().basis;
 	Quaternion swing;
 	Quaternion twist;
-	get_swing_twist(align_rot, Vector3(0, 1, 0), swing, twist);
+	get_swing_twist(align_rot.get_rotation_quaternion(), Vector3(0, 1, 0), swing, twist);
 	double angle_delta_2 = twist.get_angle() * twist.get_axis().y * -1;
-	double from_min_to_angle_delta = signed_angle_difference(angle_delta_2, Math_TAU - min_axial_angle);
-	double turn_diff = 1.0;
-	if (from_min_to_angle_delta < Math_TAU - range_angle) {
-		double dist_to_min = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - min_axial_angle));
-		double dist_to_max = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - (min_axial_angle + range_angle)));
-		if (dist_to_min < dist_to_max) {
-			turn_diff = turn_diff * from_min_to_angle_delta;
-		} else {
-			turn_diff = turn_diff * (range_angle - (Math_TAU - from_min_to_angle_delta));
-		}
+	angle_delta_2 = to_tau(angle_delta_2);
+	double from_min_to_angle_delta = to_tau(signed_angle_difference(angle_delta_2, Math_TAU - min_axial_angle));
+	if (!(from_min_to_angle_delta < Math_TAU - range_angle)) {
+		return;
 	}
+	double dist_to_min = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - min_axial_angle));
+	double dist_to_max = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - (min_axial_angle + range_angle)));
+	double turn_diff = 1;
+	Quaternion rot;
 	Vector3 axis_y = to_set->get_global_transform().basis.get_column(Vector3::AXIS_Y);
-	to_set->rotate_local_with_global(Quaternion(axis_y, turn_diff));
+	if (dist_to_min < dist_to_max) {
+		turn_diff = turn_diff * (from_min_to_angle_delta);
+	} else {
+		turn_diff = turn_diff * (range_angle - (Math_TAU - from_min_to_angle_delta));
+	}
+	rot = Quaternion(axis_y.normalized(), turn_diff).normalized();
+	to_set->rotate_local_with_global(rot);
 }
 
 double IKKusudama::signed_angle_difference(double min_angle, double p_super) {
@@ -342,29 +346,22 @@ void IKKusudama::get_swing_twist(
 		Vector3 p_axis,
 		Quaternion &r_swing,
 		Quaternion &r_twist) {
-	// Align flip phases.
-	Quaternion rotation = Basis(p_rotation).get_rotation_quaternion();
-	// https://allenchou.net/2018/05/game-math-swing-twist-interpolation-sterp/
-	Vector3 axis = Vector3(rotation.x, rotation.y, rotation.z);
-	if (axis.length_squared() < FLT_EPSILON) {
-		// The rotation is a singularity.
-		Vector3 rotated_twist_axis = rotation.xform(p_axis);
-		Vector3 swing_axis = p_axis.cross(rotated_twist_axis);
-		// Rotate by a 180 degrees.
-		if (swing_axis.length_squared() > FLT_EPSILON) {
-			double swing_angle = p_axis.angle_to(rotated_twist_axis);
-			r_swing = Quaternion(swing_axis, swing_angle);
-		} else {
-			// The rotation axis is parallel to the twist axis.
-			r_swing = Quaternion();
-		}
-		// Always twist 180 degree on the singularity.
-		r_twist = Quaternion(p_axis, 180.0f);
-		return;
+	Quaternion rotation = p_rotation;
+	rotation.x *= -1;
+	rotation.y *= -1;
+	rotation.z *= -1;
+	Vector3 quaternion_axis;
+	quaternion_axis.x = rotation.x;
+	quaternion_axis.y = rotation.y;
+	quaternion_axis.z = rotation.z;
+	const float d = quaternion_axis.dot(p_axis);
+	r_twist = Quaternion(p_axis.x * d, p_axis.y * d, p_axis.z * d, rotation.w).normalized();
+	if (d < 0) {
+		r_swing *= -1.0f;
 	}
-	Vector3 project = axis.project(p_axis);
-	r_twist = Quaternion(project.x, project.y, project.z, rotation.w);
-	r_twist.normalize();
-	r_swing = rotation * r_twist.inverse();
+	r_twist.x *= -1;
+	r_twist.y *= -1;
+	r_twist.z *= -1;
+	r_swing = r_twist * p_rotation;
 	r_swing.normalize();
 }

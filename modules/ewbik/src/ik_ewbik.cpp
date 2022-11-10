@@ -241,9 +241,9 @@ void SkeletonModification3DNBoneIK::_get_property_list(List<PropertyInfo> *p_lis
 		}
 		p_list->push_back(bone_name);
 		p_list->push_back(
-				PropertyInfo(Variant::FLOAT, "constraints/" + itos(constraint_i) + "/kusudama_twist_from", PROPERTY_HINT_RANGE, "-360.0,360.0,0.1,radians,or_less,or_greater"));
+				PropertyInfo(Variant::FLOAT, "constraints/" + itos(constraint_i) + "/kusudama_twist_from", PROPERTY_HINT_RANGE, "-360.0,360.0,0.1,radians"));
 		p_list->push_back(
-				PropertyInfo(Variant::FLOAT, "constraints/" + itos(constraint_i) + "/kusudama_twist_to", PROPERTY_HINT_RANGE, "-360.0,360.0,0.1,radians,or_less,or_greater"));
+				PropertyInfo(Variant::FLOAT, "constraints/" + itos(constraint_i) + "/kusudama_twist_to", PROPERTY_HINT_RANGE, "-360.0,360.0,0.1,radians"));
 		p_list->push_back(
 				PropertyInfo(Variant::INT, "constraints/" + itos(constraint_i) + "/kusudama_limit_cone_count",
 						PROPERTY_HINT_RANGE, "0,30,1", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_ARRAY,
@@ -472,7 +472,7 @@ void SkeletonModification3DNBoneIK::set_constraint_count(int32_t p_count) {
 		constraint_names.write[constraint_i] = String();
 		kusudama_limit_cone_count.write[constraint_i] = 0;
 		kusudama_limit_cones.write[constraint_i].resize(0);
-		kusudama_twist.write[constraint_i] = Vector2(Math::deg_to_rad(0.0f), Math::deg_to_rad(720.0f));
+		kusudama_twist.write[constraint_i] = Vector2();
 	}
 	set_dirty();
 }
@@ -592,7 +592,7 @@ void SkeletonModification3DNBoneIK::set_kusudama_limit_cone_center(int32_t p_eff
 }
 
 Vector2 SkeletonModification3DNBoneIK::get_kusudama_twist(int32_t p_index) const {
-	ERR_FAIL_INDEX_V(p_index, kusudama_twist.size(), Vector2(Math::deg_to_rad(0.0f), Math::deg_to_rad(720.0f)));
+	ERR_FAIL_INDEX_V(p_index, kusudama_twist.size(), Vector2());
 	return kusudama_twist[p_index];
 }
 
