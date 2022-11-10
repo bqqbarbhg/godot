@@ -653,6 +653,9 @@ void SkeletonModification3DNBoneIK::execute(real_t delta) {
 	}
 	update_ik_bones_transform();
 	for (int32_t i = 0; i < get_max_ik_iterations(); i++) {
+		if (segmented_skeleton.is_null()) {
+			break;
+		}
 		segmented_skeleton->segment_solver(get_default_damp());
 	}
 	update_skeleton_bones_transform();
