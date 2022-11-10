@@ -313,7 +313,7 @@ void fragment() {
 					continue;
 				}
 				created_gizmo_mesh.insert(current_bone_idx);
-				Transform3D constraint_relative_to_the_skeleton = ik_bone->get_constraint_transform()->get_global_transform();
+				Transform3D constraint_relative_to_the_skeleton = skeleton->get_transform().affine_inverse() * ik_bone->get_constraint_transform()->get_global_transform();
 				Transform3D constraint_relative_to_the_universe = skeleton->get_global_transform() * constraint_relative_to_the_skeleton;
 				Transform3D selected_node_relative_to_the_universe = ewbik->get_global_transform();
 				Transform3D constraint_relative_to_the_node = selected_node_relative_to_the_universe.affine_inverse() * constraint_relative_to_the_universe;
