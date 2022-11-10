@@ -274,25 +274,35 @@ void fragment() {
 )");
 		int bones_to_process_i = 0;
 		Vector<Vector3> handles;
+		Vector<BoneId> kusudama_bones;
+		Ref<IKBoneSegment> bone_segment = ewbik->get_segmented_skeleton();
+		if (bone_segment.is_null()) {
+			return;
+		}
 		while (bones_to_process_i < bones_to_process.size()) {
 			int current_bone_idx = bones_to_process[bones_to_process_i];
+			bones.push_back(current_bone_idx);
+			Vector<int> child_bones_vector = ewbik_skeleton->get_bone_children(current_bone_idx);
+			for (int child_bone_idx : child_bones_vector) {
+				// Add the bone's children to the list of bones to be processed.
+				bones_to_process.push_back(child_bone_idx);
+			}
+			Ref<IKBone3D> ik_bone = bone_segment->get_ik_bone(current_bone_idx);
+			if (!(ik_bone.is_null() || ik_bone->get_bone_id() != current_bone_idx)) {
+				Ref<IKKusudama> ik_kusudama = ik_bone->get_constraint();
+				if (ik_kusudama.is_valid()) {
+					kusudama_bones.push_back(current_bone_idx);
+				}
+			}
+			bones_to_process_i++;
+		}
+		Color current_bone_color = bone_color;
+		for (BoneId current_bone_idx : kusudama_bones) {
 			BoneId parent_idx = ewbik_skeleton->get_bone_parent(current_bone_idx);
 			bones[0] = parent_idx;
-			bones_to_process_i++;
-			Color current_bone_color = bone_color;
-			Ref<IKBoneSegment> bone_segment = ewbik->get_segmented_skeleton();
-			if (bone_segment.is_null()) {
-				continue;
-			}
 			Ref<IKBone3D> ik_bone = bone_segment->get_ik_bone(current_bone_idx);
 			if (ik_bone.is_null() || ik_bone->get_bone_id() != current_bone_idx) {
 				continue;
-			}
-			Vector<int> child_bones_vector = ewbik_skeleton->get_bone_children(current_bone_idx);
-			for (int child_bone_idx : child_bones_vector) {
-				String bone_name = ewbik_skeleton->get_bone_name(current_bone_idx);
-				// Add the bone's children to the list of bones to be processed.
-				bones_to_process.push_back(child_bone_idx);
 			}
 			Ref<IKKusudama> ik_kusudama = ik_bone->get_constraint();
 			if (ik_kusudama.is_null()) {
