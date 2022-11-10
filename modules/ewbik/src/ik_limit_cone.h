@@ -91,15 +91,6 @@ public:
 	 *
 	 * @param next
 	 * @param input
-	 * @param collision_point will be set to the rectified (if necessary) position of the input after accounting for collisions
-	 * @return
-	 */
-	bool in_bounds_from_this_to_next(Ref<IKLimitCone> next, Vector3 input, Vector3 collision_point) const;
-
-	/**
-	 *
-	 * @param next
-	 * @param input
 	 * @return null if the input point is already in bounds, or the point's rectified position
 	 * if the point was out of bounds.
 	 */

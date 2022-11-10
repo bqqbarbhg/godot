@@ -258,27 +258,6 @@ Vector3 IKLimitCone::get_closest_collision(Ref<IKLimitCone> next, Vector3 input)
 	return result;
 }
 
-bool IKLimitCone::in_bounds_from_this_to_next(Ref<IKLimitCone> next, Vector3 input, Vector3 collision_point) const {
-	bool isInBounds = false;
-	Vector3 closestCollision = get_closest_collision(next, input);
-	bool is_number = !(Math::is_nan(closestCollision.x) && Math::is_nan(closestCollision.y) && Math::is_nan(closestCollision.z));
-	if (!is_number) {
-		/**
-		 * get_closest_collision returns null if the point is already in bounds,
-		 * so we set isInBounds to true.
-		 */
-		isInBounds = true;
-		collision_point.x = input.x;
-		collision_point.y = input.y;
-		collision_point.z = input.z;
-	} else {
-		collision_point.x = closestCollision.x;
-		collision_point.y = closestCollision.y;
-		collision_point.z = closestCollision.z;
-	}
-	return isInBounds;
-}
-
 Vector3 IKLimitCone::get_orthogonal(Vector3 p_in) {
 	Vector3 result;
 	float threshold = p_in.length() * 0.6f;
