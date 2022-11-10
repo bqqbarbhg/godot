@@ -120,6 +120,7 @@ public:
 	void set_kusudama_limit_cone_count(int32_t p_constraint_index, int32_t p_count);
 	SkeletonModification3DNBoneIK();
 	~SkeletonModification3DNBoneIK();
+	void set_dirty();
 };
 
 #endif // IK_EWBIK_H

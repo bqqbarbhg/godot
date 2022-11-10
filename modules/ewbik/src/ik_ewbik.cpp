@@ -45,7 +45,7 @@ void SkeletonModification3DNBoneIK::set_pin_count(int32_t p_value) {
 	for (int32_t pin_i = p_value; pin_i-- > old_count;) {
 		pins.write[pin_i].instantiate();
 	}
-	is_dirty = true;
+	set_dirty();
 }
 
 int32_t SkeletonModification3DNBoneIK::get_pin_count() const {
@@ -62,7 +62,7 @@ void SkeletonModification3DNBoneIK::add_pin(const StringName &p_name, const Node
 	set_pin_count(count + 1);
 	set_pin_bone(count, p_name);
 	set_pin_target_nodepath(count, p_target_node);
-	is_dirty = true;
+	set_dirty();
 }
 
 void SkeletonModification3DNBoneIK::set_pin_bone(int32_t p_pin_index, const String &p_bone) {
@@ -73,7 +73,7 @@ void SkeletonModification3DNBoneIK::set_pin_bone(int32_t p_pin_index, const Stri
 		pins.write[p_pin_index] = effector_template;
 	}
 	effector_template->set_name(p_bone);
-	is_dirty = true;
+	set_dirty();
 }
 
 void SkeletonModification3DNBoneIK::set_pin_target_nodepath(int32_t p_pin_index, const NodePath &p_target_node) {
@@ -84,7 +84,7 @@ void SkeletonModification3DNBoneIK::set_pin_target_nodepath(int32_t p_pin_index,
 		pins.write[p_pin_index] = effector_template;
 	}
 	effector_template->set_target_node(p_target_node);
-	is_dirty = true;
+	set_dirty();
 }
 
 NodePath SkeletonModification3DNBoneIK::get_pin_target_nodepath(int32_t p_pin_index) {
@@ -102,7 +102,7 @@ void SkeletonModification3DNBoneIK::remove_pin(int32_t p_index) {
 	pins.remove_at(p_index);
 	pin_count--;
 	pins.resize(pin_count);
-	is_dirty = true;
+	set_dirty();
 }
 
 void SkeletonModification3DNBoneIK::update_ik_bones_transform() {
@@ -383,7 +383,8 @@ bool SkeletonModification3DNBoneIK::_set(const StringName &p_name, const Variant
 	return false;
 }
 
-void SkeletonModification3DNBoneIK::_bind_methods() {
+void SkeletonModification3DNBoneIK::_bind_methods() {	
+	ClassDB::bind_method(D_METHOD("set_dirty"), &SkeletonModification3DNBoneIK::set_dirty);
 	ClassDB::bind_method(D_METHOD("set_root_bone", "root_bone"), &SkeletonModification3DNBoneIK::set_root_bone);
 	ClassDB::bind_method(D_METHOD("get_root_bone"), &SkeletonModification3DNBoneIK::get_root_bone);
 	ClassDB::bind_method(D_METHOD("set_tip_bone", "tip_bone"), &SkeletonModification3DNBoneIK::set_tip_bone);
@@ -447,7 +448,7 @@ void SkeletonModification3DNBoneIK::set_pin_depth_falloff(int32_t p_effector_ind
 	Ref<IKEffectorTemplate> effector_template = pins[p_effector_index];
 	ERR_FAIL_NULL(effector_template);
 	effector_template->set_depth_falloff(p_depth_falloff);
-	is_dirty = true;
+	set_dirty();
 }
 
 void SkeletonModification3DNBoneIK::set_constraint_count(int32_t p_count) {
@@ -463,7 +464,7 @@ void SkeletonModification3DNBoneIK::set_constraint_count(int32_t p_count) {
 		kusudama_limit_cones.write[constraint_i].resize(0);
 		kusudama_twist.write[constraint_i] = Vector2(Math::deg_to_rad(0.0f), Math::deg_to_rad(720.0f));
 	}
-	is_dirty = true;
+	set_dirty();
 }
 
 int32_t SkeletonModification3DNBoneIK::get_constraint_count() const {
@@ -478,7 +479,7 @@ inline StringName SkeletonModification3DNBoneIK::get_constraint_name(int32_t p_i
 void SkeletonModification3DNBoneIK::set_kusudama_twist(int32_t p_index, Vector2 p_to) {
 	ERR_FAIL_INDEX(p_index, constraint_count);
 	kusudama_twist.write[p_index] = p_to;
-	is_dirty = true;
+	set_dirty();
 }
 
 int32_t SkeletonModification3DNBoneIK::find_effector_id(StringName p_bone_name) {
@@ -502,7 +503,7 @@ void SkeletonModification3DNBoneIK::set_kusudama_limit_cone(int32_t p_contraint_
 	cone.w = p_radius;
 	cones.write[p_index] = cone;
 	kusudama_limit_cones.write[p_contraint_index] = cones;
-	is_dirty = true;
+	set_dirty();
 }
 
 Vector3 SkeletonModification3DNBoneIK::get_kusudama_limit_cone_center(int32_t p_contraint_index, int32_t p_index) const {
@@ -542,7 +543,7 @@ void SkeletonModification3DNBoneIK::set_kusudama_limit_cone_count(int32_t p_cont
 		cone.z = 0.0f;
 		cone.w = Math::deg_to_rad(10.0f);
 	}
-	is_dirty = true;
+	set_dirty();
 }
 
 real_t SkeletonModification3DNBoneIK::get_default_damp() const {
@@ -551,7 +552,7 @@ real_t SkeletonModification3DNBoneIK::get_default_damp() const {
 
 void SkeletonModification3DNBoneIK::set_default_damp(float p_default_damp) {
 	default_damp = p_default_damp;
-	is_dirty = true;
+	set_dirty();
 }
 
 StringName SkeletonModification3DNBoneIK::get_pin_bone_name(int32_t p_effector_index) const {
@@ -566,7 +567,7 @@ void SkeletonModification3DNBoneIK::set_kusudama_limit_cone_radius(int32_t p_eff
 	ERR_FAIL_INDEX(p_index, kusudama_limit_cones[p_effector_index].size());
 	Vector4 &cone = kusudama_limit_cones.write[p_effector_index].write[p_index];
 	cone.w = p_radius;
-	is_dirty = true;
+	set_dirty();
 }
 
 void SkeletonModification3DNBoneIK::set_kusudama_limit_cone_center(int32_t p_effector_index, int32_t p_index, Vector3 p_center) {
@@ -577,7 +578,7 @@ void SkeletonModification3DNBoneIK::set_kusudama_limit_cone_center(int32_t p_eff
 	cone.x = p_center.x;
 	cone.y = p_center.y;
 	cone.z = p_center.z;
-	is_dirty = true;
+	set_dirty();
 }
 
 Vector2 SkeletonModification3DNBoneIK::get_kusudama_twist(int32_t p_index) const {
@@ -588,7 +589,7 @@ Vector2 SkeletonModification3DNBoneIK::get_kusudama_twist(int32_t p_index) const
 void SkeletonModification3DNBoneIK::set_constraint_name(int32_t p_index, String p_name) {
 	ERR_FAIL_INDEX(p_index, constraint_names.size());
 	constraint_names.write[p_index] = p_name;
-	is_dirty = true;
+	set_dirty();
 }
 
 Ref<IKBoneSegment> SkeletonModification3DNBoneIK::get_segmented_skeleton() {
@@ -721,7 +722,7 @@ StringName SkeletonModification3DNBoneIK::get_root_bone() const {
 
 void SkeletonModification3DNBoneIK::set_root_bone(const StringName &p_root_bone) {
 	root_bone = p_root_bone;
-	is_dirty = true;
+	set_dirty();
 }
 
 StringName SkeletonModification3DNBoneIK::get_tip_bone() const {
@@ -730,7 +731,7 @@ StringName SkeletonModification3DNBoneIK::get_tip_bone() const {
 
 void SkeletonModification3DNBoneIK::set_tip_bone(StringName p_bone) {
 	tip_bone = p_bone;
-	is_dirty = true;
+	set_dirty();
 }
 real_t SkeletonModification3DNBoneIK::get_pin_weight(int32_t p_pin_index) const {
 	ERR_FAIL_INDEX_V(p_pin_index, pins.size(), 0.0);
@@ -745,7 +746,7 @@ void SkeletonModification3DNBoneIK::set_pin_weight(int32_t p_pin_index, const re
 		pins.write[p_pin_index] = effector_template;
 	}
 	effector_template->set_weight(p_weight);
-	is_dirty = true;
+	set_dirty();
 }
 
 Vector3 SkeletonModification3DNBoneIK::get_pin_direction_priorities(int32_t p_pin_index) const {
@@ -762,5 +763,9 @@ void SkeletonModification3DNBoneIK::set_pin_direction_priorities(int32_t p_pin_i
 		pins.write[p_pin_index] = effector_template;
 	}
 	effector_template->set_direction_priorities(p_priority_direction);
+	set_dirty();
+}
+void SkeletonModification3DNBoneIK::set_dirty() {
 	is_dirty = true;
+	update_gizmos();
 }
