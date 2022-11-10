@@ -77,8 +77,8 @@ IKKusudama::IKKusudama(Ref<IKNode3D> to_set, Ref<IKNode3D> bone_direction, Ref<I
 }
 
 void IKKusudama::set_axial_limits(double min_angle, double in_range) {
-	_min_axial_angle = min_angle;
-	range = to_tau(in_range);
+	min_axial_angle = min_angle;
+	range_angle = to_tau(in_range);
 	_update_constraint();
 }
 
@@ -90,18 +90,18 @@ void IKKusudama::set_snap_to_twist_limit(Ref<IKNode3D> to_set, Ref<IKNode3D> lim
 	get_swing_twist(align_rot.get_rotation_quaternion(), Vector3(0, 1, 0), swing, twist);
 	double angle_delta_2 = twist.get_angle() * twist.get_axis().y * -1;
 	angle_delta_2 = to_tau(angle_delta_2);
-	double from_min_to_angle_delta = to_tau(signed_angle_difference(angle_delta_2, Math_TAU - min_axial_angle()));
-	if (!(from_min_to_angle_delta < Math_TAU - range)) {
+	double from_min_to_angle_delta = to_tau(signed_angle_difference(angle_delta_2, Math_TAU - get_min_axial_angle()));
+	if (!(from_min_to_angle_delta < Math_TAU - range_angle)) {
 		return;
 	}
-	double dist_to_min = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - min_axial_angle()));
-	double dist_to_max = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - (min_axial_angle() + range)));
+	double dist_to_min = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - get_min_axial_angle()));
+	double dist_to_max = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - (get_min_axial_angle() + range_angle)));
 	double turn_diff = 1;
 	Vector3 axis_y = to_set->get_global_transform().basis.get_column(Vector3::AXIS_Y);
 	if (dist_to_min < dist_to_max) {
 		turn_diff = turn_diff * (from_min_to_angle_delta);
 	} else {
-		turn_diff = turn_diff * (range - (Math_TAU - from_min_to_angle_delta));
+		turn_diff = turn_diff * (range_angle - (Math_TAU - from_min_to_angle_delta));
 	}
 	to_set->rotate_local_with_global(Quaternion(axis_y, turn_diff));
 }
@@ -117,7 +117,7 @@ double IKKusudama::angle_to_twist_center(Ref<IKNode3D> to_set, Ref<IKNode3D> lim
 	get_swing_twist(align_rot, temp_var, swing, twist);
 	double angle_delta_2 = twist.get_angle() * Basis(twist).get_euler_normalized().y * -1;
 	angle_delta_2 = to_tau(angle_delta_2);
-	double dist_to_mid = signed_angle_difference(angle_delta_2, Math_TAU - (this->min_axial_angle() + (range / 2)));
+	double dist_to_mid = signed_angle_difference(angle_delta_2, Math_TAU - (this->get_min_axial_angle() + (range_angle / 2)));
 	return dist_to_mid;
 }
 
@@ -130,11 +130,11 @@ bool IKKusudama::in_twist_limits(Ref<IKNode3D> bone_axes, Ref<IKNode3D> limiting
 	get_swing_twist(align_rot, temp_var, swing, twist);
 	double angle_delta_2 = twist.get_angle() * twist.get_axis().y * -1;
 	angle_delta_2 = to_tau(angle_delta_2);
-	double from_min_to_angle_delta = to_tau(signed_angle_difference(angle_delta_2, Math_TAU - this->min_axial_angle()));
+	double from_min_to_angle_delta = to_tau(signed_angle_difference(angle_delta_2, Math_TAU - this->get_min_axial_angle()));
 
-	if (from_min_to_angle_delta < Math_TAU - range) {
-		double dist_to_min = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - this->min_axial_angle()));
-		double dist_to_max = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - (this->min_axial_angle() + range)));
+	if (from_min_to_angle_delta < Math_TAU - range_angle) {
+		double dist_to_min = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - this->get_min_axial_angle()));
+		double dist_to_max = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - (this->get_min_axial_angle() + range_angle)));
 		if (dist_to_min >= dist_to_max) {
 			return false;
 		}
@@ -184,16 +184,16 @@ double IKKusudama::mod(double x, double y) {
 	return 0.0f;
 }
 
-double IKKusudama::min_axial_angle() {
-	return _min_axial_angle;
+double IKKusudama::get_min_axial_angle() {
+	return min_axial_angle;
 }
 
 double IKKusudama::max_axial_angle() {
-	return range;
+	return range_angle;
 }
 
 double IKKusudama::absolute_max_axial_angle() {
-	return signed_angle_difference(range + _min_axial_angle, Math_TAU);
+	return signed_angle_difference(range_angle + min_axial_angle, Math_TAU);
 }
 
 bool IKKusudama::is_axially_constrained() {
@@ -250,7 +250,7 @@ double IKKusudama::get_rotational_freedom() {
 }
 
 void IKKusudama::update_rotational_freedom() {
-	double axial_constrained_hyper_area = is_axially_constrained() ? (range / Math_TAU) : 1;
+	double axial_constrained_hyper_area = is_axially_constrained() ? (range_angle / Math_TAU) : 1;
 	// A quick and dirty solution (should revisit).
 	double total_limit_cone_surface_area_ratio = 0;
 	for (int32_t cone_i = 0; cone_i < limit_cones.size(); cone_i++) {
@@ -291,7 +291,7 @@ Vector3 IKKusudama::local_point_on_path_sequence(Vector3 in_point, Ref<IKNode3D>
 
 /**
  * Given a point (in global coordinates), checks to see if a ray can be extended from the Kusudama's
- * origin to that point, such that the ray in the Kusudama's reference frame is within the range allowed by the Kusudama's
+ * origin to that point, such that the ray in the Kusudama's reference frame is within the range_angle allowed by the Kusudama's
  * coneLimits.
  * If such a ray exists, the original point is returned (the point is within the limits).
  * If it cannot exist, the tip of the ray within the kusudama's limits that would require the least rotation

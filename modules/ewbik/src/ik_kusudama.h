@@ -64,12 +64,12 @@ protected:
 	 * Defined as some Angle in radians about the limiting_axes Y axis, 0 being equivalent to the
 	 * limiting_axes Z axis.
 	 */
-	double _min_axial_angle = 0.0;
+	double min_axial_angle = 0.0;
 	/**
 	 * Defined as some Angle in radians about the limiting_axes Y axis, 0 being equivalent to the
 	 * min_axial_angle
 	 */
-	double range = Math::deg_to_rad(720.0f);
+	double range_angle = Math::deg_to_rad(720.0f);
 
 	bool orientationally_constrained = false;
 	bool axially_constrained = false;
@@ -111,9 +111,9 @@ public:
 	 * the bone is rotated about its own final direction. Where limit cones allow you to constrain the "Swing"
 	 * component, this method lets you constrain the "twist" component.
 	 *
-	 * @param min_angle some angle in radians about the major rotation frame's y-axis to serve as the first angle within the range that the bone is allowed to twist.
+	 * @param min_angle some angle in radians about the major rotation frame's y-axis to serve as the first angle within the range_angle that the bone is allowed to twist.
 	 * @param in_range some angle in radians added to the min_angle. if the bone's local Z goes maxAngle radians beyond the min_angle, it is considered past the limit.
-	 * This value is always interpreted as being in the positive direction. For example, if this value is -PI/2, the entire range from min_angle to min_angle + 3PI/4 is
+	 * This value is always interpreted as being in the positive direction. For example, if this value is -PI/2, the entire range_angle from min_angle to min_angle + 3PI/4 is
 	 * considered valid.
 	 */
 	virtual void set_axial_limits(double min_angle, double in_range);
@@ -136,7 +136,7 @@ public:
 
 	/**
 	 * Given a point (in local coordinates), checks to see if a ray can be extended from the Kusudama's
-	 * origin to that point, such that the ray in the Kusudama's reference frame is within the range allowed by the Kusudama's
+	 * origin to that point, such that the ray in the Kusudama's reference frame is within the range_angle allowed by the Kusudama's
 	 * coneLimits.
 	 * If such a ray exists, the original point is returned (the point is within the limits).
 	 * If it cannot exist, the tip of the ray within the kusudama's limits that would require the least rotation
@@ -179,7 +179,7 @@ public:
 	 *
 	 * @return the lower bound on the axial constraint
 	 */
-	virtual double min_axial_angle();
+	virtual double get_min_axial_angle();
 
 	virtual double max_axial_angle();
 
