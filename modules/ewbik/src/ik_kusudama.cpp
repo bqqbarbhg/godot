@@ -78,8 +78,7 @@ IKKusudama::IKKusudama(Ref<IKNode3D> to_set, Ref<IKNode3D> bone_direction, Ref<I
 
 void IKKusudama::set_axial_limits(double min_angle, double in_range) {
 	min_axial_angle = min_angle;
-	range_angle = to_tau(in_range);
-	_update_constraint();
+	range_angle = in_range;
 }
 
 void IKKusudama::set_snap_to_twist_limit(Ref<IKNode3D> to_set, Ref<IKNode3D> limiting_axes, float p_dampening, float p_cos_half_dampen) {
