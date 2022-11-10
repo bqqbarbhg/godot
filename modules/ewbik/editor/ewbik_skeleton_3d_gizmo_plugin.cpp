@@ -31,6 +31,7 @@
 #include "ewbik_skeleton_3d_gizmo_plugin.h"
 
 #include "core/io/resource_saver.h"
+#include "core/math/transform_3d.h"
 #include "editor/editor_file_dialog.h"
 #include "editor/editor_node.h"
 #include "editor/editor_properties.h"
@@ -53,7 +54,7 @@
 #include "../src/ik_kusudama.h"
 
 bool EWBIK3DGizmoPlugin::has_gizmo(Node3D *p_spatial) {
-	return cast_to<SkeletonModification3DNBoneIK>(p_spatial);
+	return cast_to<Skeleton3D>(p_spatial);
 }
 
 String EWBIK3DGizmoPlugin::get_gizmo_name() const {
@@ -68,10 +69,6 @@ void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 	if (!node_3d) {
 		return;
 	}
-	if (!cast_to<SkeletonModification3DNBoneIK>(node_3d)) {
-		p_gizmo->clear();
-		return;
-	}
 	Node *owner_node = node_3d->get_owner();
 	if (!owner_node) {
 		return;
@@ -83,8 +80,11 @@ void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 		if (!ewbik) {
 			continue;
 		}
-		Skeleton3D *skeleton = ewbik->get_skeleton();
-		if (!skeleton) {
+		Skeleton3D *ewbik_skeleton = ewbik->get_skeleton();
+		if (!ewbik_skeleton) {
+			continue;
+		}
+		if (cast_to<Skeleton3D>(node_3d) != ewbik_skeleton) {
 			continue;
 		}
 		LocalVector<int> bones;
@@ -96,7 +96,7 @@ void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 			weights[i] = 0;
 		}
 		weights[0] = 1;
-		Vector<int> bones_to_process = skeleton->get_parentless_bones();
+		Vector<int> bones_to_process = ewbik_skeleton->get_parentless_bones();
 		Ref<Shader> kusudama_shader;
 		kusudama_shader.instantiate();
 		kusudama_shader->set_code(R"(
@@ -279,15 +279,15 @@ void fragment() {
 			int current_bone_idx = bones_to_process[bones_to_process_i];
 			bones_to_process_i++;
 			Color current_bone_color = bone_color;
-			Vector<int> child_bones_vector = skeleton->get_bone_children(current_bone_idx);
+			Vector<int> child_bones_vector = ewbik_skeleton->get_bone_children(current_bone_idx);
 			Ref<ArrayMesh> mesh;
 			for (int child_bone_idx : child_bones_vector) {
-				Vector3 v0 = skeleton->get_bone_global_rest(current_bone_idx).origin;
-				Vector3 v1 = skeleton->get_bone_global_rest(child_bone_idx).origin;
+				Vector3 v0 = ewbik_skeleton->get_bone_global_rest(current_bone_idx).origin;
+				Vector3 v1 = ewbik_skeleton->get_bone_global_rest(child_bone_idx).origin;
 				real_t dist = v0.distance_to(v1);
 				float radius = dist / 5.0;
-				String bone_name = skeleton->get_bone_name(current_bone_idx);
-				BoneId parent_idx = skeleton->get_bone_parent(current_bone_idx);
+				String bone_name = ewbik_skeleton->get_bone_name(current_bone_idx);
+				BoneId parent_idx = ewbik_skeleton->get_bone_parent(current_bone_idx);
 				if (parent_idx == -1) {
 					bones_to_process.push_back(child_bone_idx);
 					continue;
@@ -313,8 +313,9 @@ void fragment() {
 					continue;
 				}
 				created_gizmo_mesh.insert(current_bone_idx);
-				Transform3D constraint_relative_to_the_skeleton = skeleton->get_transform().affine_inverse() * ik_bone->get_constraint_transform()->get_global_transform();
-				Transform3D constraint_relative_to_the_universe = skeleton->get_global_transform() * constraint_relative_to_the_skeleton;
+				Transform3D constraint_relative_to_the_skeleton = ewbik_skeleton->get_transform().affine_inverse() * ik_bone->get_constraint_transform()->get_global_transform();
+				Transform3D skeleton_node_relative_to_the_universe = ewbik_skeleton->get_global_transform();
+				Transform3D constraint_relative_to_the_universe = skeleton_node_relative_to_the_universe * constraint_relative_to_the_skeleton;
 				Transform3D selected_node_relative_to_the_universe = ewbik->get_global_transform();
 				Transform3D constraint_relative_to_the_node = selected_node_relative_to_the_universe.affine_inverse() * constraint_relative_to_the_universe;
 
@@ -417,7 +418,7 @@ void fragment() {
 						c.a = 0;
 						kusudama_surface_tool->set_custom(MESH_CUSTOM_0, c);
 						kusudama_surface_tool->set_normal(normals[point_i]);
-						kusudama_surface_tool->add_vertex(points[point_i]);
+						kusudama_surface_tool->add_vertex(constraint_relative_to_the_node.xform(points[point_i]));
 					}
 					for (int32_t index_i : indices) {
 						kusudama_surface_tool->add_index(index_i);
@@ -429,10 +430,10 @@ void fragment() {
 					int32_t cone_count = kusudama->get_limit_cones().size();
 					kusudama_material->set_shader_parameter("cone_count", cone_count);
 					kusudama_material->set_shader_parameter("kusudama_color", current_bone_color);
-					p_gizmo->add_mesh(kusudama_surface_tool->commit(Ref<Mesh>(), RS::ARRAY_CUSTOM_RGBA_HALF << RS::ARRAY_FORMAT_CUSTOM0_SHIFT), kusudama_material, constraint_relative_to_the_node, skeleton->register_skin(skeleton->create_skin_from_rest_transforms()));
+					p_gizmo->add_mesh(kusudama_surface_tool->commit(Ref<Mesh>(), RS::ARRAY_CUSTOM_RGBA_HALF << RS::ARRAY_FORMAT_CUSTOM0_SHIFT), kusudama_material, Transform3D(), ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
 					// END Create a kusudama ball visualization.
 				}
-				{ 
+				{
 					// START Create a cone visualization.
 					Ref<SurfaceTool> cone_sides_surface_tool;
 					cone_sides_surface_tool.instantiate();
@@ -452,7 +453,7 @@ void fragment() {
 							Transform3D handle_relative_to_mesh;
 							handle_relative_to_mesh.origin = center * radius;
 							Transform3D handle_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_relative_to_mesh;
-							Transform3D handle_relative_to_universe = skeleton->get_global_transform() * handle_relative_to_skeleton;
+							Transform3D handle_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_relative_to_skeleton;
 							Transform3D handle_relative_to_node = selected_node_relative_to_the_universe.affine_inverse() * handle_relative_to_universe;
 							handles.push_back(handle_relative_to_node.origin);
 						}
@@ -472,7 +473,7 @@ void fragment() {
 								Transform3D handle_border_relative_to_mesh;
 								handle_border_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
 								Transform3D handle_border_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_border_relative_to_mesh;
-								Transform3D handle_border_relative_to_universe = skeleton->get_global_transform() * handle_border_relative_to_skeleton;
+								Transform3D handle_border_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_border_relative_to_skeleton;
 								Transform3D handle_border_relative_to_node = selected_node_relative_to_the_universe.affine_inverse() * handle_border_relative_to_universe;
 								handles.push_back(handle_border_relative_to_node.origin);
 							}
@@ -480,14 +481,14 @@ void fragment() {
 								// Draw 8 lines from the cone origin to the sides of the circle
 								cone_sides_surface_tool->set_bones(bones);
 								cone_sides_surface_tool->set_weights(weights);
-								cone_sides_surface_tool->add_vertex(center_relative_to_mesh.xform(Vector3(a.x, a.y, -d)));
+								cone_sides_surface_tool->add_vertex((constraint_relative_to_the_node * center_relative_to_mesh).xform(Vector3(a.x, a.y, -d)));
 								cone_sides_surface_tool->set_bones(bones);
 								cone_sides_surface_tool->set_weights(weights);
-								cone_sides_surface_tool->add_vertex(center_relative_to_mesh.xform(Vector3()));
+								cone_sides_surface_tool->add_vertex((constraint_relative_to_the_node * center_relative_to_mesh).xform(Vector3()));
 							}
 						}
 					}
-					p_gizmo->add_mesh(cone_sides_surface_tool->commit(), material_tertiary, constraint_relative_to_the_node, skeleton->register_skin(skeleton->create_skin_from_rest_transforms()));
+					p_gizmo->add_mesh(cone_sides_surface_tool->commit(), material_tertiary, Transform3D(), ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
 				} // END cone
 
 				// Add the bone's children to the list of bones to be processed.
