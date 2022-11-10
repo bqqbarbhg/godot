@@ -299,16 +299,16 @@ void EWBIK3DGizmoPlugin::create_gizmo_mesh_handles(BoneId current_bone_idx, Bone
 					// Draw 8 lines from the cone origin to the sides of the circle
 					cone_sides_surface_tool->set_bones(bones);
 					cone_sides_surface_tool->set_weights(weights);
-					cone_sides_surface_tool->add_vertex((constraint_relative_to_the_skeleton * center_relative_to_mesh).xform(Vector3(a.x, a.y, -d)));
+					cone_sides_surface_tool->add_vertex((center_relative_to_mesh).xform(Vector3(a.x, a.y, -d)));
 					cone_sides_surface_tool->set_bones(bones);
 					cone_sides_surface_tool->set_weights(weights);
-					cone_sides_surface_tool->add_vertex((constraint_relative_to_the_skeleton * center_relative_to_mesh).xform(Vector3()));
+					cone_sides_surface_tool->add_vertex((center_relative_to_mesh).xform(Vector3()));
 				}
 			}
 		}
 		p_gizmo->add_mesh(cone_sides_surface_tool->commit(),
 		material_tertiary, 
-		ewbik_skeleton->get_global_transform(), 
+		constraint_relative_to_the_universe, 
 		ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
 	} // END cone
 	// TODO: Use several colors for the dots and match the color of the lines.
