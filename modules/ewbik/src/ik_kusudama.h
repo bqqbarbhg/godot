@@ -162,7 +162,7 @@ public:
 
 	static double to_tau(double angle);
 
-	virtual double mod(double x, double y);
+	static double mod(double x, double y);
 
 	/**
 	 * @return the limiting_axes of this Kusudama (these are it's parentBone's majorRotationAxes)
