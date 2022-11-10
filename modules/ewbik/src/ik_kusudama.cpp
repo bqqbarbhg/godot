@@ -135,9 +135,7 @@ bool IKKusudama::in_twist_limits(Ref<IKNode3D> bone_axes, Ref<IKNode3D> limiting
 	if (from_min_to_angle_delta < Math_TAU - range) {
 		double dist_to_min = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - this->min_axial_angle()));
 		double dist_to_max = Math::abs(signed_angle_difference(angle_delta_2, Math_TAU - (this->min_axial_angle() + range)));
-		if (dist_to_min < dist_to_max) {
-			return false;
-		} else {
+		if (dist_to_min >= dist_to_max) {
 			return false;
 		}
 	}
