@@ -36,6 +36,7 @@
 #include "editor/editor_node.h"
 #include "editor/editor_properties.h"
 #include "editor/plugins/node_3d_editor_plugin.h"
+#include "modules/ewbik/src/ik_bone_3d.h"
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/label_3d.h"
 #include "scene/3d/mesh_instance_3d.h"
@@ -54,7 +55,8 @@ class EWBIK3DGizmoPlugin : public EditorNode3DGizmoPlugin {
 	GDCLASS(EWBIK3DGizmoPlugin, EditorNode3DGizmoPlugin);
 
 	SkeletonModification3DNBoneIK *ewbik = nullptr;
-
+	Ref<Shader> kusudama_shader;
+	
 protected:
 	static void _bind_methods() {
 		ClassDB::bind_method(D_METHOD("_get_gizmo_name"), &EWBIK3DGizmoPlugin::get_gizmo_name);
@@ -79,6 +81,7 @@ public:
 		create_handle_material("handles");
 		create_handle_material("handles_billboard", true);
 	}
+	void create_gizmo_mesh_handles(BoneId current_bone_idx, BoneId parent_idx, Ref<IKBone3D> ik_bone, EditorNode3DGizmo *p_gizmo, Color current_bone_color, Skeleton3D *ewbik_skeleton);
 };
 
 class EditorPluginEWBIK : public EditorPlugin {
