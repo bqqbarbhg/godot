@@ -326,7 +326,6 @@ void IKKusudama::set_axes_to_orientation_snap(Ref<IKNode3D> to_set, Ref<IKNode3D
 }
 
 Ref<IKNode3D> IKKusudama::limiting_axes() {
-	// if(inverted) return inverseLimitingAxes;
 	return _limiting_axes;
 }
 void IKKusudama::_bind_methods() {
