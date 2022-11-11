@@ -395,9 +395,9 @@ void EWBIK3DGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBon
 		Transform3D axial_relative_to_universe = ewbik_skeleton->get_global_transform() * axial_relative_to_skeleton;
 		axial_to_handles.push_back(axial_relative_to_universe.origin);
 	}
-	p_gizmo->add_handles(center_handles, get_material("handles"), Vector<int>(), true, true);
-	p_gizmo->add_handles(radius_handles, get_material("handles_radius"), Vector<int>(), true, false);
-	p_gizmo->add_handles(axial_from_handles, get_material("handles_axial_from"), Vector<int>(), true, false);
-	p_gizmo->add_handles(axial_middle_handles, get_material("handles_axial_middle"), Vector<int>(), true, false);
-	p_gizmo->add_handles(axial_to_handles, get_material("handles_axial_to"), Vector<int>(), true, false);
+	p_gizmo->add_handles(center_handles, get_material("handles"), Vector<int>(), false, false);
+	p_gizmo->add_handles(radius_handles, get_material("handles_radius"), Vector<int>(), false, true);
+	p_gizmo->add_handles(axial_from_handles, get_material("handles_axial_from"), Vector<int>(), false, false);
+	p_gizmo->add_handles(axial_middle_handles, get_material("handles_axial_middle"), Vector<int>(), false, true);
+	p_gizmo->add_handles(axial_to_handles, get_material("handles_axial_to"), Vector<int>(), false, false);
 }
