@@ -264,6 +264,12 @@ EWBIK3DGizmoPlugin::EWBIK3DGizmoPlugin() {
 	Ref<Texture2D> handle_radius = Node3DEditor::get_singleton()->get_theme_icon(SNAME("Editor3DHandle"), SNAME("EditorIcons"));
 	create_handle_material("handles_radius", false, handle_radius);
 	create_handle_material("handles_billboard", true);
+	Ref<Texture2D> handle_axial_from = Node3DEditor::get_singleton()->get_theme_icon(SNAME("Node3D"), SNAME("EditorIcons"));
+	create_handle_material("handles_axial_from", false, handle_axial_from);
+	Ref<Texture2D> handle_axial_middle = Node3DEditor::get_singleton()->get_theme_icon(SNAME("Node"), SNAME("EditorIcons"));
+	create_handle_material("handles_axial_middle", false, handle_axial_middle);
+	Ref<Texture2D> handle_axial_to = Node3DEditor::get_singleton()->get_theme_icon(SNAME("SpringArm3D"), SNAME("EditorIcons"));
+	create_handle_material("handles_axial_to", false, handle_axial_to);
 }
 
 void EWBIK3DGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBone3D> ik_bone, EditorNode3DGizmo *p_gizmo, Color current_bone_color, Skeleton3D *ewbik_skeleton) {
@@ -324,29 +330,80 @@ void EWBIK3DGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBon
 	surface_tool->begin(Mesh::PRIMITIVE_LINES);
 	Vector<Vector3> center_handles;
 	Vector<Vector3> radius_handles;
+	Vector<Vector3> axial_from_handles;
+	Vector<Vector3> axial_middle_handles;
+	Vector<Vector3> axial_to_handles;
+	float r = radius;
+	Basis mesh_orientation = Basis::from_euler(Vector3(Math::deg_to_rad(90.0f), 0, 0));
 	for (int32_t cone_i = 0; cone_i < kusudama_limit_cones.size(); cone_i = cone_i + (3 * 4)) {
 		Vector3 center = Vector3(kusudama_limit_cones[cone_i + 0], kusudama_limit_cones[cone_i + 1], kusudama_limit_cones[cone_i + 2]);
 		if (Math::is_zero_approx(center.length())) {
 			break;
 		}
-		Basis mesh_orientation = Basis::from_euler(Vector3(Math::deg_to_rad(90.0f), 0, 0));
-		Transform3D handle_relative_to_mesh;
-		handle_relative_to_mesh.origin = center * radius;
-		Transform3D handle_relative_to_universe = constraint_relative_to_the_universe * handle_relative_to_mesh;
-		center_handles.push_back(handle_relative_to_universe.origin);
-		float r = radius;
-		float cone_radius = kusudama_limit_cones[cone_i + 3];
+		{
+			Transform3D handle_relative_to_mesh;
+			handle_relative_to_mesh.origin = center * radius;
+			Transform3D handle_relative_to_universe = constraint_relative_to_the_universe * handle_relative_to_mesh;
+			center_handles.push_back(handle_relative_to_universe.origin);
+		}
+		{
+			float cone_radius = kusudama_limit_cones[cone_i + 3];
+			float w = r * Math::sin(cone_radius);
+			float d = r * Math::cos(cone_radius);
+			const float ra = (float)(0 * 3);
+			const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
+			Transform3D handle_border_relative_to_mesh;
+			Transform3D center_relative_to_mesh = Transform3D(Quaternion(Vector3(0, 1, 0), center)) * mesh_orientation;
+			handle_border_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
+			Transform3D handle_border_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_border_relative_to_mesh;
+			Transform3D handle_border_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_border_relative_to_skeleton;
+			radius_handles.push_back(handle_border_relative_to_universe.origin);
+		}
+	}
+	const Vector3 axial_center = Vector3(0, 1, 0);
+	{
+		float cone_radius = Math::deg_to_rad(90.0f);
 		float w = r * Math::sin(cone_radius);
 		float d = r * Math::cos(cone_radius);
-		const float ra = Math::deg_to_rad((float)(0 * 3));
+		const float ra = (float)(kusudama->get_min_axial_angle() * 3);
 		const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
-		Transform3D handle_border_relative_to_mesh;
-		Transform3D center_relative_to_mesh = Transform3D(Quaternion(Vector3(0, 1, 0), center)) * mesh_orientation;
-		handle_border_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
-		Transform3D handle_border_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_border_relative_to_mesh;
-		Transform3D handle_border_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_border_relative_to_skeleton;
-		radius_handles.push_back(handle_border_relative_to_universe.origin);
+		Transform3D axial_from_relative_to_mesh;
+		Transform3D center_relative_to_mesh = Transform3D(Quaternion(Vector3(0, 1, 0), axial_center)) * mesh_orientation;
+		axial_from_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
+		Transform3D axial_relative_to_skeleton = constraint_relative_to_the_skeleton * axial_from_relative_to_mesh;
+		Transform3D axial_relative_to_universe = ewbik_skeleton->get_global_transform() * axial_relative_to_skeleton;
+		axial_from_handles.push_back(axial_relative_to_universe.origin);
+	}
+	const int32_t segment_count = 20;
+	for (int32_t segment_i = 1; segment_i < segment_count; segment_i++) {
+		float cone_radius = Math::deg_to_rad(90.0f);
+		float w = r * Math::sin(cone_radius);
+		float d = r * Math::cos(cone_radius);
+		float ra = Math::lerp((float)kusudama->get_max_axial_angle() * 3.0f, (float)kusudama->get_min_axial_angle() * 3.0f, (float)segment_i / segment_count);
+		const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
+		Transform3D axial_from_relative_to_mesh;
+		Transform3D center_relative_to_mesh = Transform3D(Quaternion(Vector3(0, 1, 0), axial_center)) * mesh_orientation;
+		axial_from_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
+		Transform3D axial_relative_to_skeleton = constraint_relative_to_the_skeleton * axial_from_relative_to_mesh;
+		Transform3D axial_relative_to_universe = ewbik_skeleton->get_global_transform() * axial_relative_to_skeleton;
+		axial_middle_handles.push_back(axial_relative_to_universe.origin);
+	}
+	{
+		float cone_radius = Math::deg_to_rad(90.0f);
+		float w = r * Math::sin(cone_radius);
+		float d = r * Math::cos(cone_radius);
+		const float ra = (float)(kusudama->get_max_axial_angle() * 3);
+		const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
+		Transform3D axial_from_relative_to_mesh;
+		Transform3D center_relative_to_mesh = Transform3D(Quaternion(Vector3(0, 1, 0), axial_center)) * mesh_orientation;
+		axial_from_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
+		Transform3D axial_relative_to_skeleton = constraint_relative_to_the_skeleton * axial_from_relative_to_mesh;
+		Transform3D axial_relative_to_universe = ewbik_skeleton->get_global_transform() * axial_relative_to_skeleton;
+		axial_to_handles.push_back(axial_relative_to_universe.origin);
 	}
 	p_gizmo->add_handles(center_handles, get_material("handles"), Vector<int>(), true, true);
 	p_gizmo->add_handles(radius_handles, get_material("handles_radius"), Vector<int>(), true, false);
+	p_gizmo->add_handles(axial_from_handles, get_material("handles_axial_from"), Vector<int>(), true, false);
+	p_gizmo->add_handles(axial_middle_handles, get_material("handles_axial_middle"), Vector<int>(), true, false);
+	p_gizmo->add_handles(axial_to_handles, get_material("handles_axial_to"), Vector<int>(), true, false);
 }
