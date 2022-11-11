@@ -637,6 +637,9 @@ void SkeletonModification3DNBoneIK::execute(real_t delta) {
 	}
 	if (segmented_skeleton.is_null() || is_dirty) {
 		skeleton_changed(get_skeleton());
+		if (is_dirty && get_skeleton()) {
+			get_skeleton()->update_gizmos();
+		}
 		is_dirty = false;
 		notify_property_list_changed();
 	}
