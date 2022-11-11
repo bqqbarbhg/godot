@@ -134,7 +134,7 @@ void EWBIK3DGizmoPlugin::create_gizmo_mesh(BoneId current_bone_idx, Ref<IKBone3D
 	}
 	bones[0] = parent_idx;
 	weights[0] = 1;
-	Transform3D constraint_relative_to_the_skeleton = ik_bone->get_constraint_transform()->get_global_transform();
+	Transform3D constraint_relative_to_the_skeleton = ewbik_skeleton->get_transform().affine_inverse() * ik_bone->get_constraint_transform()->get_global_transform();
 	Transform3D constraint_relative_to_the_universe = ewbik_skeleton->get_global_transform() * constraint_relative_to_the_skeleton;
 	PackedFloat32Array kusudama_limit_cones;
 	Ref<IKKusudama> kusudama = ik_bone->get_constraint();
@@ -170,9 +170,9 @@ void EWBIK3DGizmoPlugin::create_gizmo_mesh(BoneId current_bone_idx, Ref<IKBone3D
 	Vector3 v0 = ewbik_skeleton->get_bone_global_rest(current_bone_idx).origin;
 	Vector3 v1 = ewbik_skeleton->get_bone_global_rest(parent_idx).origin;
 	real_t dist = v0.distance_to(v1);
-	float radius = dist / 10.0;
+	float radius = dist / 5.0;
 	// Code copied from the SphereMesh.
-	float height = dist / 5.0;
+	float height = dist / 2.5;
 	int rings = 32;
 
 	int i, j, prevrow, thisrow, point;
@@ -203,7 +203,7 @@ void EWBIK3DGizmoPlugin::create_gizmo_mesh(BoneId current_bone_idx, Ref<IKBone3D
 			x = sin(u * Math_TAU);
 			z = cos(u * Math_TAU);
 
-			Vector3 p = Vector3(x * radius * w, y, z * radius * w);
+			Vector3 p = Vector3(x * scale * w, y, z * scale * w);
 			points.push_back(p);
 			Vector3 normal = Vector3(x * w * scale, radius * (y / scale), z * w * scale);
 			normals.push_back(normal.normalized());
@@ -238,7 +238,7 @@ void EWBIK3DGizmoPlugin::create_gizmo_mesh(BoneId current_bone_idx, Ref<IKBone3D
 		c.a = 0;
 		surface_tool->set_custom(MESH_CUSTOM_0, c);
 		surface_tool->set_normal(normals[point_i]);
-		surface_tool->add_vertex(constraint_relative_to_the_universe.xform(points[point_i]));
+		surface_tool->add_vertex(points[point_i]);
 	}
 	for (int32_t index_i : indices) {
 		surface_tool->add_index(index_i);
@@ -252,7 +252,7 @@ void EWBIK3DGizmoPlugin::create_gizmo_mesh(BoneId current_bone_idx, Ref<IKBone3D
 	kusudama_material->set_shader_parameter("kusudama_color", current_bone_color);
 	p_gizmo->add_mesh(
 			surface_tool->commit(Ref<Mesh>(), RS::ARRAY_CUSTOM_RGBA_HALF << RS::ARRAY_FORMAT_CUSTOM0_SHIFT),
-			kusudama_material, ewbik_skeleton->get_global_transform(), ewbik_skeleton->register_skin(ewbik_skeleton->create_skin_from_rest_transforms()));
+			kusudama_material, constraint_relative_to_the_universe);
 }
 
 EWBIK3DGizmoPlugin::EWBIK3DGizmoPlugin() {
@@ -279,7 +279,8 @@ void EWBIK3DGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBon
 	}
 	bones[0] = parent_idx;
 	weights[0] = 1;
-	Transform3D constraint_relative_to_the_skeleton = ik_bone->get_constraint_transform()->get_global_transform();
+	Transform3D constraint_relative_to_the_skeleton = ewbik_skeleton->get_transform().affine_inverse() * ik_bone->get_constraint_transform()->get_global_transform();
+	Transform3D constraint_relative_to_the_universe = ewbik_skeleton->get_global_transform() * constraint_relative_to_the_skeleton;
 	PackedFloat32Array kusudama_limit_cones;
 	Ref<IKKusudama> kusudama = ik_bone->get_constraint();
 	kusudama_limit_cones.resize(KUSUDAMA_MAX_CONES * 4);
@@ -327,8 +328,7 @@ void EWBIK3DGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBon
 		Transform3D center_relative_to_mesh = Transform3D(Quaternion(Vector3(0, 1, 0), center)) * mesh_orientation;
 		Transform3D handle_relative_to_mesh;
 		handle_relative_to_mesh.origin = center * radius;
-		Transform3D handle_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_relative_to_mesh;
-		Transform3D handle_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_relative_to_skeleton;
+		Transform3D handle_relative_to_universe = constraint_relative_to_the_universe * handle_relative_to_mesh;
 		handles.push_back(handle_relative_to_universe.origin);
 		float r = radius;
 		float cone_radius = kusudama_limit_cones[cone_i + 3];
@@ -338,9 +338,8 @@ void EWBIK3DGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBon
 		const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
 		Transform3D handle_border_relative_to_mesh;
 		handle_border_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
-		Transform3D handle_border_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_border_relative_to_mesh;
-		Transform3D handle_border_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_border_relative_to_skeleton;
-		handles.push_back(handle_border_relative_to_universe.origin);
+		Transform3D handle_border_relative_to_universe =  constraint_relative_to_the_universe * handle_border_relative_to_mesh;
+		handles.push_back(handle_relative_to_universe.origin);
 	}
 	p_gizmo->add_handles(handles, get_material("handles"), Vector<int>(), true, true);
 }
