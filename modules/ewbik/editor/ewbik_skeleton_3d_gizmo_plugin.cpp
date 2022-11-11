@@ -101,7 +101,6 @@ void EWBIK3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 			processing_bones.push_back(current_bone_idx);
 			Vector<int> child_bones_vector = ewbik_skeleton->get_bone_children(current_bone_idx);
 			for (int child_bone_idx : child_bones_vector) {
-				// Add the bone's children to the list of bones to be processed.
 				bones_to_process.push_back(child_bone_idx);
 			}
 			bones_to_process_i++;
