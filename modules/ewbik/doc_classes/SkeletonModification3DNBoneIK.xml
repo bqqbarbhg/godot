@@ -84,6 +84,12 @@
 			<description>
 			</description>
 		</method>
+		<method name="queue_print_skeleton">
+			<return type="void" />
+			<param index="0" name="enable" type="bool" />
+			<description>
+			</description>
+		</method>
 		<method name="remove_pin">
 			<return type="void" />
 			<param index="0" name="index" type="int" />
@@ -100,12 +106,6 @@
 			<return type="void" />
 			<param index="0" name="index" type="int" />
 			<param index="1" name="name" type="String" />
-			<description>
-			</description>
-		</method>
-		<method name="queue_print_skeleton">
-			<return type="void" />
-			<param index="0" name="enable" type="bool" />
 			<description>
 			</description>
 		</method>
