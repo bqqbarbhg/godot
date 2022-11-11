@@ -264,11 +264,11 @@ EWBIK3DGizmoPlugin::EWBIK3DGizmoPlugin() {
 	Ref<Texture2D> handle_radius = Node3DEditor::get_singleton()->get_theme_icon(SNAME("Editor3DHandle"), SNAME("EditorIcons"));
 	create_handle_material("handles_radius", false, handle_radius);
 	create_handle_material("handles_billboard", true);
-	Ref<Texture2D> handle_axial_from = Node3DEditor::get_singleton()->get_theme_icon(SNAME("Node3D"), SNAME("EditorIcons"));
+	Ref<Texture2D> handle_axial_from = Node3DEditor::get_singleton()->get_theme_icon(SNAME("SpringArm3D"), SNAME("EditorIcons"));
 	create_handle_material("handles_axial_from", false, handle_axial_from);
 	Ref<Texture2D> handle_axial_middle = Node3DEditor::get_singleton()->get_theme_icon(SNAME("Node"), SNAME("EditorIcons"));
 	create_handle_material("handles_axial_middle", false, handle_axial_middle);
-	Ref<Texture2D> handle_axial_to = Node3DEditor::get_singleton()->get_theme_icon(SNAME("SpringArm3D"), SNAME("EditorIcons"));
+	Ref<Texture2D> handle_axial_to = Node3DEditor::get_singleton()->get_theme_icon(SNAME("Node3D"), SNAME("EditorIcons"));
 	create_handle_material("handles_axial_to", false, handle_axial_to);
 }
 
