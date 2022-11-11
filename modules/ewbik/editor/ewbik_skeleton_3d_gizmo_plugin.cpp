@@ -338,7 +338,6 @@ void EWBIK3DGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBon
 		const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
 		Transform3D handle_border_relative_to_mesh;
 		handle_border_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
-		Transform3D handle_border_relative_to_universe =  constraint_relative_to_the_universe * handle_border_relative_to_mesh;
 		handles.push_back(handle_relative_to_universe.origin);
 	}
 	p_gizmo->add_handles(handles, get_material("handles"), Vector<int>(), true, true);
