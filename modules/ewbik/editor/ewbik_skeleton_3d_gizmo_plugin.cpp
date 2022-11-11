@@ -170,10 +170,10 @@ void EWBIK3DGizmoPlugin::create_gizmo_mesh(BoneId current_bone_idx, Ref<IKBone3D
 	Vector3 v0 = ewbik_skeleton->get_bone_global_rest(current_bone_idx).origin;
 	Vector3 v1 = ewbik_skeleton->get_bone_global_rest(parent_idx).origin;
 	real_t dist = v0.distance_to(v1);
-	float radius = dist / 5.0;
+	float radius = dist / 10.0;
 	// Code copied from the SphereMesh.
-	float height = dist / 2.5;
-	int rings = 64;
+	float height = dist / 5.0;
+	int rings = 32;
 
 	int i, j, prevrow, thisrow, point;
 	float x, y, z;
