@@ -663,6 +663,7 @@ void SkeletonModification3DNBoneIK::execute(real_t delta) {
 		segmented_skeleton->segment_solver(get_default_damp());
 	}
 	update_skeleton_bones_transform();
+	get_skeleton()->update_gizmos();
 }
 
 void SkeletonModification3DNBoneIK::skeleton_changed(Skeleton3D *p_skeleton) {
