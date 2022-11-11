@@ -574,6 +574,7 @@ StringName SkeletonModification3DNBoneIK::get_pin_bone_name(int32_t p_effector_i
 void SkeletonModification3DNBoneIK::set_kusudama_limit_cone_radius(int32_t p_effector_index, int32_t p_index, float p_radius) {
 	ERR_FAIL_INDEX(p_effector_index, kusudama_limit_cone_count.size());
 	ERR_FAIL_INDEX(p_effector_index, kusudama_limit_cones.size());
+	ERR_FAIL_INDEX(p_index, kusudama_limit_cone_count[p_effector_index]);
 	ERR_FAIL_INDEX(p_index, kusudama_limit_cones[p_effector_index].size());
 	Vector4 &cone = kusudama_limit_cones.write[p_effector_index].write[p_index];
 	cone.w = p_radius;
