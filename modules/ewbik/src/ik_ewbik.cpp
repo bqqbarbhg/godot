@@ -641,9 +641,6 @@ void SkeletonModification3DNBoneIK::execute(real_t delta) {
 	if (is_dirty) {
 		skeleton_changed(get_skeleton());
 		notify_property_list_changed();
-		if (get_skeleton()) {
-			get_skeleton()->update_gizmos();
-		}
 		is_dirty = false;
 	}
 	if (bone_list.size()) {
