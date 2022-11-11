@@ -50,12 +50,12 @@ struct _NO_DISCARD_ Vector3 {
 
 	union {
 		struct {
-			real_t x = 0.0f;
-			real_t y = 0.0f;
-			real_t z = 0.0f;
+			real_t x;
+			real_t y;
+			real_t z;
 		};
 
-		real_t coord[3];
+		real_t coord[3] = { 0, 0, 0 };
 	};
 
 	_FORCE_INLINE_ const real_t &operator[](const int p_axis) const {
