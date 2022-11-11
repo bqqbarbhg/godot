@@ -364,12 +364,12 @@ bool SkeletonModification3DNBoneIK::_set(const StringName &p_name, const Variant
 			set_constraint_name(index, p_value);
 			return true;
 		} else if (what == "kusudama_twist_from") {
-			Vector2 kusudama_twist = get_kusudama_twist(index);
-			set_kusudama_twist(index, Vector2(p_value, kusudama_twist.y));
+			Vector2 kusudama_twist_from = get_kusudama_twist(index);
+			set_kusudama_twist(index, Vector2(p_value, kusudama_twist_from.y));
 			return true;
 		} else if (what == "kusudama_twist_to") {
-			Vector2 kusudama_twist = get_kusudama_twist(index);
-			set_kusudama_twist(index, Vector2(kusudama_twist.x, p_value));
+			Vector2 kusudama_twist_to = get_kusudama_twist(index);
+			set_kusudama_twist(index, Vector2(kusudama_twist_to.x, p_value));
 			return true;
 		} else if (what == "kusudama_limit_cone_count") {
 			set_kusudama_limit_cone_count(index, p_value);
