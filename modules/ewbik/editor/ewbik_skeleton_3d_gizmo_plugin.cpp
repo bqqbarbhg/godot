@@ -259,16 +259,19 @@ EWBIK3DGizmoPlugin::EWBIK3DGizmoPlugin() {
 	// Enable vertex colors for the materials below as the gizmo color depends on the light color.
 	create_material("lines_primary", Color(0.93725490570068, 0.19215686619282, 0.22352941334248), true, true, true);
 	// Need a textured2d handle for yellow dot, blue dot and turqouise dot and be icons.
-	create_handle_material("handles");
+	Ref<Texture2D> handle_center = Node3DEditor::get_singleton()->get_theme_icon(SNAME("EditorPivot"), SNAME("EditorIcons"));
+	create_handle_material("handles", false, handle_center);
+	Ref<Texture2D> handle_radius = Node3DEditor::get_singleton()->get_theme_icon(SNAME("Editor3DHandle"), SNAME("EditorIcons"));
+	create_handle_material("handles_radius", false, handle_radius);
 	create_handle_material("handles_billboard", true);
 }
+
 void EWBIK3DGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBone3D> ik_bone, EditorNode3DGizmo *p_gizmo, Color current_bone_color, Skeleton3D *ewbik_skeleton) {
 	Ref<IKKusudama> ik_kusudama = ik_bone->get_constraint();
 	if (ik_kusudama.is_null()) {
 		return;
 	}
 	BoneId parent_idx = ewbik_skeleton->get_bone_parent(current_bone_idx);
-	Vector<Vector3> handles;
 	LocalVector<int> bones;
 	LocalVector<float> weights;
 	bones.resize(4);
@@ -319,6 +322,8 @@ void EWBIK3DGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBon
 	Ref<SurfaceTool> surface_tool;
 	surface_tool.instantiate();
 	surface_tool->begin(Mesh::PRIMITIVE_LINES);
+	Vector<Vector3> center_handles;
+	Vector<Vector3> radius_handles;
 	for (int32_t cone_i = 0; cone_i < kusudama_limit_cones.size(); cone_i = cone_i + (3 * 4)) {
 		Vector3 center = Vector3(kusudama_limit_cones[cone_i + 0], kusudama_limit_cones[cone_i + 1], kusudama_limit_cones[cone_i + 2]);
 		if (Math::is_zero_approx(center.length())) {
@@ -328,19 +333,20 @@ void EWBIK3DGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBon
 		Transform3D handle_relative_to_mesh;
 		handle_relative_to_mesh.origin = center * radius;
 		Transform3D handle_relative_to_universe = constraint_relative_to_the_universe * handle_relative_to_mesh;
-		handles.push_back(handle_relative_to_universe.origin);
+		center_handles.push_back(handle_relative_to_universe.origin);
 		float r = radius;
 		float cone_radius = kusudama_limit_cones[cone_i + 3];
 		float w = r * Math::sin(cone_radius);
 		float d = r * Math::cos(cone_radius);
 		const float ra = Math::deg_to_rad((float)(0 * 3));
-		const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;		
+		const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
 		Transform3D handle_border_relative_to_mesh;
 		Transform3D center_relative_to_mesh = Transform3D(Quaternion(Vector3(0, 1, 0), center)) * mesh_orientation;
 		handle_border_relative_to_mesh.origin = center_relative_to_mesh.xform(Vector3(a.x, a.y, -d));
 		Transform3D handle_border_relative_to_skeleton = constraint_relative_to_the_skeleton * handle_border_relative_to_mesh;
 		Transform3D handle_border_relative_to_universe = ewbik_skeleton->get_global_transform() * handle_border_relative_to_skeleton;
-		handles.push_back(handle_border_relative_to_universe.origin);
+		radius_handles.push_back(handle_border_relative_to_universe.origin);
 	}
-	p_gizmo->add_handles(handles, get_material("handles"), Vector<int>(), true, true);
+	p_gizmo->add_handles(center_handles, get_material("handles"), Vector<int>(), true, true);
+	p_gizmo->add_handles(radius_handles, get_material("handles_radius"), Vector<int>(), true, false);
 }
