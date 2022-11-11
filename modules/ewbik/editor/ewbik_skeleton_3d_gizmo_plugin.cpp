@@ -365,7 +365,7 @@ void EWBIK3DGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBon
 	float w = r * Math::sin(cone_radius);
 	float d = r * Math::cos(cone_radius);
 	{
-		const float ra = (float)(kusudama->get_min_axial_angle() * 3);
+		const float ra = (float)kusudama->get_min_axial_angle();
 		const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
 		Transform3D axial_from_relative_to_mesh;
 		Transform3D center_relative_to_mesh = Transform3D(Quaternion(Vector3(0, 1, 0), axial_center)) * mesh_orientation;
@@ -376,7 +376,7 @@ void EWBIK3DGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBon
 	}
 	const int32_t segment_count = 20;
 	for (int32_t segment_i = 1; segment_i < segment_count; segment_i++) {
-		float ra = Math::lerp((float)kusudama->get_max_axial_angle() * 3.0f, (float)kusudama->get_min_axial_angle() * 3.0f, (float)segment_i / segment_count);
+		const float ra = Math::lerp((float)kusudama->get_max_axial_angle(), (float)kusudama->get_min_axial_angle(), (float)segment_i / segment_count);
 		const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
 		Transform3D axial_from_relative_to_mesh;
 		Transform3D center_relative_to_mesh = Transform3D(Quaternion(Vector3(0, 1, 0), axial_center)) * mesh_orientation;
@@ -386,7 +386,7 @@ void EWBIK3DGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBon
 		axial_middle_handles.push_back(axial_relative_to_universe.origin);
 	}
 	{
-		const float ra = (float)(kusudama->get_max_axial_angle() * 3);
+		const float ra = (float)(kusudama->get_max_axial_angle());
 		const Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * w;
 		Transform3D axial_from_relative_to_mesh;
 		Transform3D center_relative_to_mesh = Transform3D(Quaternion(Vector3(0, 1, 0), axial_center)) * mesh_orientation;
