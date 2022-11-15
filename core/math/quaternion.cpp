@@ -32,6 +32,7 @@
 
 #include "core/math/basis.h"
 #include "core/string/ustring.h"
+#include "godot/core/error/error_macros.h"
 
 real_t Quaternion::angle_to(const Quaternion &p_to) const {
 	real_t d = dot(p_to);
@@ -293,7 +294,7 @@ real_t Quaternion::get_angle() const {
 
 Quaternion::Quaternion(const Vector3 &p_axis, real_t p_angle) {
 #ifdef MATH_CHECKS
-	ERR_FAIL_COND_MSG(!p_axis.is_normalized(), "The axis Vector3 must be normalized.");
+	ERR_FAIL_COND_MSG_ONCE(!p_axis.is_normalized(), "The axis Vector3 must be normalized.");
 #endif
 	real_t d = p_axis.length();
 	if (d == 0) {

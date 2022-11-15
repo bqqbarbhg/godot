@@ -405,6 +405,23 @@ void _err_flush_stdout();
 
 /**
  * Ensures `m_cond` is false.
+ * If `m_cond` is true, prints `m_msg` once and the current function returns.
+ *
+ * If checking for null use ERR_FAIL_NULL_MSG instead.
+ * If checking index bounds use ERR_FAIL_INDEX_MSG instead.
+ */
+#define ERR_FAIL_COND_MSG_ONCE(m_cond, m_msg)                                                                     \
+	if (unlikely(m_cond)) {                                                                                       \
+		static bool first_print = true;                                                                           \
+		if (first_print) {                                                                                        \
+			_err_print_error(FUNCTION_STR, __FILE__, __LINE__, "Condition \"" _STR(m_cond) "\" is true.", m_msg); \
+			first_print = false;                                                                                  \
+		}                                                                                                         \
+	} else                                                                                                        \
+		((void)0)
+
+/**
+ * Ensures `m_cond` is false.
  * If `m_cond` is true, prints `m_msg` and the current function returns.
  *
  * If checking for null use ERR_FAIL_NULL_MSG instead.
@@ -444,6 +461,26 @@ void _err_flush_stdout();
 		((void)0)
 
 /**
+ * Try using `ERR_FAIL_COND_V_MSG`.
+ * Only use this macro if there is no sensible error message.
+ * If checking for null use ERR_FAIL_NULL_V_MSG instead.
+ * If checking index bounds use ERR_FAIL_INDEX_V_MSG instead.
+ *
+ * Ensures `m_cond` is false.
+ * If `m_cond` is true, the current function returns `m_retval`.
+ */
+#define ERR_FAIL_COND_V_ONCE(m_cond, m_retval)                                                                                        \
+	if (unlikely(m_cond)) {                                                                                                           \
+		static bool first_print = true;                                                                                               \
+		if (first_print) {                                                                                                            \
+			_err_print_error(FUNCTION_STR, __FILE__, __LINE__, "Condition \"" _STR(m_cond) "\" is true. Returning: " _STR(m_retval)); \
+			first_print = false;                                                                                                      \
+		}                                                                                                                             \
+		return m_retval;                                                                                                              \
+	} else                                                                                                                            \
+		((void)0)
+
+/**
  * Ensures `m_cond` is false.
  * If `m_cond` is true, prints `m_msg` and the current function returns `m_retval`.
  *
@@ -455,6 +492,24 @@ void _err_flush_stdout();
 		_err_print_error(FUNCTION_STR, __FILE__, __LINE__, "Condition \"" _STR(m_cond) "\" is true. Returning: " _STR(m_retval), m_msg); \
 		return m_retval;                                                                                                                 \
 	} else                                                                                                                               \
+		((void)0)
+
+/**
+ * Ensures `m_cond` is false.
+ * If `m_cond` is true, prints `m_msg` once and the current function returns `m_retval`.
+ *
+ * If checking for null use ERR_FAIL_NULL_V_MSG instead.
+ * If checking index bounds use ERR_FAIL_INDEX_V_MSG instead.
+ */
+#define ERR_FAIL_COND_V_MSG_ONCE(m_cond, m_retval, m_msg)                                                                                    \
+	if (unlikely(m_cond)) {                                                                                                                  \
+		static bool first_print = true;                                                                                                      \
+		if (first_print) {                                                                                                                   \
+			_err_print_error(FUNCTION_STR, __FILE__, __LINE__, "Condition \"" _STR(m_cond) "\" is true. Returning: " _STR(m_retval), m_msg); \
+			first_print = false;                                                                                                             \
+		}                                                                                                                                    \
+		return m_retval;                                                                                                                     \
+	} else                                                                                                                                   \
 		((void)0)
 
 /**
