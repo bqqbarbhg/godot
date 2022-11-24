@@ -44,7 +44,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef MSVC
+#ifdef _MSC_VER
 #define S_ISREG(m) ((m)&_S_IFREG)
 #include <io.h>
 #endif
