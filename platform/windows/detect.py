@@ -368,7 +368,6 @@ def configure_msvc(env, vcvars_msvc_config):
             "WINMIDI_ENABLED",
             "TYPED_METHOD_BIND",
             "WIN32",
-            "MSVC",
             "WINVER=%s" % env["target_win_version"],
             "_WIN32_WINNT=%s" % env["target_win_version"],
         ]
@@ -412,6 +411,9 @@ def configure_msvc(env, vcvars_msvc_config):
     if env["opengl3"]:
         env.AppendUnique(CPPDEFINES=["GLES3_ENABLED"])
         LIBS += ["opengl32"]
+
+    if env["target"] in ["editor", "template_debug"]:
+        LIBS += ["psapi", "dbghelp"]
 
     env.Append(LINKFLAGS=[p + env["LIBSUFFIX"] for p in LIBS])
 
