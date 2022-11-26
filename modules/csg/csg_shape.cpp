@@ -181,6 +181,7 @@ CSGBrush *CSGShape3D::_get_brush() {
 		brush = nullptr;
 
 		CSGBrush *n = _build_brush();
+		n->pack_manifold();
 
 		for (int i = 0; i < get_child_count(); i++) {
 			CSGShape3D *child = Object::cast_to<CSGShape3D>(get_child(i));
@@ -204,26 +205,8 @@ CSGBrush *CSGShape3D::_get_brush() {
 				CSGBrush *nn = memnew(CSGBrush);
 				CSGBrush *nn2 = memnew(CSGBrush);
 				nn2->copy_from(*n2, child->get_transform());
-				for (const KeyValue<int64_t, std::vector<float>> &E : nn2->mesh_id_properties) {
-					nn->mesh_id_properties.operator[](E.key) = E.value;
-				}
-				for (const KeyValue<int64_t, std::vector<glm::ivec3>> &E : nn2->mesh_id_triangle_property_indices) {
-					nn->mesh_id_triangle_property_indices.operator[](E.key) = E.value;
-				}
-				for (const KeyValue<int64_t, Vector<Ref<Material>>> &E : nn2->mesh_id_materials) {
-					nn->mesh_id_materials.operator[](E.key) = E.value;
-				}
-				for (const KeyValue<int64_t, std::vector<float>> &E : n->mesh_id_properties) {
-					nn->mesh_id_properties.operator[](E.key) = E.value;
-				}
-				for (const KeyValue<int64_t, std::vector<glm::ivec3>> &E : n->mesh_id_triangle_property_indices) {
-					nn->mesh_id_triangle_property_indices.operator[](E.key) = E.value;
-				}
-				for (const KeyValue<int64_t, Vector<Ref<Material>>> &E : n->mesh_id_materials) {
-					nn->mesh_id_materials.operator[](E.key) = E.value;
-				}
 				switch (child->get_operation()) {
-					case CSGShape3D::OPERATION_UNION:					
+					case CSGShape3D::OPERATION_UNION:
 						nn->manifold = n->manifold.Boolean(nn2->manifold, manifold::Manifold::OpType::ADD);
 						break;
 					case CSGShape3D::OPERATION_INTERSECTION:
@@ -233,14 +216,17 @@ CSGBrush *CSGShape3D::_get_brush() {
 						nn->manifold = n->manifold.Boolean(nn2->manifold, manifold::Manifold::OpType::SUBTRACT);
 						break;
 				}
+				nn->merge_manifold_properties(n->mesh_id_properties, n->mesh_id_triangle_property_indices, n->mesh_id_materials,
+						nn->mesh_id_properties, nn->mesh_id_triangle_property_indices, nn->mesh_id_materials);
+				nn->merge_manifold_properties(nn2->mesh_id_properties, nn2->mesh_id_triangle_property_indices, nn2->mesh_id_materials,
+						nn->mesh_id_properties, nn->mesh_id_triangle_property_indices, nn->mesh_id_materials);
+				nn->unpack_manifold();
 				memdelete(n);
 				memdelete(nn2);
 				n = nn;
 			}
 		}
-
 		if (n) {
-			n->unpack_manifold();
 			AABB aabb;
 			for (int i = 0; i < n->faces.size(); i++) {
 				for (int j = 0; j < 3; j++) {
@@ -257,10 +243,8 @@ CSGBrush *CSGShape3D::_get_brush() {
 		}
 
 		brush = n;
-
 		dirty = false;
 	}
-
 	return brush;
 }
 

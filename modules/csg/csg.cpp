@@ -41,8 +41,8 @@
 #include "core/variant/variant.h"
 #include "scene/resources/material.h"
 #include "scene/resources/mesh.h"
-#include "scene/resources/surface_tool.h"
 #include "scene/resources/mesh_data_tool.h"
+#include "scene/resources/surface_tool.h"
 
 // Static helper functions.
 
@@ -270,11 +270,7 @@ void CSGBrush::copy_from(const CSGBrush &p_brush, const Transform3D &p_xform) {
 	faces = p_brush.faces;
 	materials = p_brush.materials;
 	manifold = p_brush.manifold;
-	pack_manifold();
-	if (manifold.Status() != manifold::Manifold::Error::NO_ERROR) {
-		print_line(vformat("Cannot copy from the other brush. %d", int(manifold.Status())));
-	}
-
+	manifold.AsOriginal();
 	for (int i = 0; i < faces.size(); i++) {
 		for (int j = 0; j < 3; j++) {
 			faces.write[i].vertices[j] = p_xform.xform(p_brush.faces[i].vertices[j]);
@@ -282,6 +278,7 @@ void CSGBrush::copy_from(const CSGBrush &p_brush, const Transform3D &p_xform) {
 	}
 
 	_regen_face_aabbs();
+	pack_manifold();
 }
 
 // CSGBrushOperation
@@ -1495,7 +1492,6 @@ void CSGBrush::unpack_manifold() {
 			glm::vec3 position = mesh.vertPos[vertex_index];
 			face.vertices[face_vertex_i] = Vector3(position.x, position.y, position.z);
 			glm::vec3 normal = mesh.vertNormal[vertex_index];
-			// Normal equality doesn't depend on winding order.
 			bool flat = Math::is_equal_approx(normal.x, normal.y) && Math::is_equal_approx(normal.x, normal.z);
 			face.smooth = !flat;
 		}
@@ -1557,7 +1553,7 @@ void CSGBrush::pack_manifold() {
 	mdt.instantiate();
 	mdt->create_from_surface(st->commit(), 0);
 	std::vector<glm::ivec3> triangle_property_indices(mdt->get_face_count(), glm::vec3(-1, -1, -1));
-	std::vector<float> vertex_property_tolerance(MANIFOLD_MAX, CMP_EPSILON);
+	std::vector<float> vertex_property_tolerance(MANIFOLD_MAX, 1e-3);
 	std::vector<float> vertex_properties(mdt->get_face_count() * MANIFOLD_MAX, NAN);
 	Vector<Ref<Material>> triangle_material;
 	triangle_material.resize(mdt->get_face_count());
@@ -1596,7 +1592,27 @@ void CSGBrush::pack_manifold() {
 		triangle_material.write[triangle_i] = materials[faces[triangle_i].material];
 	}
 	manifold = manifold::Manifold(mesh, triangle_property_indices, vertex_properties, vertex_property_tolerance);
+	if (manifold.Status() != manifold::Manifold::Error::NO_ERROR) {
+		print_line(vformat("Cannot copy from the other brush. %d", int(manifold.Status())));
+	}
 	mesh_id_properties[manifold.OriginalID()] = vertex_properties;
 	mesh_id_triangle_property_indices[manifold.OriginalID()] = triangle_property_indices;
 	mesh_id_materials[manifold.OriginalID()] = triangle_material;
+}
+
+void CSGBrush::merge_manifold_properties(const HashMap<int64_t, std::vector<float>> &p_mesh_id_properties,
+		const HashMap<int64_t, std::vector<glm::ivec3>> &p_mesh_id_triangle_property_indices,
+		const HashMap<int64_t, Vector<Ref<Material>>> &p_mesh_id_materials,
+		HashMap<int64_t, std::vector<float>> &r_mesh_id_properties,
+		HashMap<int64_t, std::vector<glm::ivec3>> &r_mesh_id_triangle_property_indices,
+		HashMap<int64_t, Vector<Ref<Material>>> &r_mesh_id_materials) {
+	for (const KeyValue<int64_t, std::vector<float>> &E : p_mesh_id_properties) {
+		r_mesh_id_properties.operator[](E.key) = E.value;
+	}
+	for (const KeyValue<int64_t, std::vector<glm::ivec3>> &E : p_mesh_id_triangle_property_indices) {
+		r_mesh_id_triangle_property_indices.operator[](E.key) = E.value;
+	}
+	for (const KeyValue<int64_t, Vector<Ref<Material>>> &E : p_mesh_id_materials) {
+		r_mesh_id_materials.operator[](E.key) = E.value;
+	}
 }

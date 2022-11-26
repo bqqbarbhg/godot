@@ -86,6 +86,12 @@ struct CSGBrush {
 	};
 	void pack_manifold();
 	void unpack_manifold();
+	static void merge_manifold_properties(const HashMap<int64_t, std::vector<float>> &p_mesh_id_properties,
+		const HashMap<int64_t, std::vector<glm::ivec3>> &p_mesh_id_triangle_property_indices,
+		const HashMap<int64_t, Vector<Ref<Material>>> &p_mesh_id_materials,
+		HashMap<int64_t, std::vector<float>> &r_mesh_id_properties,
+		HashMap<int64_t, std::vector<glm::ivec3>> &r_mesh_id_triangle_property_indices,
+		HashMap<int64_t, Vector<Ref<Material>>> &r_mesh_id_materials);
 
 	// Create a brush from faces.
 	void build_from_faces(const Vector<Vector3> &p_vertices, const Vector<Vector2> &p_uvs, const Vector<bool> &p_smooth, const Vector<Ref<Material>> &p_materials, const Vector<bool> &p_invert_faces);
