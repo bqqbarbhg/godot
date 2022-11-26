@@ -25,6 +25,7 @@ thirdparty_sources = [
     "src/manifold/src/csg_tree.cpp",
     "src/collider/src/collider.cpp",
     "src/polygon/src/polygon.cpp",
+    "src/utilities/src/detect_cuda.cpp",
     "src/third_party/graphlite/src/connected_components.cpp",
 ]
 
