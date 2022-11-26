@@ -30,8 +30,8 @@
 
 #include "csg_shape.h"
 
-#include "core/math/geometry_2d.h"
 #include "../../thirdparty/manifold/third_party/glm/glm/ext/vector_int3.hpp"
+#include "core/math/geometry_2d.h"
 #include "thirdparty/manifold/src/utilities/include/public.h"
 
 void CSGShape3D::set_use_collision(bool p_enable) {
@@ -167,8 +167,8 @@ void CSGShape3D::_make_dirty(bool p_parent_removing) {
 #include "scene/resources/mesh_data_tool.h"
 #include "scene/resources/surface_tool.h"
 
-#include "../../thirdparty/manifold/third_party/glm/glm/ext/vector_float3.hpp"
 #include "../../thirdparty/manifold/src/manifold/include/manifold.h"
+#include "../../thirdparty/manifold/third_party/glm/glm/ext/vector_float3.hpp"
 #include <stdint.h>
 #include <algorithm>
 #include <vector>
@@ -234,12 +234,7 @@ static void pack_manifold(const CSGBrush *const p_mesh_merge, manifold::Manifold
 			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i] = p_mesh_merge->faces[face_i].uvs[vertex_i].y;
 		}
 	}
-	try {
-		r_manifold = manifold::Manifold(mesh, triProperties, properties, propertyTolerance);
-	} catch (const std::exception &e) {
-		ERR_PRINT(e.what());
-		r_manifold = manifold::Manifold();
-	}
+	r_manifold = manifold::Manifold(mesh, triProperties, properties, propertyTolerance);
 }
 
 static void unpack_manifold(const manifold::Manifold &p_manifold,
@@ -256,7 +251,7 @@ static void unpack_manifold(const manifold::Manifold &p_manifold,
 			glm::vec3 position = mesh.vertPos[index];
 			face.vertices[vertex_i] = Vector3(position.x, position.y, position.z);
 			glm::vec3 normal = mesh.vertNormal[index];
-			bool flat =	Math::is_equal_approx(normal.x, normal.y) && Math::is_equal_approx(normal.x, normal.z);
+			bool flat = Math::is_equal_approx(normal.x, normal.y) && Math::is_equal_approx(normal.x, normal.z);
 			face.smooth = !flat;
 		}
 		const manifold::MeshRelation &mesh_relation = p_manifold.GetMeshRelation();
@@ -267,9 +262,9 @@ static void unpack_manifold(const manifold::Manifold &p_manifold,
 		const std::vector<float> &properties = mesh_id_properties[mesh_id];
 		int invert_index = face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT;
 		face.invert = properties[invert_index];
-			if (face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP < properties.size()) {
-				face.smooth = properties[face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP];
-			}
+		if (face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP < properties.size()) {
+			face.smooth = properties[face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP];
+		}
 		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
 			int uv_x_index = face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0 + vertex_i;
 			face.uvs[vertex_i].x = properties[uv_x_index];
@@ -335,27 +330,22 @@ CSGBrush *CSGShape3D::_get_brush() {
 				manifold_nn.AsOriginal();
 				if (!manifold_n.IsManifold()) {
 					manifold_n = manifold::Manifold();
-				} 
+				}
 				if (!manifold_nn2.IsManifold()) {
 					manifold_nn2 = manifold::Manifold();
 				}
-				try {
-					switch (child->get_operation()) {
-						case CSGShape3D::OPERATION_UNION:
-							manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::ADD);
-							break;
-						case CSGShape3D::OPERATION_INTERSECTION:
-							manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::INTERSECT);
-							break;
-						case CSGShape3D::OPERATION_SUBTRACTION:
-							manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::SUBTRACT);
-							break;
-					}
-					unpack_manifold(manifold_nn, mesh_id_properties, mesh_face_count, nn);
-				} catch (const std::exception &e) {
-					ERR_PRINT(e.what());
-					manifold_nn = manifold::Manifold();
+				switch (child->get_operation()) {
+					case CSGShape3D::OPERATION_UNION:
+						manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::ADD);
+						break;
+					case CSGShape3D::OPERATION_INTERSECTION:
+						manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::INTERSECT);
+						break;
+					case CSGShape3D::OPERATION_SUBTRACTION:
+						manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::SUBTRACT);
+						break;
 				}
+				unpack_manifold(manifold_nn, mesh_id_properties, mesh_face_count, nn);
 				memdelete(n);
 				memdelete(nn2);
 				n = nn;
