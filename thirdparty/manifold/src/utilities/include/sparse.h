@@ -14,12 +14,11 @@
 
 #pragma once
 #include <math.h>
-#include "../../third_party/thrust/
-#include <../../third_party/thrust/thrust/binary_search.h>
-#include <../../third_party/thrust/thrust/gather.h>
-#include <../../third_party/thrust/thrust/remove.h>
-#include <../../third_party/thrust/thrust/sort.h>
-#include <../../third_party/thrust/thrust/unique.h>
+#include <thrust/binary_search.h>
+#include <thrust/gather.h>
+#include <thrust/remove.h>
+#include <thrust/sort.h>
+#include <thrust/unique.h>
 
 #include "optional_assert.h"
 #include "par.h"

@@ -13,30 +13,30 @@
 // limitations under the License.
 
 #pragma once
-#include <../third_party/thrust/thrust/binary_search.h>
-#include <../third_party/thrust/thrust/count.h>
-#include <../third_party/thrust/thrust/execution_policy.h>
-#include <../third_party/thrust/thrust/gather.h>
-#include <../third_party/thrust/thrust/logical.h>
-#include <../third_party/thrust/thrust/remove.h>
-#include <../third_party/thrust/thrust/sequence.h>
-#include <../third_party/thrust/thrust/sort.h>
-#include <../third_party/thrust/thrust/system/cpp/execution_policy.h>
-#include <../third_party/thrust/thrust/uninitialized_copy.h>
-#include <../third_party/thrust/thrust/unique.h>
+#include <thrust/binary_search.h>
+#include <thrust/count.h>
+#include <thrust/execution_policy.h>
+#include <thrust/gather.h>
+#include <thrust/logical.h>
+#include <thrust/remove.h>
+#include <thrust/sequence.h>
+#include <thrust/sort.h>
+#include <thrust/system/cpp/execution_policy.h>
+#include <thrust/uninitialized_copy.h>
+#include <thrust/unique.h>
 
 #if MANIFOLD_PAR == 'O'
-#include <../third_party/thrust/thrust/system/omp/execution_policy.h>
+#include <thrust/system/omp/execution_policy.h>
 #define MANIFOLD_PAR_NS omp
 #elif MANIFOLD_PAR == 'T'
-#include <../third_party/thrust/thrust/system/tbb/execution_policy.h>
+#include <thrust/system/tbb/execution_policy.h>
 #define MANIFOLD_PAR_NS tbb
 #else
 #define MANIFOLD_PAR_NS cpp
 #endif
 
 #ifdef MANIFOLD_USE_CUDA
-#include <../third_party/thrust/thrust/system/cuda/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 #endif
 
 namespace manifold {

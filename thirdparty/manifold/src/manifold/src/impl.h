@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #pragma once
-#include "../../collider/include/collider.h"
-#include "manifold.h"
+#include "thirdparty/manifold/src/collider/include/collider.h"
+#include "thirdparty/manifold/src/manifold/include/manifold.h"
 #include "optional_assert.h"
 #include "shared.h"
 #include "sparse.h"

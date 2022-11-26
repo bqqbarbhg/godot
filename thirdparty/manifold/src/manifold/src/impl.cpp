@@ -14,7 +14,7 @@
 
 #include "impl.h"
 
-#include <../third_party/thrust/thrust/logical.h>
+#include <thrust/logical.h>
 
 #include <algorithm>
 #include <atomic>

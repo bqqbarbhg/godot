@@ -11,7 +11,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "../../third_party/thrust/thrust/sequence.h"
+#include <thrust/version.h>
+#include <thrust/detail/config.h>
+#include <thrust/sequence.h>
 #include "csg_tree.h"
 #include "graph.h"
 #include "impl.h"

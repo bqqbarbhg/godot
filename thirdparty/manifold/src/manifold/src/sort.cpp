@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <../third_party/thrust/thrust/sequence.h>
+#include <thrust/sequence.h>
 
 #include "impl.h"
 #include "par.h"

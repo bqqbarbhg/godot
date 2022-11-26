@@ -14,11 +14,11 @@
 // limitations under the License.
 
 #pragma once
-#include <../third_party/thrust/thrust/device_vector.h>
-#include <../third_party/thrust/thrust/functional.h>
-#include <../third_party/thrust/thrust/iterator/permutation_iterator.h>
-#include <../third_party/thrust/thrust/iterator/zip_iterator.h>
-#include <../third_party/thrust/thrust/tuple.h>
+#include <thrust/device_vector.h>
+#include <thrust/functional.h>
+#include <thrust/iterator/permutation_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/tuple.h>
 
 #include <atomic>
 
