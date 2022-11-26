@@ -270,7 +270,6 @@ void CSGBrush::copy_from(const CSGBrush &p_brush, const Transform3D &p_xform) {
 	faces = p_brush.faces;
 	materials = p_brush.materials;
 	manifold = p_brush.manifold;
-	manifold.AsOriginal();
 	for (int i = 0; i < faces.size(); i++) {
 		for (int j = 0; j < 3; j++) {
 			faces.write[i].vertices[j] = p_xform.xform(p_brush.faces[i].vertices[j]);

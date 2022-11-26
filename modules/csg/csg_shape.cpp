@@ -200,6 +200,7 @@ CSGBrush *CSGShape3D::_get_brush() {
 				n = memnew(CSGBrush);
 
 				n->copy_from(*n2, child->get_transform());
+				n->unpack_manifold();
 
 			} else {
 				CSGBrush *nn = memnew(CSGBrush);
@@ -220,7 +221,7 @@ CSGBrush *CSGShape3D::_get_brush() {
 						nn->mesh_id_properties, nn->mesh_id_triangle_property_indices, nn->mesh_id_materials);
 				nn->merge_manifold_properties(nn2->mesh_id_properties, nn2->mesh_id_triangle_property_indices, nn2->mesh_id_materials,
 						nn->mesh_id_properties, nn->mesh_id_triangle_property_indices, nn->mesh_id_materials);
-				nn->unpack_manifold();
+				brush->unpack_manifold();
 				memdelete(n);
 				memdelete(nn2);
 				n = nn;
@@ -418,6 +419,7 @@ void CSGShape3D::_update_shape() {
 			surfaces.write[idx].last_added += 3;
 		}
 	}
+	n->pack_manifold();
 
 	root_mesh.instantiate();
 	//create surfaces
