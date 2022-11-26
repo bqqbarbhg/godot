@@ -51,6 +51,7 @@ public:
 	};
 
 private:
+
 	Operation operation = OPERATION_UNION;
 	CSGShape3D *parent_shape = nullptr;
 
@@ -163,6 +164,10 @@ VARIANT_ENUM_CAST(CSGShape3D::Operation)
 
 class CSGCombiner3D : public CSGShape3D {
 	GDCLASS(CSGCombiner3D, CSGShape3D);
+
+	HashMap<int64_t, std::vector<float>> mesh_id_properties;
+	HashMap<int64_t, std::vector<glm::ivec3>> mesh_id_triangle_property_indices;
+	HashMap<int64_t, Vector<Ref<Material>>> mesh_id_materials;
 
 private:
 	virtual CSGBrush *_build_brush() override;

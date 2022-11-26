@@ -42,6 +42,8 @@
 #include "core/templates/vector.h"
 #include "scene/resources/material.h"
 
+#include "../../thirdparty/manifold/third_party/glm/glm/ext/vector_int3.hpp"
+
 struct CSGBrush {
 	struct Face {
 		Vector3 vertices[3];
@@ -54,6 +56,10 @@ struct CSGBrush {
 
 	Vector<Face> faces;
 	Vector<Ref<Material>> materials;
+
+	HashMap<int64_t, std::vector<float>> mesh_id_properties;
+	HashMap<int64_t, std::vector<glm::ivec3>> mesh_id_triangle_property_indices;
+	HashMap<int64_t, Vector<Ref<Material>>> mesh_id_materials;
 
 	inline void _regen_face_aabbs() {
 		for (int i = 0; i < faces.size(); i++) {

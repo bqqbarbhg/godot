@@ -268,6 +268,9 @@ void CSGBrush::build_from_faces(const Vector<Vector3> &p_vertices, const Vector<
 void CSGBrush::copy_from(const CSGBrush &p_brush, const Transform3D &p_xform) {
 	faces = p_brush.faces;
 	materials = p_brush.materials;
+	mesh_id_properties = p_brush.mesh_id_properties;
+	mesh_id_triangle_property_indices = p_brush.mesh_id_triangle_property_indices;
+	mesh_id_materials = p_brush.mesh_id_materials;
 
 	for (int i = 0; i < faces.size(); i++) {
 		for (int j = 0; j < 3; j++) {
