@@ -187,7 +187,7 @@ enum {
 };
 static void pack_manifold(const CSGBrush *const p_mesh_merge, manifold::Manifold &r_manifold,
 		HashMap<int64_t, std::vector<float>> &mesh_id_properties,
-		HashMap<int64_t, int> &mesh_face_count, const float p_snap) {
+		HashMap<int64_t, int> &mesh_vertex_count, const float p_snap) {
 	Ref<SurfaceTool> st;
 	st.instantiate();
 	st->begin(Mesh::PRIMITIVE_TRIANGLES);
@@ -208,69 +208,77 @@ static void pack_manifold(const CSGBrush *const p_mesh_merge, manifold::Manifold
 	Ref<MeshDataTool> mdt;
 	mdt.instantiate();
 	mdt->create_from_surface(st->commit(), 0);
-	std::vector<glm::ivec3> triProperties(mdt->get_face_count(), glm::vec3(-1, -1, -1));
-	std::vector<float> propertyTolerance(MANIFOLD_MAX, CLAMP(p_snap, 1e-3, INFINITY));
-	std::vector<float> properties(mdt->get_face_count() * MANIFOLD_MAX, NAN);
+	std::vector<glm::ivec3> triangle_property_indices(mdt->get_face_count(), glm::vec3(-1, -1, -1));
+	std::vector<float> vertex_property_tolerance(MANIFOLD_MAX, CLAMP(p_snap, 1e-3, INFINITY));
+	std::vector<float> vertex_properties(mdt->get_face_count() * MANIFOLD_MAX, NAN);
 	manifold::Mesh mesh;
-	mesh.triVerts.resize(mdt->get_face_count());
+	mesh.triVerts.resize(mdt->get_face_count()); // triVerts has one vector3 of indices
 	mesh.vertPos.resize(mdt->get_vertex_count());
 	mesh.vertNormal.resize(mdt->get_vertex_count());
-	HashMap<int32_t, Ref<Material>> materials;
+	HashMap<int32_t, Ref<Material>> vertex_material;
 	constexpr int32_t order[3] = { 0, 2, 1 };
-	for (int face_i = 0; face_i < mdt->get_face_count(); face_i++) {
-		materials[face_i] = mdt->get_material();
-		properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT] = p_mesh_merge->faces[face_i].invert;
-		properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_PLACEHOLDER_MATERIAL] = p_mesh_merge->faces[face_i].material;
-		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
-			int32_t index = mdt->get_face_vertex(face_i, vertex_i);
-			mesh.triVerts[face_i][order[vertex_i]] = index;
-			Vector3 pos = mdt->get_vertex(index);
-			mesh.vertPos[index] = glm::vec3(pos.x, pos.y, pos.z);
-			Vector3 normal = mdt->get_vertex_normal(index);
-			mesh.vertNormal[index] = glm::vec3(normal.x, normal.y, normal.z);
-			triProperties[face_i][order[vertex_i]] = mdt->get_face_vertex(face_i, vertex_i);
-			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP] = p_mesh_merge->faces[face_i].smooth;
-			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0 + vertex_i] = p_mesh_merge->faces[face_i].uvs[vertex_i].x;
-			properties[face_i * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i] = p_mesh_merge->faces[face_i].uvs[vertex_i].y;
+	for (int triangle_i = 0; triangle_i < mdt->get_face_count(); triangle_i++) {
+		glm::ivec3 triangle_property_index;
+		for (int32_t face_index_i = 0; face_index_i < 3; face_index_i++) {
+			size_t mesh_vertex = mdt->get_face_vertex(triangle_i, face_index_i);
+			triangle_property_index[face_index_i] = mesh_vertex;
+			{
+				mesh.triVerts[triangle_i][order[face_index_i]] = mesh_vertex;
+				Vector3 pos = mdt->get_vertex(mesh_vertex);
+				mesh.vertPos[mesh_vertex] = glm::vec3(pos.x, pos.y, pos.z);
+				Vector3 normal = mdt->get_vertex_normal(mesh_vertex);
+				mesh.vertNormal[mesh_vertex] = glm::vec3(normal.x, normal.y, normal.z);
+			}
+			// vertex_material[mesh_vertex] = mdt->get_material();
+			// vertex_properties[mesh_vertex * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT] = p_mesh_merge->faces[triangle_i].invert;
+			// vertex_properties[mesh_vertex * MANIFOLD_MAX + MANIFOLD_PROPERTY_PLACEHOLDER_MATERIAL] = p_mesh_merge->faces[triangle_i].material;
+			// vertex_properties[mesh_vertex * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP] = p_mesh_merge->faces[triangle_i].smooth;
+			// vertex_properties[mesh_vertex * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0 + face_index_i] = p_mesh_merge->faces[triangle_i].uvs[face_index_i].x;
+			// vertex_properties[mesh_vertex * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + face_index_i] = p_mesh_merge->faces[triangle_i].uvs[face_index_i].y;
 		}
+		triangle_property_indices[triangle_i] = triangle_property_index;
 	}
-	r_manifold = manifold::Manifold(mesh, triProperties, properties, propertyTolerance);
+	r_manifold = manifold::Manifold(mesh, triangle_property_indices, vertex_properties, vertex_property_tolerance);
 }
 
 static void unpack_manifold(const manifold::Manifold &p_manifold,
 		const HashMap<int64_t, std::vector<float>> &mesh_id_properties,
 		const HashMap<int64_t, int> &mesh_face_count, CSGBrush *r_mesh_merge) {
 	manifold::Mesh mesh = p_manifold.GetMesh();
-	r_mesh_merge->faces.resize(mesh.triVerts.size());
-	manifold::MeshRelation mesh_ids = p_manifold.GetMeshRelation();
-	for (size_t triangle_i = 0; triangle_i < mesh.triVerts.size(); triangle_i++) {
+	size_t triangle_count = mesh.triVerts.size();
+	r_mesh_merge->faces.resize(triangle_count); // triVerts has one vector3 of indices
+	for (size_t triangle_i = 0; triangle_i < triangle_count; triangle_i++) {
 		CSGBrush::Face &face = r_mesh_merge->faces.write[triangle_i];
 		constexpr int32_t order[3] = { 0, 2, 1 };
-		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
-			int32_t index = mesh.triVerts[triangle_i][order[vertex_i]];
-			glm::vec3 position = mesh.vertPos[index];
-			face.vertices[vertex_i] = Vector3(position.x, position.y, position.z);
-			glm::vec3 normal = mesh.vertNormal[index];
+		for (int32_t face_vertex_i = 0; face_vertex_i < 3; face_vertex_i++) {
+			size_t vertex_index = mesh.triVerts[triangle_i][order[face_vertex_i]];
+			glm::vec3 position = mesh.vertPos[vertex_index];
+			face.vertices[face_vertex_i] = Vector3(position.x, position.y, position.z);
+			glm::vec3 normal = mesh.vertNormal[vertex_index];
 			bool flat = Math::is_equal_approx(normal.x, normal.y) && Math::is_equal_approx(normal.x, normal.z);
 			face.smooth = !flat;
 		}
-		const manifold::MeshRelation &mesh_relation = p_manifold.GetMeshRelation();
-		const manifold::BaryRef &bary_ref = mesh_relation.triBary[triangle_i];
-		uint32_t face_index = bary_ref.tri;
-		face.invert = false;
-		int32_t mesh_id = bary_ref.meshID;
-		const std::vector<float> &properties = mesh_id_properties[mesh_id];
-		int invert_index = face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT;
-		face.invert = properties[invert_index];
-		if (face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP < properties.size()) {
-			face.smooth = properties[face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP];
-		}
-		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
-			int uv_x_index = face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0 + vertex_i;
-			face.uvs[vertex_i].x = properties[uv_x_index];
-			int uv_y_index = face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i;
-			face.uvs[vertex_i].y = properties[uv_y_index];
-		}
+		// const manifold::MeshRelation &mesh_relation = p_manifold.GetMeshRelation();
+		// const manifold::BaryRef &bary_ref = mesh_relation.triBary[triangle_i];
+		// uint32_t original_face_index = bary_ref.tri;
+		// face.invert = false;
+		// size_t mesh_id = bary_ref.originalID;
+		// if (!mesh_id_properties.has(mesh_id)) {
+		// 	// TODO: fire 2022-11-26 Restore search for properties of the old mesh.
+		// 	return;
+		// }
+		// const std::vector<float> &properties = mesh_id_properties[mesh_id];
+		// int invert_index = original_face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT;
+		// face.invert = properties[invert_index];
+		// if (original_face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP < properties.size()) {
+		// 	face.smooth = properties[original_face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP];
+		// }
+		// for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
+		// 	int uv_x_index = original_face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0 + vertex_i;
+		// 	face.uvs[vertex_i].x = properties[uv_x_index];
+		// 	int uv_y_index = original_face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i;
+		// 	face.uvs[vertex_i].y = properties[uv_y_index];
+		// }
 	}
 	r_mesh_merge->_regen_face_aabbs();
 }
@@ -309,31 +317,23 @@ CSGBrush *CSGShape3D::_get_brush() {
 				HashMap<int64_t, std::vector<float>> mesh_id_properties;
 				HashMap<int64_t, int> mesh_face_count;
 				manifold::Manifold manifold_n;
-				manifold_n.AsOriginal();
-				pack_manifold(n, manifold_n, mesh_id_properties, mesh_face_count, snap);
+				{
+					manifold_n.AsOriginal();
+					pack_manifold(n, manifold_n, mesh_id_properties, mesh_face_count, snap);
+					if (manifold_n.Status() != manifold::Manifold::Error::NO_ERROR) {
+						print_line(vformat("Manifold n creation had an error. %d", int(manifold_n.Status())));
+					}
+				}
 				manifold::Manifold manifold_nn2 = manifold_n;
-				manifold_nn2.AsOriginal();
-				pack_manifold(nn2, manifold_nn2, mesh_id_properties, mesh_face_count, snap);
-				if (manifold_n.IsEmpty() && manifold_nn2.IsEmpty()) {
-					manifold_n = manifold::Manifold();
-					manifold_n.AsOriginal();
-					manifold_nn2 = manifold::Manifold();
+				{
+					if (manifold_nn2.Status() != manifold::Manifold::Error::NO_ERROR) {
+						print_line(vformat("Manifold nn2 creation had an error. %d", int(manifold_nn2.Status())));
+					}
 					manifold_nn2.AsOriginal();
-				} else if (manifold_n.IsEmpty() && !manifold_nn2.IsEmpty()) {
-					manifold_n = manifold::Manifold();
-					manifold_n.AsOriginal();
-				} else if (!manifold_n.IsEmpty() && manifold_nn2.IsEmpty()) {
-					manifold_nn2 = manifold::Manifold();
-					manifold_nn2.AsOriginal();
+					pack_manifold(nn2, manifold_nn2, mesh_id_properties, mesh_face_count, snap);
 				}
 				manifold::Manifold manifold_nn = manifold_nn2;
 				manifold_nn.AsOriginal();
-				if (!manifold_n.IsManifold()) {
-					manifold_n = manifold::Manifold();
-				}
-				if (!manifold_nn2.IsManifold()) {
-					manifold_nn2 = manifold::Manifold();
-				}
 				switch (child->get_operation()) {
 					case CSGShape3D::OPERATION_UNION:
 						manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::ADD);
@@ -344,6 +344,9 @@ CSGBrush *CSGShape3D::_get_brush() {
 					case CSGShape3D::OPERATION_SUBTRACTION:
 						manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::SUBTRACT);
 						break;
+				}
+				if (manifold_nn.Status() != manifold::Manifold::Error::NO_ERROR) {
+					print_line(vformat("Manifolds combined creation had an error. %d", int(manifold_nn.Status())));
 				}
 				unpack_manifold(manifold_nn, mesh_id_properties, mesh_face_count, nn);
 				memdelete(n);
