@@ -1,4 +1,4 @@
-// Copyright 2022 Emmett Lalish
+// Copyright 2022 The Manifold Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "manifold.h"
+#include "polygon.h"
 #include "test.h"
 
 Options options;
@@ -20,8 +22,10 @@ void print_usage() {
   printf("-------------------------------\n");
   printf("manifold_test specific options:\n");
   printf("  -h: Print this message\n");
-  printf("  -e: Export sample models\n");
-  printf("  -v: Enable verbose output\n");
+  printf("  -e: Export GLB models of samples\n");
+  printf(
+      "  -v: Enable verbose output (only works if compiled with MANIFOLD_DEBUG "
+      "flag)\n");
 }
 
 int main(int argc, char **argv) {
@@ -38,10 +42,17 @@ int main(int argc, char **argv) {
         print_usage();
         return 0;
       case 'e':
+#ifndef MANIFOLD_EXPORT
+        printf(
+            "Export not possible because MANIFOLD_EXPORT compile flag is not "
+            "set.\n");
+#endif
         options.exportModels = true;
         break;
       case 'v':
         options.params.verbose = true;
+        manifold::ManifoldParams().verbose = true;
+        manifold::ManifoldParams().intermediateChecks = true;
         break;
       default:
         fprintf(stderr, "Unknown option: %s\n", argv[i]);
@@ -49,6 +60,8 @@ int main(int argc, char **argv) {
         return 1;
     }
   }
+
+  manifold::PolygonParams().intermediateChecks = true;
 
   return RUN_ALL_TESTS();
 }

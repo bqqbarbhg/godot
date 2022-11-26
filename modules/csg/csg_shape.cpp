@@ -31,7 +31,7 @@
 #include "csg_shape.h"
 
 #include "core/math/geometry_2d.h"
-#include "glm/ext/vector_int3.hpp"
+#include "../../thirdparty/manifold/third_party/glm/glm/ext/vector_int3.hpp"
 
 void CSGShape3D::set_use_collision(bool p_enable) {
 	if (use_collision == p_enable) {
@@ -166,9 +166,8 @@ void CSGShape3D::_make_dirty(bool p_parent_removing) {
 #include "scene/resources/mesh_data_tool.h"
 #include "scene/resources/surface_tool.h"
 
-#include "glm/ext/vector_float3.hpp"
-#include "structs.h"
-#include "thirdparty/manifold/manifold/include/manifold.h"
+#include "../../thirdparty/manifold/third_party/glm/glm/ext/vector_float3.hpp"
+#include "../../thirdparty/manifold/src/manifold/include/manifold.h"
 #include <stdint.h>
 #include <algorithm>
 #include <vector>

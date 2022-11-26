@@ -143,6 +143,14 @@
 #include "absl/strings/str_replace.h"
 #endif  // GTEST_HAS_ABSL
 
+// Checks builtin compiler feature |x| while avoiding an extra layer of #ifdefs
+// at the callsite.
+#if defined(__has_builtin)
+#define GTEST_HAS_BUILTIN(x) __has_builtin(x)
+#else
+#define GTEST_HAS_BUILTIN(x) 0
+#endif  // defined(__has_builtin)
+
 namespace testing {
 
 using internal::CountIf;
@@ -371,6 +379,8 @@ GTEST_DEFINE_string_(
 
 namespace testing {
 namespace internal {
+
+const uint32_t Random::kMaxRange;
 
 // Generates a random number from [0, range), using a Linear
 // Congruential Generator (LCG).  Crashes if 'range' is 0 or greater
@@ -1008,14 +1018,14 @@ void DefaultPerThreadTestPartResultReporter::ReportTestPartResult(
 TestPartResultReporterInterface*
 UnitTestImpl::GetGlobalTestPartResultReporter() {
   internal::MutexLock lock(&global_test_part_result_reporter_mutex_);
-  return global_test_part_result_repoter_;
+  return global_test_part_result_reporter_;
 }
 
 // Sets the global test part result reporter.
 void UnitTestImpl::SetGlobalTestPartResultReporter(
     TestPartResultReporterInterface* reporter) {
   internal::MutexLock lock(&global_test_part_result_reporter_mutex_);
-  global_test_part_result_repoter_ = reporter;
+  global_test_part_result_reporter_ = reporter;
 }
 
 // Returns the test part result reporter for the current thread.
@@ -2434,12 +2444,10 @@ void Test::TearDown() {}
 void Test::RecordProperty(const std::string& key, const std::string& value) {
   UnitTest::GetInstance()->RecordProperty(key, value);
 }
-
-// Allows user supplied key value pairs to be recorded for later output.
-void Test::RecordProperty(const std::string& key, int value) {
-  Message value_message;
-  value_message << value;
-  RecordProperty(key, value_message.GetString().c_str());
+// We do not define a customary serialization except for integers,
+// but other values could be logged in this way.
+void Test::RecordProperty(const std::string& key, int64_t value) {
+  RecordProperty(key, (Message() << value).GetString());
 }
 
 namespace internal {
@@ -2711,7 +2719,8 @@ TestInfo::TestInfo(const std::string& a_test_suite_name,
                    internal::TypeId fixture_class_id,
                    internal::TestFactoryBase* factory)
     : test_suite_name_(a_test_suite_name),
-      name_(a_name),
+      // begin()/end() is MSVC 17.3.3 ASAN crash workaround (GitHub issue #3997)
+      name_(a_name.begin(), a_name.end()),
       type_param_(a_type_param ? new std::string(a_type_param) : nullptr),
       value_param_(a_value_param ? new std::string(a_value_param) : nullptr),
       location_(a_code_location),
@@ -3244,17 +3253,15 @@ bool ShouldUseColor(bool stdout_is_tty) {
     // On non-Windows platforms, we rely on the TERM variable.
     const char* const term = posix::GetEnv("TERM");
     const bool term_supports_color =
-        String::CStringEquals(term, "xterm") ||
-        String::CStringEquals(term, "xterm-color") ||
-        String::CStringEquals(term, "xterm-256color") ||
-        String::CStringEquals(term, "screen") ||
-        String::CStringEquals(term, "screen-256color") ||
-        String::CStringEquals(term, "tmux") ||
-        String::CStringEquals(term, "tmux-256color") ||
-        String::CStringEquals(term, "rxvt-unicode") ||
-        String::CStringEquals(term, "rxvt-unicode-256color") ||
-        String::CStringEquals(term, "linux") ||
-        String::CStringEquals(term, "cygwin");
+        term != nullptr && (String::CStringEquals(term, "xterm") ||
+                            String::CStringEquals(term, "xterm-color") ||
+                            String::CStringEquals(term, "xterm-kitty") ||
+                            String::CStringEquals(term, "screen") ||
+                            String::CStringEquals(term, "tmux") ||
+                            String::CStringEquals(term, "rxvt-unicode") ||
+                            String::CStringEquals(term, "linux") ||
+                            String::CStringEquals(term, "cygwin") ||
+                            String::EndsWithCaseInsensitive(term, "-256color"));
     return stdout_is_tty && term_supports_color;
 #endif  // GTEST_OS_WINDOWS
   }
@@ -4821,6 +4828,9 @@ void JsonUnitTestResultPrinter::PrintJsonUnitTest(std::ostream* stream,
   // If there was a test failure outside of one of the test suites (like in a
   // test environment) include that in the output.
   if (unit_test.ad_hoc_test_result().Failed()) {
+    if (comma) {
+      *stream << ",\n";
+    }
     OutputJsonTestSuiteForTestResult(stream, unit_test.ad_hoc_test_result());
   }
 
@@ -5331,6 +5341,10 @@ void UnitTest::AddTestPartResult(TestPartResult::Type result_type,
      (defined(__x86_64__) || defined(__i386__)))
       // with clang/gcc we can achieve the same effect on x86 by invoking int3
       asm("int3");
+#elif GTEST_HAS_BUILTIN(__builtin_trap)
+      __builtin_trap();
+#elif defined(SIGTRAP)
+      raise(SIGTRAP);
 #else
       // Dereference nullptr through a volatile pointer to prevent the compiler
       // from removing. We use this rather than abort() or __builtin_trap() for
@@ -5516,7 +5530,7 @@ UnitTestImpl::UnitTestImpl(UnitTest* parent)
       GTEST_DISABLE_MSC_WARNINGS_PUSH_(4355 /* using this in initializer */)
           default_global_test_part_result_reporter_(this),
       default_per_thread_test_part_result_reporter_(this),
-      GTEST_DISABLE_MSC_WARNINGS_POP_() global_test_part_result_repoter_(
+      GTEST_DISABLE_MSC_WARNINGS_POP_() global_test_part_result_reporter_(
           &default_global_test_part_result_reporter_),
       per_thread_test_part_result_reporter_(
           &default_per_thread_test_part_result_reporter_),
@@ -6037,7 +6051,7 @@ bool ShouldRunTestOnShard(int total_shards, int shard_index, int test_id) {
 // each TestSuite and TestInfo object.
 // If shard_tests == true, further filters tests based on sharding
 // variables in the environment - see
-// https://github.com/google/googletest/blob/master/googletest/docs/advanced.md
+// https://github.com/google/googletest/blob/main/docs/advanced.md
 // . Returns the number of tests that should run.
 int UnitTestImpl::FilterTests(ReactionToSharding shard_tests) {
   const int32_t total_shards = shard_tests == HONOR_SHARDING_PROTOCOL
@@ -6245,7 +6259,7 @@ void UnitTestImpl::UnshuffleTests() {
 // GetCurrentOsStackTraceExceptTop(..., 1), Foo() will be included in
 // the trace but Bar() and GetCurrentOsStackTraceExceptTop() won't.
 GTEST_NO_INLINE_ GTEST_NO_TAIL_CALL_ std::string
-GetCurrentOsStackTraceExceptTop(UnitTest* /*unit_test*/, int skip_count) {
+GetCurrentOsStackTraceExceptTop(int skip_count) {
   // We pass skip_count + 1 to skip this wrapper function in addition
   // to what the user really wants to skip.
   return GetUnitTestImpl()->CurrentOsStackTraceExceptTop(skip_count + 1);
@@ -6741,12 +6755,13 @@ void InitGoogleTest() {
 #endif  // defined(GTEST_CUSTOM_INIT_GOOGLE_TEST_FUNCTION_)
 }
 
-#if !defined(GTEST_CUSTOM_TEMPDIR_FUNCTION_)
-// Return value of first environment variable that is set and contains
-// a non-empty string. If there are none, return the "fallback" string.
-// Since we like the temporary directory to have a directory separator suffix,
-// add it if not provided in the environment variable value.
-static std::string GetTempDirFromEnv(
+#if !defined(GTEST_CUSTOM_TEMPDIR_FUNCTION_) || \
+    !defined(GTEST_CUSTOM_SRCDIR_FUNCTION_)
+// Returns the value of the first environment variable that is set and contains
+// a non-empty string. If there are none, returns the "fallback" string. Adds
+// the director-separator character as a suffix if not provided in the
+// environment variable value.
+static std::string GetDirFromEnv(
     std::initializer_list<const char*> environment_variables,
     const char* fallback, char separator) {
   for (const char* variable_name : environment_variables) {
@@ -6766,11 +6781,35 @@ std::string TempDir() {
 #if defined(GTEST_CUSTOM_TEMPDIR_FUNCTION_)
   return GTEST_CUSTOM_TEMPDIR_FUNCTION_();
 #elif GTEST_OS_WINDOWS || GTEST_OS_WINDOWS_MOBILE
-  return GetTempDirFromEnv({"TEST_TMPDIR", "TEMP"}, "\\temp\\", '\\');
+  return GetDirFromEnv({"TEST_TMPDIR", "TEMP"}, "\\temp\\", '\\');
 #elif GTEST_OS_LINUX_ANDROID
-  return GetTempDirFromEnv({"TEST_TMPDIR", "TMPDIR"}, "/data/local/tmp/", '/');
+  return GetDirFromEnv({"TEST_TMPDIR", "TMPDIR"}, "/data/local/tmp/", '/');
 #else
-  return GetTempDirFromEnv({"TEST_TMPDIR", "TMPDIR"}, "/tmp/", '/');
+  return GetDirFromEnv({"TEST_TMPDIR", "TMPDIR"}, "/tmp/", '/');
+#endif
+}
+
+#if !defined(GTEST_CUSTOM_SRCDIR_FUNCTION_)
+// Returns the directory path (including terminating separator) of the current
+// executable as derived from argv[0].
+static std::string GetCurrentExecutableDirectory() {
+  internal::FilePath argv_0(internal::GetArgvs()[0]);
+  return argv_0.RemoveFileName().string();
+}
+#endif
+
+std::string SrcDir() {
+#if defined(GTEST_CUSTOM_SRCDIR_FUNCTION_)
+  return GTEST_CUSTOM_SRCDIR_FUNCTION_();
+#elif GTEST_OS_WINDOWS || GTEST_OS_WINDOWS_MOBILE
+  return GetDirFromEnv({"TEST_SRCDIR"}, GetCurrentExecutableDirectory().c_str(),
+                       '\\');
+#elif GTEST_OS_LINUX_ANDROID
+  return GetDirFromEnv({"TEST_SRCDIR"}, GetCurrentExecutableDirectory().c_str(),
+                       '/');
+#else
+  return GetDirFromEnv({"TEST_SRCDIR"}, GetCurrentExecutableDirectory().c_str(),
+                       '/');
 #endif
 }
 

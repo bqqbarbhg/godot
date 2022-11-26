@@ -1,4 +1,4 @@
-// Copyright 2021 Emmett Lalish
+// Copyright 2021 The Manifold Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,8 +15,13 @@
 #include <random>
 
 #include "manifold.h"
-#include "meshIO.h"
+#include "polygon.h"
+#include "sdf.h"
 #include "test.h"
+
+#ifdef MANIFOLD_EXPORT
+#include "meshIO.h"
+#endif
 
 namespace {
 
@@ -48,6 +53,16 @@ Mesh Csaszar() {
   return csaszar;
 }
 
+Mesh Tet() {
+  Mesh tet;
+  tet.vertPos = {{-1.0f, -1.0f, 1.0f},
+                 {-1.0f, 1.0f, -1.0f},
+                 {1.0f, -1.0f, -1.0f},
+                 {1.0f, 1.0f, 1.0f}};
+  tet.triVerts = {{2, 0, 1}, {0, 3, 1}, {2, 3, 0}, {3, 2, 1}};
+  return tet;
+}
+
 void Identical(const Mesh& mesh1, const Mesh& mesh2) {
   ASSERT_EQ(mesh1.vertPos.size(), mesh2.vertPos.size());
   for (int i = 0; i < mesh1.vertPos.size(); ++i)
@@ -64,7 +79,7 @@ void Related(const Manifold& out, const std::vector<Mesh>& input,
   Mesh output = out.GetMesh();
   MeshRelation relation = out.GetMeshRelation();
   for (int tri = 0; tri < out.NumTri(); ++tri) {
-    int meshID = relation.triBary[tri].meshID;
+    int meshID = relation.triBary[tri].originalID;
     int meshIdx = meshID2idx.at(meshID);
     ASSERT_LT(meshIdx, input.size());
     const Mesh& inMesh = input[meshIdx];
@@ -76,10 +91,10 @@ void Related(const Manifold& out, const std::vector<Mesh>& input,
     for (int j : {0, 1, 2}) {
       glm::vec3 vPos = output.vertPos[output.triVerts[tri][j]];
       glm::vec3 uvw = relation.UVW(tri, j);
-      ASSERT_NEAR(uvw[0] + uvw[1] + uvw[2], 1, 0.0001);
+      ASSERT_NEAR(uvw[0] + uvw[1] + uvw[2], 1, 0.0002);
       glm::vec3 vRelation = inTriangle * uvw;
       for (int k : {0, 1, 2})
-        ASSERT_NEAR(vPos[k], vRelation[k], 5 * out.Precision());
+        ASSERT_NEAR(vPos[k], vRelation[k], 10 * out.Precision());
     }
   }
 }
@@ -88,14 +103,14 @@ void RelatedOp(const Manifold& inP, const Manifold& inQ, const Manifold& outR) {
   std::vector<Mesh> input;
   std::map<int, int> meshID2idx;
 
-  std::vector<int> meshIDs = inP.GetMeshIDs();
-  EXPECT_EQ(meshIDs.size(), 1);
-  meshID2idx[meshIDs[0]] = input.size();
+  int meshID = inP.OriginalID();
+  EXPECT_GE(meshID, 0);
+  meshID2idx[meshID] = input.size();
   input.push_back(inP.GetMesh());
 
-  meshIDs = inQ.GetMeshIDs();
-  EXPECT_EQ(meshIDs.size(), 1);
-  meshID2idx[meshIDs[0]] = input.size();
+  meshID = inQ.OriginalID();
+  EXPECT_GE(meshID, 0);
+  meshID2idx[meshID] = input.size();
   input.push_back(inQ.GetMesh());
 
   Related(outR, input, meshID2idx);
@@ -146,14 +161,20 @@ Polygons SquareHole(float xOffset = 0.0) {
   return polys;
 }
 
-}  // namespace
+struct Gyroid {
+  __host__ __device__ float operator()(glm::vec3 p) const {
+    const glm::vec3 min = p;
+    const glm::vec3 max = glm::vec3(glm::two_pi<float>()) - p;
+    const float min3 = glm::min(min.x, glm::min(min.y, min.z));
+    const float max3 = glm::min(max.x, glm::min(max.y, max.z));
+    const float bound = glm::min(min3, max3);
+    const float gyroid =
+        cos(p.x) * sin(p.y) + cos(p.y) * sin(p.z) + cos(p.z) * sin(p.x);
+    return glm::min(gyroid, bound);
+  }
+};
 
-TEST(MeshIO, ReadWrite) {
-  Mesh mesh = ImportMesh("data/gyroidpuzzle.ply");
-  ExportMesh("data/gyroidpuzzle1.ply", mesh, {});
-  Mesh mesh_out = ImportMesh("data/gyroidpuzzle1.ply");
-  Identical(mesh, mesh_out);
-}
+}  // namespace
 
 /**
  * This tests that turning a mesh into a manifold and returning it to a mesh
@@ -167,20 +188,118 @@ TEST(Manifold, GetMesh) {
   Identical(mesh_out, mesh_out2);
 }
 
-// There is still some non-determinism, especially in parallel. Likely in the
-// edge collapse step. Not a huge problem, but best to fix for user's sanity.
-TEST(Manifold, DISABLED_Determinism) {
-  Manifold manifold(ImportMesh("data/gyroidpuzzle.ply"));
-  EXPECT_TRUE(manifold.IsManifold());
-
-  Manifold manifold1 = manifold.Translate(glm::vec3(5.0f));
-  int num_overlaps = manifold.NumOverlaps(manifold1);
-  ASSERT_EQ(num_overlaps, 229611);
-
+TEST(Manifold, GetMeshGL) {
+  Manifold manifold = Manifold::Sphere(1);
   Mesh mesh_out = manifold.GetMesh();
-  Manifold manifold2(mesh_out);
-  Mesh mesh_out2 = manifold2.GetMesh();
-  // Identical(mesh_out, mesh_out2);
+  MeshGL meshGL_out = manifold.GetMeshGL();
+  ASSERT_EQ(meshGL_out.NumVert(), mesh_out.vertPos.size());
+  ASSERT_EQ(meshGL_out.NumTri(), mesh_out.triVerts.size());
+  for (int i = 0; i < meshGL_out.NumVert(); ++i) {
+    for (const int j : {0, 1, 2}) {
+      ASSERT_EQ(meshGL_out.vertPos[3 * i + j], mesh_out.vertPos[i][j]);
+      ASSERT_EQ(meshGL_out.vertNormal[3 * i + j], mesh_out.vertNormal[i][j]);
+    }
+  }
+  for (int i = 0; i < meshGL_out.NumTri(); ++i) {
+    for (const int j : {0, 1, 2})
+      ASSERT_EQ(meshGL_out.triVerts[3 * i + j], mesh_out.triVerts[i][j]);
+  }
+}
+
+TEST(Manifold, Empty) {
+  Mesh emptyMesh;
+  Manifold empty(emptyMesh);
+
+  EXPECT_TRUE(empty.IsEmpty());
+  EXPECT_EQ(empty.Status(), Manifold::Error::NO_ERROR);
+  EXPECT_TRUE(empty.IsManifold());
+}
+
+TEST(Manifold, ValidInput) {
+  std::vector<float> propTol = {0.1, 0.2};
+  std::vector<float> prop = {0, 0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6};
+  std::vector<glm::ivec3> triProp = {
+      {2, 0, 1}, {0, 3, 1}, {2, 3, 0}, {6, 5, 4}};
+  Manifold tet(Tet(), triProp, prop, propTol);
+  EXPECT_FALSE(tet.IsEmpty());
+  EXPECT_EQ(tet.Status(), Manifold::Error::NO_ERROR);
+  EXPECT_TRUE(tet.IsManifold());
+}
+
+TEST(Manifold, InvalidInput1) {
+  Mesh in = Tet();
+  in.vertPos[2][1] = NAN;
+  Manifold tet(in);
+  EXPECT_TRUE(tet.IsEmpty());
+  EXPECT_EQ(tet.Status(), Manifold::Error::NON_FINITE_VERTEX);
+  EXPECT_TRUE(tet.IsManifold());
+}
+
+TEST(Manifold, InvalidInput2) {
+  Mesh in = Tet();
+  std::swap(in.triVerts[2][1], in.triVerts[2][2]);
+  Manifold tet(in);
+  EXPECT_TRUE(tet.IsEmpty());
+  EXPECT_EQ(tet.Status(), Manifold::Error::NOT_MANIFOLD);
+  EXPECT_TRUE(tet.IsManifold());
+}
+
+TEST(Manifold, InvalidInput3) {
+  Mesh in = Tet();
+  for (glm::ivec3& tri : in.triVerts) {
+    for (int i : {0, 1, 2}) {
+      if (tri[i] == 2) tri[i] = -2;
+    }
+  }
+  Manifold tet(in);
+  EXPECT_TRUE(tet.IsEmpty());
+  EXPECT_EQ(tet.Status(), Manifold::Error::VERTEX_INDEX_OUT_OF_BOUNDS);
+  EXPECT_TRUE(tet.IsManifold());
+}
+
+TEST(Manifold, InvalidInput4) {
+  Mesh in = Tet();
+  for (glm::ivec3& tri : in.triVerts) {
+    for (int i : {0, 1, 2}) {
+      if (tri[i] == 2) tri[i] = 4;
+    }
+  }
+  Manifold tet(in);
+  EXPECT_TRUE(tet.IsEmpty());
+  EXPECT_EQ(tet.Status(), Manifold::Error::VERTEX_INDEX_OUT_OF_BOUNDS);
+  EXPECT_TRUE(tet.IsManifold());
+}
+
+TEST(Manifold, InvalidInput5) {
+  std::vector<float> propTol = {0.1, 0.2};
+  std::vector<float> prop = {0, 0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6};
+  std::vector<glm::ivec3> triProp = {
+      {2, 0, 1}, {0, 3, 1}, {2, 3, 0}, {6, 5, 4}};
+  Manifold tet(Tet(), triProp, prop, propTol);
+  EXPECT_TRUE(tet.IsEmpty());
+  EXPECT_EQ(tet.Status(), Manifold::Error::PROPERTIES_WRONG_LENGTH);
+  EXPECT_TRUE(tet.IsManifold());
+}
+
+TEST(Manifold, InvalidInput6) {
+  std::vector<float> propTol = {0.1, 0.2};
+  std::vector<float> prop = {0, 0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6};
+  std::vector<glm::ivec3> triProp = {{2, 0, 1}, {0, 3, 1}, {2, 3, 0}};
+  Manifold tet(Tet(), triProp, prop, propTol);
+  EXPECT_TRUE(tet.IsEmpty());
+  EXPECT_EQ(tet.Status(), Manifold::Error::TRI_PROPERTIES_WRONG_LENGTH);
+  EXPECT_TRUE(tet.IsManifold());
+}
+
+TEST(Manifold, InvalidInput7) {
+  std::vector<float> propTol = {0.1, 0.2};
+  std::vector<float> prop = {0, 0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6};
+  std::vector<glm::ivec3> triProp = {
+      {2, 0, 1}, {0, 3, 1}, {2, 3, 0}, {6, 5, 7}};
+  Manifold tet(Tet(), triProp, prop, propTol);
+  EXPECT_TRUE(tet.IsEmpty());
+  EXPECT_EQ(tet.Status(), Manifold::Error::TRI_PROPERTIES_OUT_OF_BOUNDS);
+  EXPECT_TRUE(tet.IsManifold());
 }
 
 /**
@@ -200,9 +319,9 @@ TEST(Manifold, Decompose) {
   std::map<int, int> meshID2idx;
 
   for (const Manifold& manifold : manifoldList) {
-    std::vector<int> meshIDs = manifold.GetMeshIDs();
-    EXPECT_EQ(meshIDs.size(), 1);
-    meshID2idx[meshIDs[0]] = input.size();
+    int meshID = manifold.OriginalID();
+    EXPECT_GE(meshID, 0);
+    meshID2idx[meshID] = input.size();
     input.push_back(manifold.GetMesh());
   }
 
@@ -278,7 +397,9 @@ TEST(Manifold, Smooth) {
   EXPECT_NEAR(prop.volume, 17.38, 0.1);
   EXPECT_NEAR(prop.surfaceArea, 33.38, 0.1);
 
+#ifdef MANIFOLD_EXPORT
   if (options.exportModels) ExportMesh("smoothTet.glb", smooth.GetMesh(), {});
+#endif
 }
 
 TEST(Manifold, SmoothSphere) {
@@ -318,6 +439,7 @@ TEST(Manifold, ManualSmooth) {
   EXPECT_NEAR(prop.volume, 3.53, 0.01);
   EXPECT_NEAR(prop.surfaceArea, 11.39, 0.01);
 
+#ifdef MANIFOLD_EXPORT
   if (options.exportModels) {
     const Mesh out = interp.GetMesh();
     ExportOptions options;
@@ -338,6 +460,7 @@ TEST(Manifold, ManualSmooth) {
     }
     ExportMesh("sharpenedSphere.glb", out, options);
   }
+#endif
 }
 
 TEST(Manifold, Csaszar) {
@@ -348,6 +471,7 @@ TEST(Manifold, Csaszar) {
   EXPECT_NEAR(prop.volume, 84699, 10);
   EXPECT_NEAR(prop.surfaceArea, 14796, 10);
 
+#ifdef MANIFOLD_EXPORT
   if (options.exportModels) {
     const Mesh out = csaszar.GetMesh();
     ExportOptions options;
@@ -368,6 +492,7 @@ TEST(Manifold, Csaszar) {
     }
     ExportMesh("smoothCsaszar.glb", out, options);
   }
+#endif
 }
 
 /**
@@ -395,12 +520,18 @@ TEST(Manifold, Precision) {
   EXPECT_FLOAT_EQ(cube.Precision(), 100 * kTolerance);
 }
 
+TEST(Manifold, Precision2) {
+  Manifold cube = Manifold::Cube();
+  cube = cube.Translate({-0.5, 0, 0}).Scale({2, 1, 1});
+  EXPECT_FLOAT_EQ(cube.Precision(), 2 * kTolerance);
+}
+
 /**
  * Curvature is the inverse of the radius of curvature, and signed such that
  * positive is convex and negative is concave. There are two orthogonal
  * principal curvatures at any point on a manifold, with one maximum and the
  * other minimum. Gaussian curvature is their product, while mean
- * curvature is their sum. Here we check our discrete appoximations calculated
+ * curvature is their sum. Here we check our discrete approximations calculated
  * at each vertex against the constant expected values of spheres of different
  * radii and at different mesh resolutions.
  */
@@ -453,15 +584,23 @@ TEST(Manifold, Transform) {
 }
 
 TEST(Manifold, MeshRelation) {
+  const float period = glm::two_pi<float>();
+
+  Mesh gyroidMesh = LevelSet(Gyroid(), {glm::vec3(0), glm::vec3(period)}, 0.5);
+
   std::vector<Mesh> input;
   std::map<int, int> meshID2idx;
 
-  input.push_back(ImportMesh("data/gyroidpuzzle.ply"));
+  input.push_back(gyroidMesh);
   Manifold gyroid(input[0]);
 
-  std::vector<int> meshIDs = gyroid.GetMeshIDs();
-  EXPECT_EQ(meshIDs.size(), 1);
-  meshID2idx[meshIDs[0]] = input.size() - 1;
+#ifdef MANIFOLD_EXPORT
+  if (options.exportModels) ExportMesh("gyroid.glb", gyroid.GetMesh(), {});
+#endif
+
+  int meshID = gyroid.OriginalID();
+  EXPECT_GE(meshID, 0);
+  meshID2idx[meshID] = input.size() - 1;
 
   Related(gyroid, input, meshID2idx);
 }
@@ -473,9 +612,9 @@ TEST(Manifold, MeshRelationRefine) {
   input.push_back(Csaszar());
   Manifold csaszar(input[0]);
 
-  std::vector<int> meshIDs = csaszar.GetMeshIDs();
-  EXPECT_EQ(meshIDs.size(), 1);
-  meshID2idx[meshIDs[0]] = input.size() - 1;
+  int meshID = csaszar.OriginalID();
+  EXPECT_GE(meshID, 0);
+  meshID2idx[meshID] = input.size() - 1;
 
   Related(csaszar, input, meshID2idx);
   csaszar.Refine(4);
@@ -540,7 +679,9 @@ TEST(Boolean, Coplanar) {
   EXPECT_EQ(out.NumDegenerateTris(), 0);
   EXPECT_EQ(out.Genus(), 1);
 
+#ifdef MANIFOLD_EXPORT
   if (options.exportModels) ExportMesh("coplanar.glb", out.GetMesh(), {});
+#endif
 
   RelatedOp(cylinder, cylinder2, out);
 }
@@ -566,7 +707,9 @@ TEST(Boolean, FaceUnion) {
   EXPECT_NEAR(prop.volume, 2, 1e-5);
   EXPECT_NEAR(prop.surfaceArea, 10, 1e-5);
 
+#ifdef MANIFOLD_EXPORT
   if (options.exportModels) ExportMesh("faceUnion.glb", cubes.GetMesh(), {});
+#endif
 }
 
 TEST(Boolean, EdgeUnion) {
@@ -732,43 +875,47 @@ TEST(Boolean, Sphere) {
   RelatedOp(sphere, sphere2, result);
 }
 
-TEST(Boolean, Gyroid) {
-  Mesh gyroidpuzzle = ImportMesh("data/gyroidpuzzle.ply");
-  Manifold gyroid(gyroidpuzzle);
+TEST(Boolean, MeshRelation) {
+  const float period = glm::two_pi<float>();
 
-  Mesh gyroidpuzzle2 = gyroidpuzzle;
-  std::transform(gyroidpuzzle.vertPos.begin(), gyroidpuzzle.vertPos.end(),
-                 gyroidpuzzle2.vertPos.begin(),
-                 [](const glm::vec3& v) { return v + glm::vec3(5.0f); });
-  Manifold gyroid2(gyroidpuzzle2);
+  Mesh gyroidMesh = LevelSet(Gyroid(), {glm::vec3(0), glm::vec3(period)}, 0.5);
+  Manifold gyroid(gyroidMesh);
+
+  Mesh gyroidMesh2 = gyroidMesh;
+  std::transform(gyroidMesh.vertPos.begin(), gyroidMesh.vertPos.end(),
+                 gyroidMesh2.vertPos.begin(),
+                 [](const glm::vec3& v) { return v + glm::vec3(2.0f); });
+  Manifold gyroid2(gyroidMesh2);
 
   EXPECT_TRUE(gyroid.IsManifold());
   EXPECT_TRUE(gyroid.MatchesTriNormals());
-  EXPECT_LE(gyroid.NumDegenerateTris(), 12);
+  EXPECT_LE(gyroid.NumDegenerateTris(), 0);
   Manifold result = gyroid + gyroid2;
 
+#ifdef MANIFOLD_EXPORT
   if (options.exportModels) ExportMesh("gyroidUnion.glb", result.GetMesh(), {});
+#endif
 
   EXPECT_TRUE(result.IsManifold());
   EXPECT_TRUE(result.MatchesTriNormals());
-  EXPECT_LE(result.NumDegenerateTris(), 43);
+  EXPECT_LE(result.NumDegenerateTris(), 1);
   EXPECT_EQ(result.Decompose().size(), 1);
   auto prop = result.GetProperties();
-  EXPECT_NEAR(prop.volume, 7692, 1);
-  EXPECT_NEAR(prop.surfaceArea, 9642, 1);
+  EXPECT_NEAR(prop.volume, 226, 1);
+  EXPECT_NEAR(prop.surfaceArea, 387, 1);
 
   std::vector<Mesh> input;
   std::map<int, int> meshID2idx;
 
-  std::vector<int> meshIDs = gyroid.GetMeshIDs();
-  EXPECT_EQ(meshIDs.size(), 1);
-  meshID2idx[meshIDs[0]] = input.size();
-  input.push_back(gyroidpuzzle);
+  int meshID = gyroid.OriginalID();
+  EXPECT_GE(meshID, 0);
+  meshID2idx[meshID] = input.size();
+  input.push_back(gyroidMesh);
 
-  meshIDs = gyroid2.GetMeshIDs();
-  EXPECT_EQ(meshIDs.size(), 1);
-  meshID2idx[meshIDs[0]] = input.size();
-  input.push_back(gyroidpuzzle2);
+  meshID = gyroid2.OriginalID();
+  EXPECT_GE(meshID, 0);
+  meshID2idx[meshID] = input.size();
+  input.push_back(gyroidMesh2);
 
   Related(result, input, meshID2idx);
 }
@@ -873,5 +1020,67 @@ TEST(Boolean, Cubes) {
   EXPECT_NEAR(prop.volume, 1.6, 0.001);
   EXPECT_NEAR(prop.surfaceArea, 9.2, 0.01);
 
+#ifdef MANIFOLD_EXPORT
   if (options.exportModels) ExportMesh("cubes.glb", result.GetMesh(), {});
+#endif
+}
+
+TEST(Boolean, Subtract) {
+  Mesh firstMesh;
+  firstMesh.vertPos = {{0, 0, 0},           {1540, 0, 0},
+                       {1540, 70, 0},       {0, 70, 0},
+                       {0, 0, -278.282},    {1540, 70, -278.282},
+                       {1540, 0, -278.282}, {0, 70, -278.282}};
+  firstMesh.triVerts = {
+      {0, 1, 2}, {2, 3, 0}, {4, 5, 6}, {5, 4, 7}, {6, 2, 1}, {6, 5, 2},
+      {5, 3, 2}, {5, 7, 3}, {7, 0, 3}, {7, 4, 0}, {4, 1, 0}, {4, 6, 1},
+  };
+
+  Mesh secondMesh;
+  secondMesh.vertPos = {
+      {2.04636e-12, 70, 50000},       {2.04636e-12, -1.27898e-13, 50000},
+      {1470, -1.27898e-13, 50000},    {1540, 70, 50000},
+      {2.04636e-12, 70, -28.2818},    {1470, -1.27898e-13, 0},
+      {2.04636e-12, -1.27898e-13, 0}, {1540, 70, -28.2818}};
+  secondMesh.triVerts = {{0, 1, 2}, {2, 3, 0}, {4, 5, 6}, {5, 4, 7},
+                         {6, 2, 1}, {6, 5, 2}, {5, 3, 2}, {5, 7, 3},
+                         {7, 0, 3}, {7, 4, 0}, {4, 1, 0}, {4, 6, 1}};
+
+  Manifold first(firstMesh);
+  Manifold second(secondMesh);
+
+  first -= second;
+  first.GetMesh();
+}
+
+TEST(Boolean, Close) {
+  PolygonParams().processOverlaps = true;
+
+  const float r = 10;
+  Manifold a = Manifold::Sphere(r, 256);
+  Manifold result = a;
+  for (int i = 0; i < 10; i++) {
+    // std::cout << i << std::endl;
+    result ^= a.Translate({a.Precision() / 10 * i, 0.0, 0.0});
+    EXPECT_TRUE(result.IsManifold());
+  }
+  auto prop = result.GetProperties();
+  const float tol = 0.004;
+  EXPECT_NEAR(prop.volume, (4.0f / 3.0f) * glm::pi<float>() * r * r * r,
+              tol * r * r * r);
+  EXPECT_NEAR(prop.surfaceArea, 4 * glm::pi<float>() * r * r, tol * r * r);
+
+#ifdef MANIFOLD_EXPORT
+  if (options.exportModels) ExportMesh("close.glb", result.GetMesh(), {});
+#endif
+
+  PolygonParams().processOverlaps = false;
+}
+
+TEST(Boolean, UnionDifference) {
+  Manifold block = Manifold::Cube({1, 1, 1}, true) - Manifold::Cylinder(1, 0.5);
+  Manifold result = block + block.Translate({0, 0, 1});
+  float resultsize = result.GetProperties().volume;
+  float blocksize = block.GetProperties().volume;
+  EXPECT_NEAR(resultsize, blocksize * 2, 0.0001);
 }

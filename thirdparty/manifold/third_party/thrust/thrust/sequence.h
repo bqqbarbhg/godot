@@ -21,8 +21,8 @@
 
 #pragma once
 
-#include <thrust/detail/config.h>
-#include <thrust/detail/execution_policy.h>
+#include "../../third_party/thrust/thrust/detail/config.h"
+#include "../../third_party/thrust/thrust/detail/execution_policy.h"
 
 THRUST_NAMESPACE_BEGIN
 
