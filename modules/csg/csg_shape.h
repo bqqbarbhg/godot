@@ -39,6 +39,8 @@
 #include "scene/resources/concave_polygon_shape_3d.h"
 #include "thirdparty/misc/mikktspace.h"
 
+#include "thirdparty/manifold/src/manifold/include/manifold.h"
+
 class CSGShape3D : public GeometryInstance3D {
 	GDCLASS(CSGShape3D, GeometryInstance3D);
 
@@ -164,10 +166,6 @@ VARIANT_ENUM_CAST(CSGShape3D::Operation)
 
 class CSGCombiner3D : public CSGShape3D {
 	GDCLASS(CSGCombiner3D, CSGShape3D);
-
-	HashMap<int64_t, std::vector<float>> mesh_id_properties;
-	HashMap<int64_t, std::vector<glm::ivec3>> mesh_id_triangle_property_indices;
-	HashMap<int64_t, Vector<Ref<Material>>> mesh_id_materials;
 
 private:
 	virtual CSGBrush *_build_brush() override;

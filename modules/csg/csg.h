@@ -43,6 +43,7 @@
 #include "scene/resources/material.h"
 
 #include "../../thirdparty/manifold/third_party/glm/glm/ext/vector_int3.hpp"
+#include "thirdparty/manifold/src/manifold/include/manifold.h"
 
 struct CSGBrush {
 	struct Face {
@@ -57,6 +58,7 @@ struct CSGBrush {
 	Vector<Face> faces;
 	Vector<Ref<Material>> materials;
 
+	manifold::Manifold manifold;
 	HashMap<int64_t, std::vector<float>> mesh_id_properties;
 	HashMap<int64_t, std::vector<glm::ivec3>> mesh_id_triangle_property_indices;
 	HashMap<int64_t, Vector<Ref<Material>>> mesh_id_materials;
@@ -69,6 +71,21 @@ struct CSGBrush {
 			faces.write[i].aabb.expand_to(faces[i].vertices[2]);
 		}
 	}
+
+	enum {
+		MANIFOLD_PROPERTY_INVERT = 0,
+		MANIFOLD_PROPERTY_SMOOTH_GROUP,
+		MANIFOLD_PROPERTY_UV_X_0,
+		MANIFOLD_PROPERTY_UV_X_1,
+		MANIFOLD_PROPERTY_UV_X_2,
+		MANIFOLD_PROPERTY_UV_Y_0,
+		MANIFOLD_PROPERTY_UV_Y_1,
+		MANIFOLD_PROPERTY_UV_Y_2,
+		MANIFOLD_PROPERTY_PLACEHOLDER_MATERIAL,
+		MANIFOLD_MAX
+	};
+	void pack_manifold();
+	void unpack_manifold();
 
 	// Create a brush from faces.
 	void build_from_faces(const Vector<Vector3> &p_vertices, const Vector<Vector2> &p_uvs, const Vector<bool> &p_smooth, const Vector<Ref<Material>> &p_materials, const Vector<bool> &p_invert_faces);

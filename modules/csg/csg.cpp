@@ -38,10 +38,11 @@
 #include "core/math/vector2.h"
 #include "core/math/vector3.h"
 #include "core/templates/sort_array.h"
-
 #include "core/variant/variant.h"
 #include "scene/resources/material.h"
 #include "scene/resources/mesh.h"
+#include "scene/resources/surface_tool.h"
+#include "scene/resources/mesh_data_tool.h"
 
 // Static helper functions.
 
@@ -268,9 +269,11 @@ void CSGBrush::build_from_faces(const Vector<Vector3> &p_vertices, const Vector<
 void CSGBrush::copy_from(const CSGBrush &p_brush, const Transform3D &p_xform) {
 	faces = p_brush.faces;
 	materials = p_brush.materials;
-	mesh_id_properties = p_brush.mesh_id_properties;
-	mesh_id_triangle_property_indices = p_brush.mesh_id_triangle_property_indices;
-	mesh_id_materials = p_brush.mesh_id_materials;
+	manifold = p_brush.manifold;
+	pack_manifold();
+	if (manifold.Status() != manifold::Manifold::Error::NO_ERROR) {
+		print_line(vformat("Cannot copy from the other brush. %d", int(manifold.Status())));
+	}
 
 	for (int i = 0; i < faces.size(); i++) {
 		for (int j = 0; j < 3; j++) {
@@ -1477,4 +1480,123 @@ void CSGBrushOperation::update_faces(const CSGBrush &p_brush_a, const int p_face
 		p_collection.build2DFacesB[p_face_idx_b] = Build2DFaces(p_brush_b, p_face_idx_b, p_vertex_snap);
 	}
 	p_collection.build2DFacesB[p_face_idx_b].insert(p_brush_a, p_face_idx_a);
+}
+
+void CSGBrush::unpack_manifold() {
+	manifold::Mesh mesh = manifold.GetMesh();
+	size_t triangle_count = mesh.triVerts.size();
+	faces.resize(triangle_count); // triVerts has one vector3 of indices
+	for (size_t triangle_i = 0; triangle_i < triangle_count; triangle_i++) {
+		CSGBrush::Face &face = faces.write[triangle_i];
+		for (int32_t face_vertex_i = 0; face_vertex_i < 3; face_vertex_i++) {
+			glm::ivec3 triangle_property_index = mesh.triVerts[triangle_i];
+			constexpr int32_t order[3] = { 2, 1, 0 };
+			size_t vertex_index = triangle_property_index[order[face_vertex_i]];
+			glm::vec3 position = mesh.vertPos[vertex_index];
+			face.vertices[face_vertex_i] = Vector3(position.x, position.y, position.z);
+			glm::vec3 normal = mesh.vertNormal[vertex_index];
+			// Normal equality doesn't depend on winding order.
+			bool flat = Math::is_equal_approx(normal.x, normal.y) && Math::is_equal_approx(normal.x, normal.z);
+			face.smooth = !flat;
+		}
+		const manifold::MeshRelation &mesh_relation = manifold.GetMeshRelation();
+		const manifold::BaryRef &bary_ref = mesh_relation.triBary[triangle_i];
+		size_t original_id = bary_ref.originalID;
+		if (!mesh_id_properties.has(original_id) || !mesh_id_triangle_property_indices.has(original_id)) {
+			return;
+		}
+		const std::vector<float> &vertex_properties = mesh_id_properties[original_id];
+		const std::vector<glm::ivec3> &triangle_property_indices = mesh_id_triangle_property_indices[original_id];
+		glm::ivec3 triangle_property_index = triangle_property_indices[bary_ref.tri];
+		for (int32_t face_vertex_i = 0; face_vertex_i < 3; face_vertex_i++) {
+			uint32_t original_face_index = triangle_property_index[face_vertex_i];
+			face.invert = vertex_properties[original_face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT];
+			face.smooth = vertex_properties[original_face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP];
+			for (int32_t face_index_i = 0; face_index_i < 3; face_index_i++) {
+				constexpr int32_t order[3] = { 2, 1, 0 };
+				face.uvs[order[face_index_i]].x = vertex_properties[original_face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0];
+				face.uvs[order[face_index_i]].y = vertex_properties[original_face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0];
+			}
+		}
+		if (!mesh_id_materials.has(original_id)) {
+			continue;
+		}
+		if (unlikely((bary_ref.tri) < 0 || (bary_ref.tri) >= (mesh_id_materials[original_id].size()))) {
+			continue;
+		}
+		Vector<Ref<Material>> triangle_materials = mesh_id_materials[original_id];
+		Ref<Material> mat = triangle_materials[bary_ref.tri];
+		int32_t mat_index = materials.find(mat);
+		if (mat_index == -1) {
+			materials.push_back(mat);
+		}
+		face.material = mat_index;
+	}
+	_regen_face_aabbs();
+}
+
+void CSGBrush::pack_manifold() {
+	Ref<SurfaceTool> st;
+	st.instantiate();
+	st->begin(Mesh::PRIMITIVE_TRIANGLES);
+	for (int face_i = 0; face_i < faces.size(); face_i++) {
+		const CSGBrush::Face &face = faces[face_i];
+		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
+			st->set_smooth_group(face.smooth);
+			int32_t mat_id = face.material;
+			if (mat_id == -1 || mat_id >= materials.size()) {
+				st->set_material(Ref<Material>());
+			} else {
+				st->set_material(materials[mat_id]);
+			}
+			st->add_vertex(face.vertices[vertex_i]);
+		}
+	}
+	st->index();
+	Ref<MeshDataTool> mdt;
+	mdt.instantiate();
+	mdt->create_from_surface(st->commit(), 0);
+	std::vector<glm::ivec3> triangle_property_indices(mdt->get_face_count(), glm::vec3(-1, -1, -1));
+	std::vector<float> vertex_property_tolerance(MANIFOLD_MAX, CMP_EPSILON);
+	std::vector<float> vertex_properties(mdt->get_face_count() * MANIFOLD_MAX, NAN);
+	Vector<Ref<Material>> triangle_material;
+	triangle_material.resize(mdt->get_face_count());
+	triangle_material.fill(Ref<Material>());
+	manifold::Mesh mesh;
+	mesh.triVerts.resize(mdt->get_face_count()); // triVerts has one vector3 of indices
+	mesh.vertPos.resize(mdt->get_vertex_count());
+	mesh.vertNormal.resize(mdt->get_vertex_count());
+	HashMap<int32_t, Ref<Material>> vertex_material;
+	for (int triangle_i = 0; triangle_i < mdt->get_face_count(); triangle_i++) {
+		glm::ivec3 triangle_property_index;
+		int32_t material_id = faces[triangle_i].material;
+		for (int32_t face_index_i = 0; face_index_i < 3; face_index_i++) {
+			size_t mesh_vertex = mdt->get_face_vertex(triangle_i, face_index_i);
+			triangle_property_index[face_index_i] = mesh_vertex;
+			{
+				constexpr int32_t order[3] = { 2, 1, 0 };
+				mesh.triVerts[triangle_i][order[face_index_i]] = mesh_vertex;
+				Vector3 pos = mdt->get_vertex(mesh_vertex);
+				mesh.vertPos[mesh_vertex] = glm::vec3(pos.x, pos.y, pos.z);
+				Vector3 normal = mdt->get_vertex_normal(mesh_vertex);
+				normal = -normal;
+				mesh.vertNormal[mesh_vertex] = glm::vec3(normal.x, normal.y, normal.z);
+			}
+			vertex_material[mesh_vertex] = mdt->get_material();
+			vertex_properties[mesh_vertex * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT] = faces[triangle_i].invert;
+			vertex_properties[mesh_vertex * MANIFOLD_MAX + MANIFOLD_PROPERTY_PLACEHOLDER_MATERIAL] = material_id;
+			vertex_properties[mesh_vertex * MANIFOLD_MAX + MANIFOLD_PROPERTY_SMOOTH_GROUP] = faces[triangle_i].smooth;
+			vertex_properties[mesh_vertex * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_X_0 + face_index_i] = faces[triangle_i].uvs[face_index_i].x;
+			vertex_properties[mesh_vertex * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + face_index_i] = faces[triangle_i].uvs[face_index_i].y;
+		}
+		triangle_property_indices[triangle_i] = triangle_property_index;
+		if (unlikely((material_id) < 0 || (material_id) >= (materials.size()))) {
+			continue;
+		}
+		triangle_material.write[triangle_i] = materials[faces[triangle_i].material];
+	}
+	manifold = manifold::Manifold(mesh, triangle_property_indices, vertex_properties, vertex_property_tolerance);
+	mesh_id_properties[manifold.OriginalID()] = vertex_properties;
+	mesh_id_triangle_property_indices[manifold.OriginalID()] = triangle_property_indices;
+	mesh_id_materials[manifold.OriginalID()] = triangle_material;
 }
