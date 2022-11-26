@@ -32,6 +32,7 @@
 
 #include "core/math/geometry_2d.h"
 #include "../../thirdparty/manifold/third_party/glm/glm/ext/vector_int3.hpp"
+#include "thirdparty/manifold/src/utilities/include/public.h"
 
 void CSGShape3D::set_use_collision(bool p_enable) {
 	if (use_collision == p_enable) {
@@ -186,7 +187,6 @@ enum {
 };
 static void pack_manifold(const CSGBrush *const p_mesh_merge, manifold::Manifold &r_manifold,
 		HashMap<int64_t, std::vector<float>> &mesh_id_properties,
-		HashMap<int64_t, HashMap<int32_t, Ref<Material>>> &mesh_materials,
 		HashMap<int64_t, int> &mesh_face_count, const float p_snap) {
 	Ref<SurfaceTool> st;
 	st.instantiate();
@@ -240,20 +240,14 @@ static void pack_manifold(const CSGBrush *const p_mesh_merge, manifold::Manifold
 		ERR_PRINT(e.what());
 		r_manifold = manifold::Manifold();
 	}
-	for (int32_t id : r_manifold.GetMeshIDs()) {
-		mesh_materials[id] = materials;
-		mesh_id_properties[id] = properties;
-		mesh_face_count[id] = mdt->get_face_count();
-	}
 }
 
 static void unpack_manifold(const manifold::Manifold &p_manifold,
 		const HashMap<int64_t, std::vector<float>> &mesh_id_properties,
-		const HashMap<int64_t, HashMap<int32_t, Ref<Material>>> &mesh_materials,
 		const HashMap<int64_t, int> &mesh_face_count, CSGBrush *r_mesh_merge) {
 	manifold::Mesh mesh = p_manifold.GetMesh();
 	r_mesh_merge->faces.resize(mesh.triVerts.size());
-	std::vector<int> mesh_ids = p_manifold.GetMeshIDs();
+	manifold::MeshRelation mesh_ids = p_manifold.GetMeshRelation();
 	for (size_t triangle_i = 0; triangle_i < mesh.triVerts.size(); triangle_i++) {
 		CSGBrush::Face &face = r_mesh_merge->faces.write[triangle_i];
 		constexpr int32_t order[3] = { 0, 2, 1 };
@@ -282,18 +276,6 @@ static void unpack_manifold(const manifold::Manifold &p_manifold,
 			int uv_y_index = face_index * MANIFOLD_MAX + MANIFOLD_PROPERTY_UV_Y_0 + vertex_i;
 			face.uvs[vertex_i].y = properties[uv_y_index];
 		}
-		if (!mesh_materials.has(mesh_id)) {
-			continue;
-		}
-		if (!mesh_materials[mesh_id].has(face_index)) {
-			continue;
-		}
-		Ref<Material> mat = mesh_materials[mesh_id][face_index];
-		int32_t mat_index = r_mesh_merge->materials.find(mat);
-		if (mat_index == -1) {
-			r_mesh_merge->materials.push_back(mat);
-		}
-		face.material = mat_index;
 	}
 	r_mesh_merge->_regen_face_aabbs();
 }
@@ -330,14 +312,13 @@ CSGBrush *CSGShape3D::_get_brush() {
 				CSGBrush *nn2 = memnew(CSGBrush);
 				nn2->copy_from(*n2, child->get_transform());
 				HashMap<int64_t, std::vector<float>> mesh_id_properties;
-				HashMap<int64_t, HashMap<int32_t, Ref<Material>>> mesh_materials;
 				HashMap<int64_t, int> mesh_face_count;
 				manifold::Manifold manifold_n;
 				manifold_n.AsOriginal();
-				pack_manifold(n, manifold_n, mesh_id_properties, mesh_materials, mesh_face_count, snap);
+				pack_manifold(n, manifold_n, mesh_id_properties, mesh_face_count, snap);
 				manifold::Manifold manifold_nn2 = manifold_n;
 				manifold_nn2.AsOriginal();
-				pack_manifold(nn2, manifold_nn2, mesh_id_properties, mesh_materials, mesh_face_count, snap);
+				pack_manifold(nn2, manifold_nn2, mesh_id_properties, mesh_face_count, snap);
 				if (manifold_n.IsEmpty() && manifold_nn2.IsEmpty()) {
 					manifold_n = manifold::Manifold();
 					manifold_n.AsOriginal();
@@ -370,7 +351,7 @@ CSGBrush *CSGShape3D::_get_brush() {
 							manifold_nn = manifold_n.Boolean(manifold_nn2, manifold::Manifold::OpType::SUBTRACT);
 							break;
 					}
-					unpack_manifold(manifold_nn, mesh_id_properties, mesh_materials, mesh_face_count, nn);
+					unpack_manifold(manifold_nn, mesh_id_properties, mesh_face_count, nn);
 				} catch (const std::exception &e) {
 					ERR_PRINT(e.what());
 					manifold_nn = manifold::Manifold();

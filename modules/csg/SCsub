@@ -33,16 +33,17 @@ env_csg.Append(LINKFLAGS=["-fno-exceptions"])
 env_csg.Append(LINKFLAGS=["-fno-duplicated-branches"])
 
 thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
-env.Prepend(
+env_csg.Prepend(
     CPPPATH=[
-        thirdparty_dir + "src/manifold/include",
-        thirdparty_dir + "src/polygon/include",
-        thirdparty_dir + "src/utilities/include",
-        thirdparty_dir + "src/collider/include",
-        thirdparty_dir + "src/third_party",
-        thirdparty_dir + "src/third_party/graphlite/include",
-        thirdparty_dir + "src/third_party/thrust",
-        thirdparty_dir + "src/third_party/glm",
+        "#thirdparty/manifold/src/manifold/include",
+        "#thirdparty/manifold/src/polygon/include",
+        "#thirdparty/manifold/src/utilities/include",
+        "#thirdparty/manifold/src/collider/include",
+        "#thirdparty/manifold/src/third_party",
+        "#thirdparty/manifold/src/third_party/graphlite/include",
+        "#thirdparty/manifold/src/third_party/thrust",
+        "#thirdparty/manifold/src/third_party/glm",
+        "#thirdparty/manifold/third_party/thrust",
     ]
 )
 env_thirdparty = env_csg.Clone()
