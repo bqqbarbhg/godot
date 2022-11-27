@@ -416,7 +416,6 @@ void CSGShape3D::_update_shape() {
 			surfaces.write[idx].last_added += 3;
 		}
 	}
-	n->create_manifold();
 
 	root_mesh.instantiate();
 	//create surfaces
