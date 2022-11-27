@@ -117,20 +117,6 @@ void CSGBrush::build_from_faces(const Vector<Vector3> &p_vertices, const Vector<
 	_regen_face_aabbs();
 }
 
-void CSGBrush::copy_from(const CSGBrush &p_brush, const Transform3D &p_xform) {
-	faces = p_brush.faces;
-	materials = p_brush.materials;
-	manifold = p_brush.manifold;
-	for (int i = 0; i < faces.size(); i++) {
-		for (int j = 0; j < 3; j++) {
-			faces.write[i].vertices[j] = p_xform.xform(p_brush.faces[i].vertices[j]);
-		}
-	}
-
-	_regen_face_aabbs();
-	create_manifold();
-}
-
 void CSGBrush::convert_manifold_to_brush() {
 	manifold::Mesh mesh = manifold.GetMesh();
 	size_t triangle_count = mesh.triVerts.size();

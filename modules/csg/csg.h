@@ -54,6 +54,20 @@ struct CSGBrush {
 		bool invert = false;
 		int material = 0;
 	};
+	CSGBrush() { }
+	CSGBrush(CSGBrush &p_brush, const Transform3D &p_xform) {
+		faces = p_brush.faces;
+		materials = p_brush.materials;
+		manifold = p_brush.manifold;
+		for (int i = 0; i < faces.size(); i++) {
+			for (int j = 0; j < 3; j++) {
+				faces.write[i].vertices[j] = p_xform.xform(p_brush.faces[i].vertices[j]);
+			}
+		}
+
+		_regen_face_aabbs();
+		create_manifold();
+	}
 
 	Vector<Face> faces;
 	Vector<Ref<Material>> materials;
@@ -87,11 +101,11 @@ struct CSGBrush {
 	void create_manifold();
 	void convert_manifold_to_brush();
 	static void merge_manifold_properties(const HashMap<int64_t, std::vector<float>> &p_mesh_id_properties,
-		const HashMap<int64_t, std::vector<glm::ivec3>> &p_mesh_id_triangle_property_indices,
-		const HashMap<int64_t, Vector<Ref<Material>>> &p_mesh_id_materials,
-		HashMap<int64_t, std::vector<float>> &r_mesh_id_properties,
-		HashMap<int64_t, std::vector<glm::ivec3>> &r_mesh_id_triangle_property_indices,
-		HashMap<int64_t, Vector<Ref<Material>>> &r_mesh_id_materials);
+			const HashMap<int64_t, std::vector<glm::ivec3>> &p_mesh_id_triangle_property_indices,
+			const HashMap<int64_t, Vector<Ref<Material>>> &p_mesh_id_materials,
+			HashMap<int64_t, std::vector<float>> &r_mesh_id_properties,
+			HashMap<int64_t, std::vector<glm::ivec3>> &r_mesh_id_triangle_property_indices,
+			HashMap<int64_t, Vector<Ref<Material>>> &r_mesh_id_materials);
 
 	// Create a brush from faces.
 	void build_from_faces(const Vector<Vector3> &p_vertices, const Vector<Vector2> &p_uvs, const Vector<bool> &p_smooth, const Vector<Ref<Material>> &p_materials, const Vector<bool> &p_invert_faces);

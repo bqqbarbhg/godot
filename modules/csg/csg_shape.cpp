@@ -197,15 +197,12 @@ CSGBrush *CSGShape3D::_get_brush() {
 				continue;
 			}
 			if (!n || (!n->faces.size())) {
-				n = memnew(CSGBrush);
-
-				n->copy_from(*n2, child->get_transform());
+				n = memnew(CSGBrush(*n2, child->get_transform()));
 				n->convert_manifold_to_brush();
 
 			} else {
 				CSGBrush *nn = memnew(CSGBrush);
-				CSGBrush *nn2 = memnew(CSGBrush);
-				nn2->copy_from(*n2, child->get_transform());
+				CSGBrush *nn2 = memnew(CSGBrush(*n2, child->get_transform()));
 				switch (child->get_operation()) {
 					case CSGShape3D::OPERATION_UNION:
 						nn->manifold = n->manifold.Boolean(nn2->manifold, manifold::Manifold::OpType::ADD);
