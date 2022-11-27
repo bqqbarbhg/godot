@@ -1498,7 +1498,7 @@ void CSGBrush::convert_manifold_to_brush() {
 		const manifold::BaryRef &bary_ref = mesh_relation.triBary[triangle_i];
 		size_t original_id = bary_ref.originalID;
 		if (!mesh_id_properties.has(original_id) || !mesh_id_triangle_property_indices.has(original_id)) {
-			return;
+			continue;
 		}
 		const std::vector<float> &vertex_properties = mesh_id_properties[original_id];
 		const std::vector<glm::ivec3> &triangle_property_indices = mesh_id_triangle_property_indices[original_id];
