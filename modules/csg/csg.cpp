@@ -212,7 +212,6 @@ void CSGBrush::create_manifold() {
 				Vector3 pos = mdt->get_vertex(mesh_vertex);
 				mesh.vertPos[mesh_vertex] = glm::vec3(pos.x, pos.y, pos.z);
 				Vector3 normal = mdt->get_vertex_normal(mesh_vertex);
-				normal = -normal;
 				mesh.vertNormal[mesh_vertex] = glm::vec3(normal.x, normal.y, normal.z);
 			}
 			vertex_material[mesh_vertex] = mdt->get_material();
@@ -230,7 +229,7 @@ void CSGBrush::create_manifold() {
 	}
 	manifold = manifold::Manifold(mesh, triangle_property_indices, vertex_properties);
 	if (manifold.Status() != manifold::Manifold::Error::NO_ERROR) {
-		print_line(vformat("Cannot copy from the other brush. %d", int(manifold.Status())));
+		print_line(vformat("Cannot copy the other brush. %d", int(manifold.Status())));
 	}
 	mesh_id_properties[manifold.OriginalID()] = vertex_properties;
 	mesh_id_triangle_property_indices[manifold.OriginalID()] = triangle_property_indices;
