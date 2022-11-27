@@ -228,6 +228,7 @@ CSGBrush *CSGShape3D::_get_brush() {
 			}
 		}
 		if (n) {
+			n->unpack_manifold();
 			AABB aabb;
 			for (int i = 0; i < n->faces.size(); i++) {
 				for (int j = 0; j < 3; j++) {
@@ -242,7 +243,6 @@ CSGBrush *CSGShape3D::_get_brush() {
 		} else {
 			node_aabb = AABB();
 		}
-
 		brush = n;
 		dirty = false;
 	}
