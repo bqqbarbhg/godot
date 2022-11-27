@@ -199,6 +199,7 @@ void CSGBrush::create_manifold() {
 	mesh.triVerts.resize(mdt->get_face_count()); // triVerts has one vector3 of indices
 	mesh.vertPos.resize(mdt->get_vertex_count());
 	mesh.vertNormal.resize(mdt->get_vertex_count());
+	mesh.halfedgeTangent.resize(mdt->get_face_count() * 3);
 	HashMap<int32_t, Ref<Material>> vertex_material;
 	for (int triangle_i = 0; triangle_i < mdt->get_face_count(); triangle_i++) {
 		glm::ivec3 triangle_property_index;
@@ -214,6 +215,9 @@ void CSGBrush::create_manifold() {
 				Vector3 normal = -mdt->get_vertex_normal(mesh_vertex);
 				normal.normalize();
 				mesh.vertNormal[mesh_vertex] = glm::vec3(normal.x, normal.y, normal.z);
+				Plane tangent = mdt->get_vertex_tangent(mesh_vertex);
+				glm::vec4 glm_tangent = glm::vec4(tangent.normal.x, tangent.normal.y, tangent.normal.z, tangent.d);
+				mesh.halfedgeTangent[mesh_vertex * order[face_index_i] + order[face_index_i]] = glm_tangent;
 			}
 			vertex_material[mesh_vertex] = mdt->get_material();
 			vertex_properties[mesh_vertex * MANIFOLD_MAX + MANIFOLD_PROPERTY_INVERT] = faces[triangle_i].invert;

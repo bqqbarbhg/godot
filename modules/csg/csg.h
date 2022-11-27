@@ -44,6 +44,7 @@
 
 #include "../../thirdparty/manifold/third_party/glm/glm/ext/vector_int3.hpp"
 #include "thirdparty/manifold/src/manifold/include/manifold.h"
+#include "thirdparty/manifold/third_party/glm/glm/ext/vector_float3.hpp"
 
 struct CSGBrush {
 	struct Face {
@@ -58,15 +59,16 @@ struct CSGBrush {
 	CSGBrush(CSGBrush &p_brush, const Transform3D &p_xform) {
 		faces = p_brush.faces;
 		materials = p_brush.materials;
-		manifold = p_brush.manifold;
+		mesh_id_properties = p_brush.mesh_id_properties;
+		mesh_id_triangle_property_indices = p_brush.mesh_id_triangle_property_indices;
+		mesh_id_materials = p_brush.mesh_id_materials;
 		for (int i = 0; i < faces.size(); i++) {
 			for (int j = 0; j < 3; j++) {
 				faces.write[i].vertices[j] = p_xform.xform(p_brush.faces[i].vertices[j]);
 			}
 		}
-
-		_regen_face_aabbs();
 		create_manifold();
+		_regen_face_aabbs();
 	}
 
 	Vector<Face> faces;
