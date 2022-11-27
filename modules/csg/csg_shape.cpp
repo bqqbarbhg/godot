@@ -221,7 +221,7 @@ CSGBrush *CSGShape3D::_get_brush() {
 						nn->mesh_id_properties, nn->mesh_id_triangle_property_indices, nn->mesh_id_materials);
 				nn->merge_manifold_properties(nn2->mesh_id_properties, nn2->mesh_id_triangle_property_indices, nn2->mesh_id_materials,
 						nn->mesh_id_properties, nn->mesh_id_triangle_property_indices, nn->mesh_id_materials);
-				brush->unpack_manifold();
+				nn->unpack_manifold();
 				memdelete(n);
 				memdelete(nn2);
 				n = nn;
