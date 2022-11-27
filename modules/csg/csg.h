@@ -84,8 +84,8 @@ struct CSGBrush {
 		MANIFOLD_PROPERTY_PLACEHOLDER_MATERIAL,
 		MANIFOLD_MAX
 	};
-	void pack_manifold();
-	void unpack_manifold();
+	void create_manifold();
+	void convert_manifold_to_brush();
 	static void merge_manifold_properties(const HashMap<int64_t, std::vector<float>> &p_mesh_id_properties,
 		const HashMap<int64_t, std::vector<glm::ivec3>> &p_mesh_id_triangle_property_indices,
 		const HashMap<int64_t, Vector<Ref<Material>>> &p_mesh_id_materials,

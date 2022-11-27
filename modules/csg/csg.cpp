@@ -277,7 +277,7 @@ void CSGBrush::copy_from(const CSGBrush &p_brush, const Transform3D &p_xform) {
 	}
 
 	_regen_face_aabbs();
-	pack_manifold();
+	create_manifold();
 }
 
 // CSGBrushOperation
@@ -1478,7 +1478,7 @@ void CSGBrushOperation::update_faces(const CSGBrush &p_brush_a, const int p_face
 	p_collection.build2DFacesB[p_face_idx_b].insert(p_brush_a, p_face_idx_a);
 }
 
-void CSGBrush::unpack_manifold() {
+void CSGBrush::convert_manifold_to_brush() {
 	manifold::Mesh mesh = manifold.GetMesh();
 	size_t triangle_count = mesh.triVerts.size();
 	faces.resize(triangle_count); // triVerts has one vector3 of indices
@@ -1530,7 +1530,7 @@ void CSGBrush::unpack_manifold() {
 	_regen_face_aabbs();
 }
 
-void CSGBrush::pack_manifold() {
+void CSGBrush::create_manifold() {
 	Ref<SurfaceTool> st;
 	st.instantiate();
 	st->begin(Mesh::PRIMITIVE_TRIANGLES);

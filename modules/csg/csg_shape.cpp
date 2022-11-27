@@ -181,7 +181,7 @@ CSGBrush *CSGShape3D::_get_brush() {
 		brush = nullptr;
 
 		CSGBrush *n = _build_brush();
-		n->pack_manifold();
+		n->create_manifold();
 
 		for (int i = 0; i < get_child_count(); i++) {
 			CSGShape3D *child = Object::cast_to<CSGShape3D>(get_child(i));
@@ -200,7 +200,7 @@ CSGBrush *CSGShape3D::_get_brush() {
 				n = memnew(CSGBrush);
 
 				n->copy_from(*n2, child->get_transform());
-				n->unpack_manifold();
+				n->convert_manifold_to_brush();
 
 			} else {
 				CSGBrush *nn = memnew(CSGBrush);
@@ -221,14 +221,14 @@ CSGBrush *CSGShape3D::_get_brush() {
 						nn->mesh_id_properties, nn->mesh_id_triangle_property_indices, nn->mesh_id_materials);
 				nn->merge_manifold_properties(nn2->mesh_id_properties, nn2->mesh_id_triangle_property_indices, nn2->mesh_id_materials,
 						nn->mesh_id_properties, nn->mesh_id_triangle_property_indices, nn->mesh_id_materials);
-				nn->unpack_manifold();
+				nn->convert_manifold_to_brush();
 				memdelete(n);
 				memdelete(nn2);
 				n = nn;
 			}
 		}
 		if (n) {
-			n->unpack_manifold();
+			n->convert_manifold_to_brush();
 			AABB aabb;
 			for (int i = 0; i < n->faces.size(); i++) {
 				for (int j = 0; j < 3; j++) {
@@ -419,7 +419,7 @@ void CSGShape3D::_update_shape() {
 			surfaces.write[idx].last_added += 3;
 		}
 	}
-	n->pack_manifold();
+	n->create_manifold();
 
 	root_mesh.instantiate();
 	//create surfaces
