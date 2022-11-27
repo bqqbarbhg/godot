@@ -191,7 +191,6 @@ void CSGBrush::create_manifold() {
 	mdt.instantiate();
 	mdt->create_from_surface(st->commit(), 0);
 	std::vector<glm::ivec3> triangle_property_indices(mdt->get_face_count(), glm::vec3(-1, -1, -1));
-	std::vector<float> vertex_property_tolerance(MANIFOLD_MAX, 1e-3);
 	std::vector<float> vertex_properties(mdt->get_face_count() * MANIFOLD_MAX, NAN);
 	Vector<Ref<Material>> triangle_material;
 	triangle_material.resize(mdt->get_face_count());
@@ -229,7 +228,7 @@ void CSGBrush::create_manifold() {
 		}
 		triangle_material.write[triangle_i] = materials[faces[triangle_i].material];
 	}
-	manifold = manifold::Manifold(mesh, triangle_property_indices, vertex_properties, vertex_property_tolerance);
+	manifold = manifold::Manifold(mesh, triangle_property_indices, vertex_properties);
 	if (manifold.Status() != manifold::Manifold::Error::NO_ERROR) {
 		print_line(vformat("Cannot copy from the other brush. %d", int(manifold.Status())));
 	}
