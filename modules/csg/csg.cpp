@@ -211,7 +211,8 @@ void CSGBrush::create_manifold() {
 				mesh.triVerts[triangle_i][order[face_index_i]] = mesh_vertex;
 				Vector3 pos = mdt->get_vertex(mesh_vertex);
 				mesh.vertPos[mesh_vertex] = glm::vec3(pos.x, pos.y, pos.z);
-				Vector3 normal = mdt->get_vertex_normal(mesh_vertex);
+				Vector3 normal = -mdt->get_vertex_normal(mesh_vertex);
+				normal.normalize();
 				mesh.vertNormal[mesh_vertex] = glm::vec3(normal.x, normal.y, normal.z);
 			}
 			vertex_material[mesh_vertex] = mdt->get_material();
