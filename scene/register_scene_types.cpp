@@ -182,15 +182,7 @@
 #include "scene/resources/skeleton_modification_2d_physicalbones.h"
 #include "scene/resources/skeleton_modification_2d_stackholder.h"
 #include "scene/resources/skeleton_modification_2d_twoboneik.h"
-#include "scene/resources/skeleton_modification_3d.h"
-#include "scene/resources/skeleton_modification_3d_ccdik.h"
-#include "scene/resources/skeleton_modification_3d_fabrik.h"
-#include "scene/resources/skeleton_modification_3d_jiggle.h"
-#include "scene/resources/skeleton_modification_3d_lookat.h"
-#include "scene/resources/skeleton_modification_3d_stackholder.h"
-#include "scene/resources/skeleton_modification_3d_twoboneik.h"
 #include "scene/resources/skeleton_modification_stack_2d.h"
-#include "scene/resources/skeleton_modification_stack_3d.h"
 #include "scene/resources/skeleton_profile.h"
 #include "scene/resources/sky.h"
 #include "scene/resources/sky_material.h"
@@ -253,7 +245,6 @@
 #include "scene/3d/remote_transform_3d.h"
 #include "scene/3d/shape_cast_3d.h"
 #include "scene/3d/skeleton_3d.h"
-#include "scene/3d/skeleton_ik_3d.h"
 #include "scene/3d/soft_body_3d.h"
 #include "scene/3d/spring_arm_3d.h"
 #include "scene/3d/sprite_3d.h"
@@ -547,7 +538,6 @@ void register_scene_types() {
 	GDREGISTER_CLASS(PhysicalBone3D);
 	GDREGISTER_CLASS(SoftBody3D);
 
-	GDREGISTER_CLASS(SkeletonIK3D);
 	GDREGISTER_CLASS(BoneAttachment3D);
 
 	GDREGISTER_CLASS(VehicleBody3D);
@@ -826,15 +816,6 @@ void register_scene_types() {
 	GDREGISTER_CLASS(WorldBoundaryShape3D);
 	GDREGISTER_CLASS(ConvexPolygonShape3D);
 	GDREGISTER_CLASS(ConcavePolygonShape3D);
-
-	GDREGISTER_CLASS(SkeletonModificationStack3D);
-	GDREGISTER_CLASS(SkeletonModification3D);
-	GDREGISTER_CLASS(SkeletonModification3DLookAt);
-	GDREGISTER_CLASS(SkeletonModification3DCCDIK);
-	GDREGISTER_CLASS(SkeletonModification3DFABRIK);
-	GDREGISTER_CLASS(SkeletonModification3DJiggle);
-	GDREGISTER_CLASS(SkeletonModification3DTwoBoneIK);
-	GDREGISTER_CLASS(SkeletonModification3DStackHolder);
 
 	OS::get_singleton()->yield(); // may take time to init
 #endif // _3D_DISABLED

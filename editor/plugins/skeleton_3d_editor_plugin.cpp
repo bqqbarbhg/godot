@@ -971,11 +971,6 @@ void Skeleton3DEditor::_draw_gizmo() {
 		return;
 	}
 
-	// If you call get_bone_global_pose() while drawing the surface, such as toggle rest mode,
-	// the skeleton update will be done first and
-	// the drawing surface will be interrupted once and an error will occur.
-	skeleton->force_update_all_dirty_bones();
-
 	// Handles.
 	if (edit_mode) {
 		_draw_handles();

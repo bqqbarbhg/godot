@@ -59,12 +59,6 @@
 				Returns the bone index that matches [param name] as its name.
 			</description>
 		</method>
-		<method name="force_update_all_bone_transforms" is_deprecated="true">
-			<return type="void" />
-			<description>
-				Force updates the bone transforms/poses for all bones in the skeleton.
-			</description>
-		</method>
 		<method name="force_update_bone_child_transform">
 			<return type="void" />
 			<param index="0" name="bone_idx" type="int" />
@@ -165,12 +159,6 @@
 			<param index="0" name="bone_idx" type="int" />
 			<description>
 				Returns the rest transform for a bone [param bone_idx].
-			</description>
-		</method>
-		<method name="get_modification_stack" is_deprecated="true">
-			<return type="SkeletonModificationStack3D" />
-			<description>
-				Returns the modification stack attached to this skeleton, if one exists.
 			</description>
 		</method>
 		<method name="get_parentless_bones" qualifiers="const">

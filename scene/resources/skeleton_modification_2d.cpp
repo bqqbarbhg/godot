@@ -178,10 +178,6 @@ void SkeletonModification2D::editor_draw_angle_constraints(Bone2D *p_operation_b
 	}
 }
 
-Ref<SkeletonModificationStack2D> SkeletonModification2D::get_modification_stack() {
-	return stack;
-}
-
 void SkeletonModification2D::set_is_setup(bool p_setup) {
 	is_setup = p_setup;
 }
@@ -220,7 +216,6 @@ void SkeletonModification2D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_enabled", "enabled"), &SkeletonModification2D::set_enabled);
 	ClassDB::bind_method(D_METHOD("get_enabled"), &SkeletonModification2D::get_enabled);
-	ClassDB::bind_method(D_METHOD("get_modification_stack"), &SkeletonModification2D::get_modification_stack);
 	ClassDB::bind_method(D_METHOD("set_is_setup", "is_setup"), &SkeletonModification2D::set_is_setup);
 	ClassDB::bind_method(D_METHOD("get_is_setup"), &SkeletonModification2D::get_is_setup);
 	ClassDB::bind_method(D_METHOD("set_execution_mode", "execution_mode"), &SkeletonModification2D::set_execution_mode);
