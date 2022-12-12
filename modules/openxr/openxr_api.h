@@ -312,6 +312,7 @@ public:
 
 	void set_xr_interface(OpenXRInterface *p_xr_interface);
 	void register_extension_wrapper(OpenXRExtensionWrapper *p_extension_wrapper);
+	void unregister_extension_wrapper(OpenXRExtensionWrapper *p_extension_wrapper);
 
 	void set_form_factor(XrFormFactor p_form_factor);
 	XrFormFactor get_form_factor() const { return form_factor; }
