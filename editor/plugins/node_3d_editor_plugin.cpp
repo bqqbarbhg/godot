@@ -7687,6 +7687,7 @@ void Node3DEditor::_request_gizmo_for_id(ObjectID p_id) {
 }
 
 void Node3DEditor::_set_subgizmo_selection(Object *p_obj, Ref<Node3DGizmo> p_gizmo, int p_id, Transform3D p_transform) {
+	ERR_FAIL_NULL(p_obj);
 	if (p_id == -1) {
 		_clear_subgizmo_selection(p_obj);
 		return;
@@ -7714,6 +7715,7 @@ void Node3DEditor::_set_subgizmo_selection(Object *p_obj, Ref<Node3DGizmo> p_giz
 }
 
 void Node3DEditor::_clear_subgizmo_selection(Object *p_obj) {
+	ERR_FAIL_NULL(p_obj);
 	Node3D *sp = nullptr;
 	if (p_obj) {
 		sp = Object::cast_to<Node3D>(p_obj);
