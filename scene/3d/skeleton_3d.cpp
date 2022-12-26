@@ -39,7 +39,7 @@
 
 void SkinReference::_skin_changed() {
 	if (skeleton_node) {
-		skeleton_node->_make_dirty();
+		skeleton_node->_make_dirty(-1);
 	}
 	skeleton_version = 0;
 }
@@ -250,14 +250,20 @@ void Skeleton3D::_update_process_order() {
 void Skeleton3D::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_UPDATE_SKELETON: {
+			if (forced_bone_update == -1) {
+				for (BoneId bone_id : get_parentless_bones()) {
+					force_update_bone_children_transforms(bone_id);
+				}
+			} else {
+				force_update_bone_children_transforms(forced_bone_update);
+			}
+			forced_bone_update = -1;
+			
 			RenderingServer *rs = RenderingServer::get_singleton();
 			Bone *bonesptr = bones.ptrw();
 
 			int len = bones.size();
 			dirty = false;
-
-			// Update bone transforms.
-			force_update_all_bone_transforms();
 
 			// Update skins.
 			for (SkinReference *E : skin_bindings) {
@@ -359,7 +365,7 @@ void Skeleton3D::clear_bones_global_pose_override() {
 		bones.write[i].global_pose_override_amount = 0;
 		bones.write[i].global_pose_override_reset = true;
 	}
-	_make_dirty();
+	_make_dirty(-1);
 }
 
 void Skeleton3D::set_bone_global_pose_override(int p_bone, const Transform3D &p_pose, real_t p_amount, bool p_persistent) {
@@ -368,7 +374,7 @@ void Skeleton3D::set_bone_global_pose_override(int p_bone, const Transform3D &p_
 	bones.write[p_bone].global_pose_override_amount = p_amount;
 	bones.write[p_bone].global_pose_override = p_pose;
 	bones.write[p_bone].global_pose_override_reset = !p_persistent;
-	_make_dirty();
+	_make_dirty(p_bone);
 }
 
 Transform3D Skeleton3D::get_bone_global_pose_override(int p_bone) const {
@@ -381,6 +387,7 @@ Transform3D Skeleton3D::get_bone_global_pose(int p_bone) const {
 	const int bone_size = bones.size();
 	ERR_FAIL_INDEX_V(p_bone, bone_size, Transform3D());
 	if (dirty) {
+		const_cast<Skeleton3D *>(this)->forced_bone_update = p_bone;
 		const_cast<Skeleton3D *>(this)->notification(NOTIFICATION_UPDATE_SKELETON);
 	}
 	return bones[p_bone].pose_global;
@@ -390,6 +397,7 @@ Transform3D Skeleton3D::get_bone_global_pose_no_override(int p_bone) const {
 	const int bone_size = bones.size();
 	ERR_FAIL_INDEX_V(p_bone, bone_size, Transform3D());
 	if (dirty) {
+		const_cast<Skeleton3D *>(this)->forced_bone_update = p_bone;
 		const_cast<Skeleton3D *>(this)->notification(NOTIFICATION_UPDATE_SKELETON);
 	}
 	return bones[p_bone].pose_global_no_override;
@@ -399,7 +407,7 @@ void Skeleton3D::clear_bones_local_pose_override() {
 	for (int i = 0; i < bones.size(); i += 1) {
 		bones.write[i].local_pose_override_amount = 0;
 	}
-	_make_dirty();
+	_make_dirty(-1);
 }
 
 void Skeleton3D::set_bone_local_pose_override(int p_bone, const Transform3D &p_pose, real_t p_amount, bool p_persistent) {
@@ -408,7 +416,7 @@ void Skeleton3D::set_bone_local_pose_override(int p_bone, const Transform3D &p_p
 	bones.write[p_bone].local_pose_override_amount = p_amount;
 	bones.write[p_bone].local_pose_override = p_pose;
 	bones.write[p_bone].local_pose_override_reset = !p_persistent;
-	_make_dirty();
+	_make_dirty(p_bone);
 }
 
 Transform3D Skeleton3D::get_bone_local_pose_override(int p_bone) const {
@@ -516,7 +524,7 @@ void Skeleton3D::add_bone(const String &p_name) {
 	process_order_dirty = true;
 	version++;
 	rest_dirty = true;
-	_make_dirty();
+	_make_dirty(find_bone(p_name));
 	update_gizmos();
 }
 
@@ -575,7 +583,7 @@ void Skeleton3D::set_bone_parent(int p_bone, int p_parent) {
 	bones.write[p_bone].parent = p_parent;
 	process_order_dirty = true;
 	rest_dirty = true;
-	_make_dirty();
+	_make_dirty(p_bone);
 }
 
 void Skeleton3D::unparent_bone_and_rest(int p_bone) {
@@ -594,7 +602,7 @@ void Skeleton3D::unparent_bone_and_rest(int p_bone) {
 	process_order_dirty = true;
 
 	rest_dirty = true;
-	_make_dirty();
+	_make_dirty(p_bone);
 }
 
 int Skeleton3D::get_bone_parent(int p_bone) const {
@@ -628,7 +636,7 @@ void Skeleton3D::set_bone_rest(int p_bone, const Transform3D &p_rest) {
 
 	bones.write[p_bone].rest = p_rest;
 	rest_dirty = true;
-	_make_dirty();
+	_make_dirty(p_bone);
 }
 Transform3D Skeleton3D::get_bone_rest(int p_bone) const {
 	const int bone_size = bones.size();
@@ -651,7 +659,7 @@ void Skeleton3D::set_bone_enabled(int p_bone, bool p_enabled) {
 
 	bones.write[p_bone].enabled = p_enabled;
 	emit_signal(SceneStringNames::get_singleton()->bone_enabled_changed, p_bone);
-	_make_dirty();
+	_make_dirty(p_bone);
 }
 
 bool Skeleton3D::is_bone_enabled(int p_bone) const {
@@ -663,7 +671,7 @@ bool Skeleton3D::is_bone_enabled(int p_bone) const {
 void Skeleton3D::set_show_rest_only(bool p_enabled) {
 	show_rest_only = p_enabled;
 	emit_signal(SceneStringNames::get_singleton()->show_rest_only_changed);
-	_make_dirty();
+	_make_dirty(-1);
 }
 
 bool Skeleton3D::is_show_rest_only() const {
@@ -674,7 +682,7 @@ void Skeleton3D::clear_bones() {
 	bones.clear();
 	process_order_dirty = true;
 	version++;
-	_make_dirty();
+	_make_dirty(-1);
 }
 
 // Posing api
@@ -686,7 +694,7 @@ void Skeleton3D::set_bone_pose_position(int p_bone, const Vector3 &p_position) {
 	bones.write[p_bone].pose_position = p_position;
 	bones.write[p_bone].pose_cache_dirty = true;
 	if (is_inside_tree()) {
-		_make_dirty();
+		_make_dirty(p_bone);
 	}
 }
 void Skeleton3D::set_bone_pose_rotation(int p_bone, const Quaternion &p_rotation) {
@@ -696,7 +704,7 @@ void Skeleton3D::set_bone_pose_rotation(int p_bone, const Quaternion &p_rotation
 	bones.write[p_bone].pose_rotation = p_rotation;
 	bones.write[p_bone].pose_cache_dirty = true;
 	if (is_inside_tree()) {
-		_make_dirty();
+		_make_dirty(p_bone);
 	}
 }
 void Skeleton3D::set_bone_pose_scale(int p_bone, const Vector3 &p_scale) {
@@ -706,7 +714,7 @@ void Skeleton3D::set_bone_pose_scale(int p_bone, const Vector3 &p_scale) {
 	bones.write[p_bone].pose_scale = p_scale;
 	bones.write[p_bone].pose_cache_dirty = true;
 	if (is_inside_tree()) {
-		_make_dirty();
+		_make_dirty(p_bone);
 	}
 }
 
@@ -749,11 +757,11 @@ Transform3D Skeleton3D::get_bone_pose(int p_bone) const {
 	return bones[p_bone].pose_cache;
 }
 
-void Skeleton3D::_make_dirty() {
+void Skeleton3D::_make_dirty(BoneId p_bone_id) {
 	if (dirty) {
 		return;
 	}
-
+	forced_bone_update = p_bone_id;
 	MessageQueue::get_singleton()->push_notification(this, NOTIFICATION_UPDATE_SKELETON);
 	dirty = true;
 }
@@ -944,7 +952,7 @@ void Skeleton3D::physical_bones_remove_collision_exception(RID p_exception) {
 }
 
 void Skeleton3D::_skin_changed() {
-	_make_dirty();
+	_make_dirty(-1);
 }
 
 Ref<Skin> Skeleton3D::create_skin_from_rest_transforms() {
@@ -1010,23 +1018,9 @@ Ref<SkinReference> Skeleton3D::register_skin(const Ref<Skin> &p_skin) {
 
 	skin_ref->skin->connect("changed", callable_mp(skin_ref.operator->(), &SkinReference::_skin_changed));
 
-	_make_dirty(); // Skin needs to be updated, so update skeleton.
+	_make_dirty(-1); // Skin needs to be updated, so update skeleton.
 
 	return skin_ref;
-}
-
-void Skeleton3D::force_update_all_dirty_bones() {
-	if (dirty) {
-		const_cast<Skeleton3D *>(this)->notification(NOTIFICATION_UPDATE_SKELETON);
-	}
-}
-
-void Skeleton3D::force_update_all_bone_transforms() {
-	_update_process_order();
-
-	for (int i = 0; i < parentless_bones.size(); i++) {
-		force_update_bone_children_transforms(parentless_bones[i]);
-	}
 }
 
 void Skeleton3D::force_update_bone_children_transforms(int p_bone_idx) {
@@ -1247,8 +1241,7 @@ void Skeleton3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_bone_local_pose_override", "bone_idx", "pose", "amount", "persistent"), &Skeleton3D::set_bone_local_pose_override, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("get_bone_local_pose_override", "bone_idx"), &Skeleton3D::get_bone_local_pose_override);
 
-	ClassDB::bind_method(D_METHOD("force_update_all_bone_transforms"), &Skeleton3D::force_update_all_bone_transforms);
-	ClassDB::bind_method(D_METHOD("force_update_bone_child_transform", "bone_idx"), &Skeleton3D::force_update_bone_children_transforms);
+	ClassDB::bind_method(D_METHOD("force_update_bone_children_transforms", "bone_idx"), &Skeleton3D::force_update_bone_children_transforms);
 
 	ClassDB::bind_method(D_METHOD("set_motion_scale", "motion_scale"), &Skeleton3D::set_motion_scale);
 	ClassDB::bind_method(D_METHOD("get_motion_scale"), &Skeleton3D::get_motion_scale);

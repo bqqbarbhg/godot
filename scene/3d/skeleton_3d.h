@@ -143,8 +143,9 @@ private:
 
 	Vector<int> parentless_bones;
 
-	void _make_dirty();
+	void _make_dirty(int32_t bone_id);
 	bool dirty = false;
+	BoneId forced_bone_update = -1;
 	bool rest_dirty = false;
 
 	bool show_rest_only = false;
@@ -243,8 +244,6 @@ public:
 
 	Ref<SkinReference> register_skin(const Ref<Skin> &p_skin);
 
-	void force_update_all_dirty_bones();
-	void force_update_all_bone_transforms();
 	void force_update_bone_children_transforms(int bone_idx);
 
 	void update_bone_rest_forward_vector(int p_bone, bool p_force_update = false);

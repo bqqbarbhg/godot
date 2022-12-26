@@ -289,7 +289,9 @@ void SkeletonModification3DFABRIK::chain_apply() {
 	}
 
 	// Update all the bones so the next modification has up-to-date data.
-	stack->skeleton->force_update_all_bone_transforms();
+	for (BoneId bone_id : stack->skeleton->get_parentless_bones()) {
+		stack->skeleton->force_update_bone_children_transforms(bone_id);
+	}
 }
 
 void SkeletonModification3DFABRIK::_setup_modification(SkeletonModificationStack3D *p_stack) {
