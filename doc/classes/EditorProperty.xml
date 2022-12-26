@@ -58,6 +58,14 @@
 				Puts the [param editor] control below the property label. The control must be previously added using [method Node.add_child].
 			</description>
 		</method>
+		<method name="set_object_and_property">
+			<return type="void" />
+			<param index="0" name="object" type="Object" />
+			<param index="1" name="property" type="StringName" />
+			<description>
+				Sets the edited property for the object.
+			</description>
+		</method>
 		<method name="update_property">
 			<return type="void" />
 			<description>
