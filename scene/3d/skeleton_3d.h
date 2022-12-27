@@ -31,6 +31,7 @@
 #ifndef SKELETON_3D_H
 #define SKELETON_3D_H
 
+#include "modules/many_bone_ik/src/math/ik_node_3d.h"
 #include "scene/3d/node_3d.h"
 #include "scene/resources/skeleton_modification_3d.h"
 #include "scene/resources/skin.h"
@@ -83,30 +84,29 @@ private:
 
 		_FORCE_INLINE_ void update_pose_cache() {
 			if (pose_cache_dirty) {
-				pose_cache.basis.set_quaternion_scale(pose_rotation, pose_scale);
-				pose_cache.origin = pose_position;
+				Basis basis;
+				basis.set_quaternion_scale(pose_rotation, pose_scale);
+				pose_cache->set_transform(Transform3D(basis, pose_position));
 				pose_cache_dirty = false;
 			}
 		}
 		bool pose_cache_dirty = true;
-		Transform3D pose_cache;
+		Ref<IKNode3D> pose_cache = memnew(IKNode3D);
 		Vector3 pose_position;
 		Quaternion pose_rotation;
 		Vector3 pose_scale = Vector3(1, 1, 1);
 
-		Transform3D pose_global;
-		Transform3D pose_global_no_override;
+		Ref<IKNode3D> pose_cache_no_override = memnew(IKNode3D);
 
 		real_t global_pose_override_amount = 0.0;
 		bool global_pose_override_reset = false;
-		Transform3D global_pose_override;
+		Ref<IKNode3D> pose_override = memnew(IKNode3D);
 
 		PhysicalBone3D *physical_bone = nullptr;
 		PhysicalBone3D *cache_parent_physical_bone = nullptr;
 
 		real_t local_pose_override_amount;
 		bool local_pose_override_reset;
-		Transform3D local_pose_override;
 
 		Vector<int> child_bones;
 

@@ -220,6 +220,18 @@ void Skeleton3D::_update_process_order() {
 
 	for (int i = 0; i < len; i++) {
 		bonesptr[i].child_bones.clear();
+		if (bonesptr[i].pose_cache.is_null()) {
+			bonesptr[i].pose_cache.instantiate();
+		}
+		bonesptr[i].pose_cache->set_parent(Ref<IKNode3D>());
+		if (bonesptr[i].pose_cache_no_override.is_null()) {
+			bonesptr[i].pose_cache_no_override.instantiate();
+		}
+		bonesptr[i].pose_cache_no_override->set_parent(Ref<IKNode3D>());
+		if (bonesptr[i].pose_override.is_null()) {
+			bonesptr[i].pose_override.instantiate();
+		}
+		bonesptr[i].pose_override->set_parent(Ref<IKNode3D>());
 	}
 
 	for (int i = 0; i < len; i++) {
@@ -231,6 +243,9 @@ void Skeleton3D::_update_process_order() {
 
 		if (bonesptr[i].parent != -1) {
 			int parent_bone_idx = bonesptr[i].parent;
+			bonesptr[i].pose_cache->set_parent(bonesptr[parent_bone_idx].pose_cache);
+			bonesptr[i].pose_cache_no_override->set_parent(bonesptr[parent_bone_idx].pose_cache_no_override);
+			bonesptr[i].pose_override->set_parent(bonesptr[parent_bone_idx].pose_override);
 
 			// Check to see if this node is already added to the parent.
 			if (bonesptr[parent_bone_idx].child_bones.find(i) < 0) {
@@ -311,7 +326,7 @@ void Skeleton3D::_notification(int p_what) {
 				for (uint32_t i = 0; i < bind_count; i++) {
 					uint32_t bone_index = E->skin_bone_indices_ptrs[i];
 					ERR_CONTINUE(bone_index >= (uint32_t)len);
-					rs->skeleton_bone_set_transform(skeleton, i, bonesptr[bone_index].pose_global * skin->get_bind_pose(i));
+					rs->skeleton_bone_set_transform(skeleton, i, bonesptr[bone_index].pose_cache->get_global_transform() * skin->get_bind_pose(i));
 				}
 			}
 			emit_signal(SceneStringNames::get_singleton()->pose_updated);
@@ -366,7 +381,7 @@ void Skeleton3D::set_bone_global_pose_override(int p_bone, const Transform3D &p_
 	const int bone_size = bones.size();
 	ERR_FAIL_INDEX(p_bone, bone_size);
 	bones.write[p_bone].global_pose_override_amount = p_amount;
-	bones.write[p_bone].global_pose_override = p_pose;
+	bones.write[p_bone].pose_override->set_global_transform(p_pose);
 	bones.write[p_bone].global_pose_override_reset = !p_persistent;
 	_make_dirty();
 }
@@ -374,7 +389,7 @@ void Skeleton3D::set_bone_global_pose_override(int p_bone, const Transform3D &p_
 Transform3D Skeleton3D::get_bone_global_pose_override(int p_bone) const {
 	const int bone_size = bones.size();
 	ERR_FAIL_INDEX_V(p_bone, bone_size, Transform3D());
-	return bones[p_bone].global_pose_override;
+	return bones[p_bone].pose_override->get_global_transform();
 }
 
 Transform3D Skeleton3D::get_bone_global_pose(int p_bone) const {
@@ -383,7 +398,7 @@ Transform3D Skeleton3D::get_bone_global_pose(int p_bone) const {
 	if (dirty) {
 		const_cast<Skeleton3D *>(this)->notification(NOTIFICATION_UPDATE_SKELETON);
 	}
-	return bones[p_bone].pose_global;
+	return bones[p_bone].pose_cache->get_global_transform();
 }
 
 Transform3D Skeleton3D::get_bone_global_pose_no_override(int p_bone) const {
@@ -392,7 +407,7 @@ Transform3D Skeleton3D::get_bone_global_pose_no_override(int p_bone) const {
 	if (dirty) {
 		const_cast<Skeleton3D *>(this)->notification(NOTIFICATION_UPDATE_SKELETON);
 	}
-	return bones[p_bone].pose_global_no_override;
+	return bones[p_bone].pose_cache_no_override->get_global_transform();
 }
 
 void Skeleton3D::clear_bones_local_pose_override() {
@@ -406,7 +421,7 @@ void Skeleton3D::set_bone_local_pose_override(int p_bone, const Transform3D &p_p
 	const int bone_size = bones.size();
 	ERR_FAIL_INDEX(p_bone, bone_size);
 	bones.write[p_bone].local_pose_override_amount = p_amount;
-	bones.write[p_bone].local_pose_override = p_pose;
+	bones.write[p_bone].pose_override->set_transform(p_pose);
 	bones.write[p_bone].local_pose_override_reset = !p_persistent;
 	_make_dirty();
 }
@@ -414,7 +429,7 @@ void Skeleton3D::set_bone_local_pose_override(int p_bone, const Transform3D &p_p
 Transform3D Skeleton3D::get_bone_local_pose_override(int p_bone) const {
 	const int bone_size = bones.size();
 	ERR_FAIL_INDEX_V(p_bone, bone_size, Transform3D());
-	return bones[p_bone].local_pose_override;
+	return bones[p_bone].pose_override->get_transform();
 }
 
 void Skeleton3D::update_bone_rest_forward_vector(int p_bone, bool p_force_update) {
@@ -689,6 +704,7 @@ void Skeleton3D::set_bone_pose_position(int p_bone, const Vector3 &p_position) {
 		_make_dirty();
 	}
 }
+
 void Skeleton3D::set_bone_pose_rotation(int p_bone, const Quaternion &p_rotation) {
 	const int bone_size = bones.size();
 	ERR_FAIL_INDEX(p_bone, bone_size);
@@ -699,6 +715,7 @@ void Skeleton3D::set_bone_pose_rotation(int p_bone, const Quaternion &p_rotation
 		_make_dirty();
 	}
 }
+
 void Skeleton3D::set_bone_pose_scale(int p_bone, const Vector3 &p_scale) {
 	const int bone_size = bones.size();
 	ERR_FAIL_INDEX(p_bone, bone_size);
@@ -746,7 +763,7 @@ Transform3D Skeleton3D::get_bone_pose(int p_bone) const {
 	const int bone_size = bones.size();
 	ERR_FAIL_INDEX_V(p_bone, bone_size, Transform3D());
 	((Skeleton3D *)this)->bones.write[p_bone].update_pose_cache();
-	return bones[p_bone].pose_cache;
+	return bones[p_bone].pose_cache->get_transform();
 }
 
 void Skeleton3D::_make_dirty() {
@@ -1046,22 +1063,22 @@ void Skeleton3D::force_update_bone_children_transforms(int p_bone_idx) {
 
 		if (bone_enabled) {
 			b.update_pose_cache();
-			Transform3D pose = b.pose_cache;
+			Transform3D pose = b.pose_cache->get_transform();
 
 			if (b.parent >= 0) {
-				b.pose_global = bonesptr[b.parent].pose_global * pose;
-				b.pose_global_no_override = b.pose_global;
+				b.pose_cache->set_global_transform(bonesptr[b.parent].pose_cache->get_global_transform() * pose);
+				b.pose_cache_no_override->set_global_transform(b.pose_cache->get_global_transform());
 			} else {
-				b.pose_global = pose;
-				b.pose_global_no_override = b.pose_global;
+				b.pose_cache->set_global_transform(pose);
+				b.pose_cache_no_override->set_global_transform(b.pose_cache->get_global_transform());
 			}
 		} else {
 			if (b.parent >= 0) {
-				b.pose_global = bonesptr[b.parent].pose_global * b.rest;
-				b.pose_global_no_override = b.pose_global;
+				b.pose_cache->set_global_transform(bonesptr[b.parent].pose_cache->get_global_transform() * b.rest);
+				b.pose_cache_no_override->set_global_transform(b.pose_cache->get_global_transform());
 			} else {
-				b.pose_global = b.rest;
-				b.pose_global_no_override = b.pose_global;
+				b.pose_cache->set_global_transform(b.rest);
+				b.pose_cache_no_override->set_global_transform(b.pose_cache->get_global_transform());
 			}
 		}
 		if (rest_dirty) {
@@ -1071,15 +1088,15 @@ void Skeleton3D::force_update_bone_children_transforms(int p_bone_idx) {
 		if (b.local_pose_override_amount >= CMP_EPSILON) {
 			Transform3D override_local_pose;
 			if (b.parent >= 0) {
-				override_local_pose = bonesptr[b.parent].pose_global * b.local_pose_override;
+				override_local_pose = bonesptr[b.parent].pose_cache->get_global_transform() * b.pose_override->get_transform();
 			} else {
-				override_local_pose = b.local_pose_override;
+				override_local_pose = b.pose_override->get_transform();
 			}
-			b.pose_global = b.pose_global.interpolate_with(override_local_pose, b.local_pose_override_amount);
+			b.pose_cache->set_global_transform(b.pose_cache->get_global_transform().interpolate_with(override_local_pose, b.local_pose_override_amount));
 		}
 
 		if (b.global_pose_override_amount >= CMP_EPSILON) {
-			b.pose_global = b.pose_global.interpolate_with(b.global_pose_override, b.global_pose_override_amount);
+			b.pose_cache->set_global_transform(b.pose_cache->get_global_transform().interpolate_with(b.pose_override->get_global_transform(), b.global_pose_override_amount));
 		}
 
 		if (b.local_pose_override_reset) {
@@ -1127,7 +1144,7 @@ Transform3D Skeleton3D::local_pose_to_global_pose(int p_bone_idx, Transform3D p_
 	ERR_FAIL_INDEX_V(p_bone_idx, bone_size, Transform3D());
 	if (bones[p_bone_idx].parent >= 0) {
 		int parent_bone_idx = bones[p_bone_idx].parent;
-		return bones[parent_bone_idx].pose_global * p_local_pose;
+		return bones[parent_bone_idx].pose_cache->get_global_transform() * p_local_pose;
 	} else {
 		return p_local_pose;
 	}
