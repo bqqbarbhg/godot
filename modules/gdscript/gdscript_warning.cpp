@@ -80,6 +80,10 @@ String GDScriptWarning::get_message() const {
 		case STANDALONE_EXPRESSION: {
 			return "Standalone expression (the line has no effect).";
 		} break;
+		case VOID_ASSIGNMENT: {
+			CHECK_SYMBOLS(1);
+			return "Assignment operation, but the function '" + symbols[0] + "()' returns void.";
+		} break;
 		case NARROWING_CONVERSION: {
 			return "Narrowing conversion (float is converted to int and loses precision).";
 		} break;
@@ -198,6 +202,7 @@ String GDScriptWarning::get_name_from_code(Code p_code) {
 		"UNREACHABLE_CODE",
 		"UNREACHABLE_PATTERN",
 		"STANDALONE_EXPRESSION",
+		"VOID_ASSIGNMENT",
 		"NARROWING_CONVERSION",
 		"INCOMPATIBLE_TERNARY",
 		"UNUSED_SIGNAL",
