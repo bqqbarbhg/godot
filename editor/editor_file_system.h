@@ -238,7 +238,7 @@ class EditorFileSystem : public Node {
 
 	void _update_extensions();
 
-	void _reimport_file(const String &p_file, const HashMap<StringName, Variant> *p_custom_options = nullptr, const String &p_custom_importer = String());
+	void _reimport_file(const String &p_file, const HashMap<StringName, Variant> *p_custom_options = nullptr, const String &p_custom_importer = String(), bool p_only_update_parameters = false);
 	Error _reimport_group(const String &p_group_file, const Vector<String> &p_files);
 
 	bool _test_for_reimport(const String &p_path, bool p_only_imported_files);
@@ -311,6 +311,10 @@ public:
 	void reimport_files(const Vector<String> &p_files);
 
 	void reimport_file_with_custom_parameters(const String &p_file, const String &p_importer, const HashMap<StringName, Variant> &p_custom_params);
+
+	void overwrite_file(const String &p_file, Ref<Resource> p_resource);
+
+	void update_import_parameters(const String &p_file, const HashMap<StringName, Variant> &p_parameters);
 
 	void update_script_classes();
 

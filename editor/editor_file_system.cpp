@@ -1830,7 +1830,7 @@ Error EditorFileSystem::_reimport_group(const String &p_group_file, const Vector
 	return err;
 }
 
-void EditorFileSystem::_reimport_file(const String &p_file, const HashMap<StringName, Variant> *p_custom_options, const String &p_custom_importer) {
+void EditorFileSystem::_reimport_file(const String &p_file, const HashMap<StringName, Variant> *p_custom_options, const String &p_custom_importer, bool p_only_update_parameters) {
 	EditorFileSystemDirectory *fs = nullptr;
 	int cpos = -1;
 	bool found = _find_file(p_file, &fs, cpos);
@@ -1933,7 +1933,13 @@ void EditorFileSystem::_reimport_file(const String &p_file, const HashMap<String
 	List<String> import_variants;
 	List<String> gen_files;
 	Variant meta;
-	Error err = importer->import(p_file, base_path, params, &import_variants, &gen_files, &meta);
+
+	Error err;
+	if (!p_only_update_parameters) {
+		err = importer->import(p_file, base_path, params, &import_variants, &gen_files, &meta);
+	} else {
+		err = OK;
+	}
 
 	if (err != OK) {
 		ERR_PRINT("Error importing '" + p_file + "'.");
@@ -2066,6 +2072,12 @@ void EditorFileSystem::_reimport_file(const String &p_file, const HashMap<String
 	}
 
 	EditorResourcePreview::get_singleton()->check_for_invalidation(p_file);
+
+	if (!p_only_update_parameters) {
+		PackedStringArray reloads;
+		reloads.append(p_file);
+		emit_signal(SNAME("resources_reimported"), reloads);
+	}
 }
 
 void EditorFileSystem::_find_group_files(EditorFileSystemDirectory *efd, HashMap<String, Vector<String>> &group_files, HashSet<String> &groups_to_reimport) {
@@ -2087,6 +2099,70 @@ void EditorFileSystem::_find_group_files(EditorFileSystemDirectory *efd, HashMap
 
 void EditorFileSystem::reimport_file_with_custom_parameters(const String &p_file, const String &p_importer, const HashMap<StringName, Variant> &p_custom_params) {
 	_reimport_file(p_file, &p_custom_params, p_importer);
+}
+
+void EditorFileSystem::update_import_parameters(const String &p_file, const HashMap<StringName, Variant> &p_parameters) {
+	_reimport_file(p_file, &p_parameters, "", true);
+}
+
+void EditorFileSystem::overwrite_file(const String &p_file, Ref<Resource> p_resource) {
+	EditorFileSystemDirectory *fs = nullptr;
+	int cpos = -1;
+	bool found = _find_file(p_file, &fs, cpos);
+	ERR_FAIL_COND_MSG(!found, "Can't find file '" + p_file + "'.");
+
+	ResourceUID::ID uid = ResourceUID::INVALID_ID;
+
+	if (FileAccess::exists(p_file + ".import")) {
+		//use existing
+		Ref<ConfigFile> cf;
+		cf.instantiate();
+		Error err = cf->load(p_file + ".import");
+		if (err == OK) {
+			if (cf->has_section("remap")) {
+				if (cf->has_section_key("remap", "uid")) {
+					String uidt = cf->get_value("remap", "uid");
+					uid = ResourceUID::get_singleton()->text_to_id(uidt);
+				}
+			}
+		}
+	}
+
+	String base_path = ResourceFormatImporter::get_singleton()->get_import_base_path(p_file);
+	String extension;
+	List<String> extensions;
+	ResourceSaver::get_recognized_extensions(p_resource, &extensions);
+	if (extensions.size() >= 2 && extensions[0] == "t" + extensions[1]) {
+		extension = extensions[1]; //try to skip the text save format
+	} else {
+		extension = extensions[0];
+	}
+	ResourceSaver::save(p_resource, base_path + "." + extension);
+
+	//update modified times, to avoid reimport
+	fs->files[cpos]->modified_time = FileAccess::get_modified_time(p_file);
+	fs->files[cpos]->import_modified_time = FileAccess::get_modified_time(p_file + ".import");
+	fs->files[cpos]->deps = _get_dependencies(p_file);
+	fs->files[cpos]->type = p_resource->get_class();
+	fs->files[cpos]->uid = uid;
+	fs->files[cpos]->import_valid = fs->files[cpos]->type == "TextFile" ? true : ResourceLoader::is_import_valid(p_file);
+
+	if (ResourceUID::get_singleton()->has_id(uid)) {
+		ResourceUID::get_singleton()->set_id(uid, p_file);
+	} else {
+		ResourceUID::get_singleton()->add_id(uid, p_file);
+	}
+
+	//if file is currently up, maybe the source it was loaded from changed, so import math must be updated for it
+	//to reload properly
+	Ref<Resource> r = ResourceCache::get_ref(p_file);
+	if (r.is_valid()) {
+		if (!r->get_import_path().is_empty()) {
+			String dst_path = ResourceFormatImporter::get_singleton()->get_internal_resource_path(p_file);
+			r->set_import_path(dst_path);
+			r->set_import_last_modified_time(0);
+		}
+	}
 }
 
 void EditorFileSystem::_reimport_thread(uint32_t p_index, ImportThreadData *p_import_data) {
