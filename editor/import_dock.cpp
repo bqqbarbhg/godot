@@ -138,6 +138,7 @@ void ImportDock::set_edit_path(const String &p_path) {
 	_add_keep_import_option(importer_name);
 
 	import->set_disabled(false);
+	import_pipeline->set_disabled(false);
 	_set_dirty(false);
 	import_as->set_disabled(false);
 	preset->set_disabled(false);
@@ -299,6 +300,7 @@ void ImportDock::set_edit_multiple_paths(const Vector<String> &p_paths) {
 
 	params->paths = p_paths;
 	import->set_disabled(false);
+	import_pipeline->set_disabled(false);
 	_set_dirty(false);
 	import_as->set_disabled(false);
 	preset->set_disabled(false);
@@ -426,6 +428,7 @@ void ImportDock::_preset_selected(int p_idx) {
 void ImportDock::clear() {
 	imported->set_text("");
 	import->set_disabled(true);
+	import_pipeline->set_disabled(true);
 	import_as->clear();
 	import_as->set_disabled(true);
 	preset->set_disabled(true);
@@ -504,6 +507,13 @@ void ImportDock::_advanced_options() {
 		params->importer->show_advanced_options(params->paths[0]);
 	}
 }
+
+void ImportDock::_import_pipeline() {
+	if (params->paths.size() == 1 && params->importer.is_valid()) {
+		emit_signal("open_pipeline", params->paths[0]);
+	}
+}
+
 void ImportDock::_reimport() {
 	for (int i = 0; i < params->paths.size(); i++) {
 		Ref<ConfigFile> config;
@@ -603,6 +613,8 @@ void ImportDock::_property_toggled(const StringName &p_prop, bool p_checked) {
 
 void ImportDock::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_reimport"), &ImportDock::_reimport);
+
+	ADD_SIGNAL(MethodInfo("open_pipeline", PropertyInfo(Variant::STRING, "path")));
 }
 
 void ImportDock::initialize_import_options() const {
@@ -649,10 +661,17 @@ ImportDock::ImportDock() {
 
 	hb = memnew(HBoxContainer);
 	content->add_child(hb);
+
 	import = memnew(Button);
 	import->set_text(TTR("Reimport"));
 	import->set_disabled(true);
 	import->connect("pressed", callable_mp(this, &ImportDock::_reimport_attempt));
+
+	import_pipeline = memnew(Button);
+	import_pipeline->set_text(TTR("Pipeline"));
+	import_pipeline->set_disabled(true);
+	import_pipeline->connect("pressed", callable_mp(this, &ImportDock::_import_pipeline));
+
 	if (!DisplayServer::get_singleton()->get_swap_cancel_ok()) {
 		advanced_spacer = hb->add_spacer();
 		advanced = memnew(Button);
@@ -661,6 +680,8 @@ ImportDock::ImportDock() {
 	}
 	hb->add_spacer();
 	hb->add_child(import);
+	hb->add_spacer();
+	hb->add_child(import_pipeline);
 	hb->add_spacer();
 
 	if (DisplayServer::get_singleton()->get_swap_cancel_ok()) {

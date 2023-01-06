@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ImportPipelineStepRemoveNodes" inherits="ImportPipelineStep" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+		Post-import step to remove nodes from a [PackedScene].
+	</brief_description>
+	<description>
+		This post-import step allows to remove nodes from a [PackedScene].
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="result" type="PackedScene" setter="set_result" getter="get_result">
+		</member>
+		<member name="source" type="PackedScene" setter="set_source" getter="get_source">
+		</member>
+	</members>
+</class>

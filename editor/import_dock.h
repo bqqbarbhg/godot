@@ -56,6 +56,7 @@ class ImportDock : public VBoxContainer {
 	ConfirmationDialog *reimport_confirm = nullptr;
 	Label *label_warning = nullptr;
 	Button *import = nullptr;
+	Button *import_pipeline = nullptr;
 
 	Control *advanced_spacer = nullptr;
 	Button *advanced = nullptr;
@@ -79,6 +80,7 @@ class ImportDock : public VBoxContainer {
 	void _reimport();
 
 	void _advanced_options();
+	void _import_pipeline();
 	enum {
 		ITEM_SET_AS_DEFAULT = 100,
 		ITEM_LOAD_DEFAULT,

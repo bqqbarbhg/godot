@@ -67,6 +67,7 @@
 #include "editor/plugins/gpu_particles_collision_sdf_editor_plugin.h"
 #include "editor/plugins/gradient_editor_plugin.h"
 #include "editor/plugins/gradient_texture_2d_editor_plugin.h"
+#include "editor/plugins/import_pipeline_step.h"
 #include "editor/plugins/input_event_editor_plugin.h"
 #include "editor/plugins/light_occluder_2d_editor_plugin.h"
 #include "editor/plugins/lightmap_gi_editor_plugin.h"
@@ -133,6 +134,8 @@ void register_editor_types() {
 	GDREGISTER_CLASS(EditorExportPlugin);
 	GDREGISTER_ABSTRACT_CLASS(EditorExportPlatform);
 	GDREGISTER_CLASS(EditorResourceConversionPlugin);
+	GDREGISTER_CLASS(ImportPipelineStep);
+	GDREGISTER_CLASS(ImportPipelineStepRemoveNodes);
 	GDREGISTER_CLASS(EditorSceneFormatImporter);
 	GDREGISTER_CLASS(EditorScenePostImportPlugin);
 	GDREGISTER_CLASS(EditorInspector);

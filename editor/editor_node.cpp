@@ -128,6 +128,7 @@
 #include "editor/plugins/editor_preview_plugins.h"
 #include "editor/plugins/editor_resource_conversion_plugin.h"
 #include "editor/plugins/gdextension_export_plugin.h"
+#include "editor/plugins/import_pipeline_plugin.h"
 #include "editor/plugins/material_editor_plugin.h"
 #include "editor/plugins/mesh_library_editor_plugin.h"
 #include "editor/plugins/node_3d_editor_plugin.h"
@@ -7732,6 +7733,7 @@ EditorNode::EditorNode() {
 	add_editor_plugin(memnew(CanvasItemEditorPlugin));
 	add_editor_plugin(memnew(Node3DEditorPlugin));
 	add_editor_plugin(memnew(ScriptEditorPlugin));
+	add_editor_plugin(memnew(ImportPipelinePlugin));
 
 	EditorAudioBuses *audio_bus_editor = EditorAudioBuses::register_editor();
 
