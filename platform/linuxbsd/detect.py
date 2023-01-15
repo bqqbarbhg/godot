@@ -51,6 +51,7 @@ def get_opts():
         BoolVariable("x11", "Enable X11 display", True),
         BoolVariable("touch", "Enable touch events", True),
         BoolVariable("execinfo", "Use libexecinfo on systems where glibc is not available", False),
+        BoolVariable("ape", "Compile as actually portable executable", True),
     ]
 
 
@@ -406,3 +407,7 @@ def configure(env: "Environment"):
     else:
         if env["use_llvm"]:
             env.Append(LIBS=["atomic"])
+
+    if env["ape"]:
+        env.Append(CCFLAGS=["-fno-pie", "-fno-omit-frame-pointer", "-Wl,-T,ape.lds", "-Wl,--gc-sections", "-gdwarf-4", "-pg"]) # "-mnop-mcount", 
+        env.Append(LINKFLAGS=["-nostdlib -nostdinc -mno-red-zone -no-pie -mno-tls-direct-seg-refs -l:cosmopolitan.a -l:crt.o"])
