@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  register_types.cpp                                                    */
+/*  scene_distribution_interface.h                                        */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,38 +28,54 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "register_types.h"
+#ifndef SCENE_DISTRIBUTION_INTERFACE_H
+#define SCENE_DISTRIBUTION_INTERFACE_H
 
-#include "multiplayer_spawner.h"
-#include "multiplayer_synchronizer.h"
-#include "scene_multiplayer.h"
-#include "scene_replication_interface.h"
-#include "scene_rpc_interface.h"
-#include "scene_distribution_interface.h"
+#include "core/object/ref_counted.h"
+#include <vector>
 
-#include "multiplayer_debugger.h"
+class SceneMultiplayer;
 
-#ifdef TOOLS_ENABLED
-#include "editor/multiplayer_editor_plugin.h"
-#endif
+class SceneDistributionInterface : public RefCounted {
+	GDCLASS(SceneDistributionInterface, RefCounted);
 
-void initialize_multiplayer_module(ModuleInitializationLevel p_level) {
-	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		GDREGISTER_CLASS(SceneReplicationConfig);
-		GDREGISTER_CLASS(MultiplayerSpawner);
-		GDREGISTER_CLASS(MultiplayerSynchronizer);
-		GDREGISTER_CLASS(OfflineMultiplayerPeer);
-		GDREGISTER_CLASS(SceneMultiplayer);
-		MultiplayerAPI::set_default_interface("SceneMultiplayer");
-		MultiplayerDebugger::initialize();
+private:
+	SceneMultiplayer *multiplayer = nullptr;
+
+	static void _bind_methods();
+
+	// The directory where external programs save the created glb file.
+	String externally_created_glb_storage_path = "user://requested_glb/";
+	// The script to call, to create a glb file.
+	String externally_create_glb_script = "user:///scripts/create_glb.bat";
+
+	// Here save requested glb files. If they are created and distributed, they are removed. Pending requests.
+	HashSet<String> requested_glb_files;
+
+	// Used only inside scene_distribution_interface.cpp
+	void _distribute_glb(const String &p_path, int id);
+	void _remove_glb_as_requested(const String &glb_name);
+
+	// The peer that is able to create glb files with external tools.
+	int _glb_creator_peer = -1;
+
+public:
+	// Used in _bind_methods() to be used in GDScript.
+	void set_own_peer_as_glb_creator();
+	void request_glb(const String &glb_name);
+
+	// Used in scene_multiplayer.cpp.
+	void set_glb_as_requested(const String &glb_name);
+	HashSet<String> get_requested_glb_files();
+	void request_to_externally_create_glb(const String &glb_name);
+	void check_if_externally_created_glb_was_created();
+	void set_glb_creator_peer(int peer);
+	int get_glb_creator_peer();
+
+	//will be called in multiplayer constructor
+	SceneDistributionInterface(SceneMultiplayer *p_multiplayer) {
+		multiplayer = p_multiplayer;
 	}
-#ifdef TOOLS_ENABLED
-	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
-		EditorPlugins::add_by_type<MultiplayerEditorPlugin>();
-	}
-#endif
-}
+};
 
-void uninitialize_multiplayer_module(ModuleInitializationLevel p_level) {
-	MultiplayerDebugger::deinitialize();
-}
+#endif // SCENE_DISTRIBUTION_INTERFACE_H

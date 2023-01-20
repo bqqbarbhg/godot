@@ -34,6 +34,9 @@
 #include "core/io/marshalls.h"
 
 #include <stdint.h>
+#include <vector>
+
+#include "modules/gltf/gltf_document.h"
 
 #ifdef DEBUG_ENABLED
 #include "core/os/os.h"
@@ -63,6 +66,39 @@ void SceneMultiplayer::_update_status() {
 			clear();
 		}
 		last_connection_status = status;
+	}
+}
+
+
+
+// A signal from scene_distributor_interface calls this function, when some peer set itself as
+// a glb creator.
+// Send the "peer" to all clients so they know
+void SceneMultiplayer::_set_glb_creator_peer(int peer)
+{
+	printf("SceneMultiplayer::_set_glb_creator_peer->we are %d set:%d\n", get_unique_id(), peer);
+
+	int packet_len = SYS_CMD_SIZE + 4;
+
+	// tell others the glb creator peer
+	std::vector<uint8_t> buf(packet_len, 0);
+	buf[0] = NETWORK_COMMAND_SYS;
+	buf[1] = SYS_COMMAND_SET_GLB_PEER;
+	multiplayer_peer->set_transfer_channel(0);
+	multiplayer_peer->set_transfer_mode(MultiplayerPeer::TRANSFER_MODE_RELIABLE);
+	encode_uint32(peer, &buf[2]);
+
+	//add peer into buf
+	encode_uint32(peer, &buf[6]);
+
+	for (const int& P : connected_peers) {
+		//We set ourself in SceneDistributionInterface::set_own_peer_as_glb_creator()
+		//So we dont need todo it again
+		if (P == get_unique_id())
+			continue;
+
+		multiplayer_peer->set_target_peer(P);
+		_send(buf.data(), packet_len);
 	}
 }
 
@@ -171,6 +207,8 @@ Error SceneMultiplayer::poll() {
 	}
 
 	replicator->on_network_process();
+	if( !distributor->get_requested_glb_files().is_empty() )
+		distributor->check_if_externally_created_glb_was_created();
 	return OK;
 }
 
@@ -350,6 +388,95 @@ void SceneMultiplayer::_process_sys(int p_from, const uint8_t *p_packet, int p_p
 				_process_packet(peer, packet, len);
 				remote_sender_id = 0;
 			}
+		} break;
+		// All clients run this after some peer has set itself as glb creator
+		// So all clients know the peer to send glb-requests to
+		case SYS_COMMAND_SET_GLB_PEER: {
+			printf("SYS_COMMAND_SET_GLB_PEER we-are:%d\n", get_unique_id());
+
+			//read glb-creator-peer from packet, packet_len - 6
+			distributor->set_glb_creator_peer(decode_uint32(p_packet + SYS_CMD_SIZE)) ;
+
+			printf("glb_creator_peer is:%u from:%d myself:%d\n", distributor->get_glb_creator_peer(), p_from, get_unique_id());
+
+		} break;
+		// Should only run by the peer that set itself as glb_creator_peer
+		case SYS_COMMAND_REQUEST_GLB: {
+			printf("SYS_COMMAND_REQUEST_GLB\n");
+
+			//check if we are the glb_creator_peer
+			if (distributor->get_glb_creator_peer() == get_unique_id()) {
+				//set packet to start of payload
+				const uint8_t* packet = p_packet + SYS_CMD_SIZE;
+
+				//read glb-name from packet, packet_len - 6
+				String glb_name;
+				glb_name.parse_utf8((const char*)(packet), (p_packet_len - 6));
+
+				printf("glb_name is:%s from:%d myself:%d\n", glb_name.ascii().get_data(), p_from, get_unique_id());
+
+				//check if glb_name was already requested
+				if (distributor->get_requested_glb_files().has(glb_name.ascii().get_data())) {
+					printf("glb file already requested, doing nothing ?\n");
+				}
+				else {
+					printf("glb file NOT already requested, will create and distribute it\n");
+					//insert into requested HashSet, NOW IN poll() WE POLL TILL FILE IS FOUND
+					// OR THERE IS NO REQUESTED GLB ANYMORE
+					get_distributor()->set_glb_as_requested(glb_name.ascii().get_data());
+					//request a create of the glb
+					distributor->request_to_externally_create_glb(glb_name.ascii().get_data());
+				}
+			}
+		} break;
+		// Runs by all clients, receive .glb from glb_creator_peer, create scene and to add_spawnable_scene
+		case SYS_COMMAND_DISTRIBUTE_GLB: {
+			printf("SYS_COMMAND_DISTRIBUTE_GLB we-are:%d\n", get_unique_id());
+
+			//set packet to start of payload
+			const uint8_t* packet = p_packet + SYS_CMD_SIZE;
+
+			//read glb packedByteArray from packet, packet_len - 6
+			//uint32_t glb_creator_peer = decode_uint32(packet-4);
+			//decode glb name length
+			uint32_t glb_name_length = decode_uint32(packet);
+			//decode glb_file_PBA length
+			uint32_t glb_file_PBA_length = decode_uint32(packet + 4);
+			//decode glb file name
+			String glb_name;
+			glb_name.parse_utf8((const char*)(packet+8), glb_name_length);
+			//read glb_file_PBA
+			PackedByteArray distributed_glb;
+			distributed_glb.resize(glb_file_PBA_length);
+
+			packet = packet + 8 + glb_name_length;
+			for (uint32_t i = 0; i < glb_file_PBA_length; i++) {
+				distributed_glb.set(i, *packet++);
+			}
+
+			Ref<GLTFDocument> gltf;
+			gltf.instantiate();
+			Ref<GLTFState> gltf_state;
+			gltf_state.instantiate();
+			String save_path = "res://" + glb_name.replace(".glb", ".scn");
+
+			gltf->append_from_buffer(distributed_glb, "base_path?", gltf_state);
+
+			Node* n = gltf->generate_scene(gltf_state);
+			n->set_name(save_path);
+			Ref<PackedScene> p = memnew(PackedScene);
+			p->pack(n);
+			ResourceSaver s;
+			s.save(p, save_path);  // Or "user://..."
+
+			// @TODO better way of getting spawner ???
+			MultiplayerSpawner* spawner = Object::cast_to<MultiplayerSpawner>(get_path_cache()->get_cached_object(1, 1));
+			//ERR_FAIL_COND_V(!spawner, ERR_DOES_NOT_EXIST);
+			spawner->add_spawnable_scene(save_path);
+
+			//MultiplayerSynchronizer* sync = get_id_as<MultiplayerSynchronizer>(p_sid);
+			//ERR_FAIL_COND(!sync); // Bug.
+
 		} break;
 		default: {
 			ERR_FAIL();
@@ -610,6 +737,7 @@ Error SceneMultiplayer::object_configuration_remove(Object *p_obj, Variant p_con
 }
 
 void SceneMultiplayer::set_server_relay_enabled(bool p_enabled) {
+	ERR_FAIL_COND_MSG(multiplayer_peer.is_valid() && multiplayer_peer->get_connection_status() != MultiplayerPeer::CONNECTION_DISCONNECTED, "Cannot change the server relay option while the multiplayer peer is active.");
 	server_relay = p_enabled;
 }
 
@@ -618,6 +746,8 @@ bool SceneMultiplayer::is_server_relay_enabled() const {
 }
 
 void SceneMultiplayer::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_distributor"), &SceneMultiplayer::get_distributor);
+
 	ClassDB::bind_method(D_METHOD("set_root_path", "path"), &SceneMultiplayer::set_root_path);
 	ClassDB::bind_method(D_METHOD("get_root_path"), &SceneMultiplayer::get_root_path);
 	ClassDB::bind_method(D_METHOD("clear"), &SceneMultiplayer::clear);
@@ -660,6 +790,12 @@ SceneMultiplayer::SceneMultiplayer() {
 	replicator = Ref<SceneReplicationInterface>(memnew(SceneReplicationInterface(this)));
 	rpc = Ref<SceneRPCInterface>(memnew(SceneRPCInterface(this)));
 	cache = Ref<SceneCacheInterface>(memnew(SceneCacheInterface(this)));
+
+	distributor = Ref<SceneDistributionInterface>(memnew(SceneDistributionInterface(this)));
+	distributor->connect("_set_glb_creator_peer", callable_mp(this, &SceneMultiplayer::_set_glb_creator_peer));
+
+
+
 	set_multiplayer_peer(Ref<OfflineMultiplayerPeer>(memnew(OfflineMultiplayerPeer)));
 }
 
