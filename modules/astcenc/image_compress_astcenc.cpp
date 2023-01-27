@@ -35,7 +35,7 @@
 
 #include <astcenc.h>
 
-void _compress_astc(Image *r_img, float p_lossy_quality, Image::ASTCFormat p_format) {
+void _compress_astc(Image *r_img, Image::ASTCFormat p_format) {
 	uint64_t start_time = OS::get_singleton()->get_ticks_msec();
 
 	// TODO: See how to handle lossy quality.
