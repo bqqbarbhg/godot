@@ -51,6 +51,11 @@ public:
 	static bool can_property_revert(Object *p_object, const StringName &p_property, const Variant *p_custom_current_value = nullptr);
 };
 
+struct EditorInspectorState {
+	Object *object = nullptr;
+	Node *scene_root = nullptr;
+};
+
 class EditorProperty : public Container {
 	GDCLASS(EditorProperty, Container);
 
@@ -67,7 +72,13 @@ private:
 	String label;
 	int text_size;
 	friend class EditorInspector;
-	Object *object = nullptr;
+	union { //union to allow easy access, if this change is wanted remove union
+		EditorInspectorState state;
+		struct {
+			Object *object;
+			Node *scene_root;
+		};
+	};
 	StringName property;
 	String property_path;
 	String doc_path;
@@ -146,6 +157,7 @@ public:
 	bool is_read_only() const;
 
 	Object *get_edited_object();
+	Node *get_scene_root();
 	StringName get_edited_property() const;
 
 	void set_doc_path(const String &p_doc_path);
@@ -452,7 +464,13 @@ class EditorInspector : public ScrollContainer {
 	HashSet<StringName> pending;
 
 	void _clear();
-	Object *object = nullptr;
+	union { //union to allow easy access, if this change is wanted remove union
+		EditorInspectorState state;
+		struct {
+			Object *object;
+			Node *scene_root;
+		};
+	};
 
 	//
 
@@ -556,7 +574,7 @@ public:
 
 	void update_tree();
 	void update_property(const String &p_prop);
-	void edit(Object *p_object);
+	void edit(Object *p_object, Node *p_scene_root = nullptr);
 	Object *get_edited_object();
 
 	void set_keying(bool p_active);
