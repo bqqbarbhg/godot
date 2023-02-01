@@ -214,6 +214,7 @@ opts.Add(BoolVariable("modules_enabled_by_default", "If no, disable all modules 
 opts.Add(BoolVariable("no_editor_splash", "Don't use the custom splash screen for the editor", True))
 opts.Add("system_certs_path", "Use this path as SSL certificates default for editor (for package maintainers)", "")
 opts.Add(BoolVariable("use_precise_math_checks", "Math checks use very precise epsilon (debug option)", False))
+opts.Add(BoolVariable("use_resonance_audio", "Use the audio spatializer.", True))
 
 # Thirdparty libraries
 opts.Add(BoolVariable("builtin_certs", "Use the built-in SSL certificates bundles", True))
@@ -229,10 +230,12 @@ opts.Add(BoolVariable("builtin_libogg", "Use the built-in libogg library", True)
 opts.Add(BoolVariable("builtin_libpng", "Use the built-in libpng library", True))
 opts.Add(BoolVariable("builtin_libtheora", "Use the built-in libtheora library", True))
 opts.Add(BoolVariable("builtin_libvorbis", "Use the built-in libvorbis library", True))
+opts.Add(BoolVariable("builtin_libvpx", "Use the built-in libvpx library", True))
 opts.Add(BoolVariable("builtin_libwebp", "Use the built-in libwebp library", True))
 opts.Add(BoolVariable("builtin_wslay", "Use the built-in wslay library", True))
 opts.Add(BoolVariable("builtin_mbedtls", "Use the built-in mbedTLS library", True))
 opts.Add(BoolVariable("builtin_miniupnpc", "Use the built-in miniupnpc library", True))
+opts.Add(BoolVariable("builtin_opus", "Use the built-in Opus library", True))
 opts.Add(BoolVariable("builtin_pcre2", "Use the built-in PCRE2 library", True))
 opts.Add(BoolVariable("builtin_pcre2_with_jit", "Use JIT compiler for the built-in PCRE2 library", True))
 opts.Add(BoolVariable("builtin_recast", "Use the built-in Recast library", True))
@@ -427,6 +430,12 @@ if env_base.debug_features:
     # DEBUG_ENABLED enables debugging *features* and debug-only code, which is intended
     # to give *users* extra debugging information for their game development.
     env_base.Append(CPPDEFINES=["DEBUG_ENABLED"])
+
+# ensure that anything depending on eigen will only be linked with permissively licensed code.
+env_base.Append(CPPDEFINES=["EIGEN_MPL2_ONLY"])
+
+if env_base["use_precise_math_checks"]:
+    env_base.Append(CPPDEFINES=["PRECISE_MATH_CHECKS"])
 
 if env_base.dev_build:
     # DEV_ENABLED enables *engine developer* code which should only be compiled for those
