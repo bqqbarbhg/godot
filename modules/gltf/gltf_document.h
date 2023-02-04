@@ -264,7 +264,8 @@ private:
 			GLTFAnimation::Track p_track,
 			Ref<Animation> p_animation,
 			int32_t p_track_i,
-			GLTFNodeIndex p_node_i);
+			GLTFNodeIndex p_node_i,
+			AnimationPlayer *p_animation_player);
 	Error _encode_buffer_bins(Ref<GLTFState> p_state, const String &p_path);
 	Error _encode_buffer_glb(Ref<GLTFState> p_state, const String &p_path);
 	PackedByteArray _serialize_glb_buffer(Ref<GLTFState> p_state, Error *r_err);
