@@ -237,9 +237,8 @@ StringName::StringName(const char *p_name, bool p_static) {
 				_data->debug_references++;
 			}
 #endif
+			return;
 		}
-
-		return;
 	}
 
 	_data = memnew(_Data);
