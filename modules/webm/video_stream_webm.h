@@ -106,7 +106,6 @@ private:
 class VideoStreamWebm : public VideoStream {
 	GDCLASS(VideoStreamWebm, VideoStream);
 
-	String file;
 	int audio_track = 0;
 
 protected:
@@ -117,8 +116,6 @@ public:
 
 	virtual Ref<VideoStreamPlayback> instantiate_playback() override;
 
-	virtual void set_file(const String &p_file);
-	String get_file();
 	virtual void set_audio_track(int p_track) override;
 };
 
