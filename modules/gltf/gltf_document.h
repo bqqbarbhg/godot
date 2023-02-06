@@ -264,7 +264,8 @@ private:
 			GLTFAnimation::Track p_track,
 			Ref<Animation> p_animation,
 			int32_t p_track_i,
-			GLTFNodeIndex p_node_i);
+			GLTFNodeIndex p_node_i,
+			AnimationPlayer *p_animation_player);
 	Error _encode_buffer_bins(Ref<GLTFState> p_state, const String &p_path);
 	Error _encode_buffer_glb(Ref<GLTFState> p_state, const String &p_path);
 	PackedByteArray _serialize_glb_buffer(Ref<GLTFState> p_state, Error *r_err);
@@ -364,7 +365,7 @@ public:
 			Ref<GLTFNode> p_gltf_node);
 	GLTFMeshIndex _convert_mesh_to_gltf(Ref<GLTFState> p_state,
 			MeshInstance3D *p_mesh_instance);
-	void _convert_animation(Ref<GLTFState> p_state, AnimationPlayer *p_animation_player,
+	void _convert_animation(Ref<GLTFState> p_state, AnimationPlayer *p_animation_player, Ref<AnimationLibrary> p_library,
 			String p_animation_track_name);
 	Error _serialize(Ref<GLTFState> p_state, const String &p_path);
 	Error _parse(Ref<GLTFState> p_state, String p_path, Ref<FileAccess> p_file);
