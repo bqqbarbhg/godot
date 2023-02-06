@@ -3539,8 +3539,7 @@ void EditorNode::set_addon_plugin_enabled(const String &p_addon, bool p_enabled,
 				return;
 			}
 
-			show_warning(vformat(TTR("Unable to load addon script from path: '%s'. This might be due to a code error in that script.\nDisabling the addon at '%s' to prevent further errors."), script_path, addon_path));
-			_remove_plugin_from_enabled(addon_path);
+			show_warning(vformat(TTR("Unable to load addon '%s'. This might be due to a code error in the script at path '%s'."), addon_path, script_path));
 			return;
 		}
 
