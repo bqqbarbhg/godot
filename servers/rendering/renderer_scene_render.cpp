@@ -47,7 +47,7 @@ void RendererSceneRender::CameraData::set_camera(const Transform3D p_transform, 
 	taa_jitter = p_taa_jitter;
 }
 
-void RendererSceneRender::CameraData::set_override_projection(const Projection& p_projection) {
+void RendererSceneRender::CameraData::set_override_projection(const Projection &p_projection) {
 	if (view_count == 1) {
 		view_projection[0] = p_projection;
 	}
