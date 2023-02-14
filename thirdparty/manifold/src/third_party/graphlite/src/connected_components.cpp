@@ -14,7 +14,7 @@
 
 #include <deque>
 
-#include "../include/graph.h"
+#include "graph.h"
 
 namespace manifold {
 

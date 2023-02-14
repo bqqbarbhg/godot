@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <thrust/version.h>
-#include <thrust/detail/config.h>
 #include <thrust/count.h>
 #include <thrust/logical.h>
 #include <thrust/transform_reduce.h>

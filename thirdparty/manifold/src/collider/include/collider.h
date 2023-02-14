@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #pragma once
-#include "thirdparty/manifold/src/utilities/include/public.h"
-#include "thirdparty/manifold/src/utilities/include/sparse.h"
+#include "public.h"
+#include "sparse.h"
 #include "vec_dh.h"
 
 namespace manifold {

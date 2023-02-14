@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <atomic>
 #include <map>
+#include <numeric>
 
 #include "graph.h"
 #include "hashtable.h"
@@ -42,6 +43,12 @@ __host__ __device__ void AtomicAddVec3(glm::vec3& target,
   }
 }
 
+__host__ __device__ int FlipHalfedge(int halfedge) {
+  const int tri = halfedge / 3;
+  const int vert = 2 - (halfedge - 3 * tri);
+  return 3 * tri + vert;
+}
+
 struct Normalize {
   __host__ __device__ void operator()(glm::vec3& v) { v = SafeNormalize(v); }
 };
@@ -61,6 +68,42 @@ struct TransformNormals {
     normal = glm::normalize(transform * normal);
     if (isnan(normal.x)) normal = glm::vec3(0.0f);
     return normal;
+  }
+};
+
+struct TransformTangents {
+  const glm::mat3 transform;
+  const bool invert;
+  const glm::vec4* oldTangents;
+  const Halfedge* halfedge;
+
+  __host__ __device__ void operator()(thrust::tuple<glm::vec4&, int> inOut) {
+    glm::vec4& tangent = thrust::get<0>(inOut);
+    int edge = thrust::get<1>(inOut);
+    if (invert) {
+      edge = halfedge[FlipHalfedge(edge)].pairedHalfedge;
+    }
+
+    tangent = glm::vec4(transform * glm::vec3(oldTangents[edge]),
+                        oldTangents[edge].w);
+  }
+};
+
+struct FlipTris {
+  Halfedge* halfedge;
+
+  __host__ __device__ void operator()(thrust::tuple<TriRef&, int> inOut) {
+    TriRef& bary = thrust::get<0>(inOut);
+    const int tri = thrust::get<1>(inOut);
+
+    thrust::swap(halfedge[3 * tri], halfedge[3 * tri + 2]);
+
+    for (const int i : {0, 1, 2}) {
+      thrust::swap(halfedge[3 * tri + i].startVert,
+                   halfedge[3 * tri + i].endVert);
+      halfedge[3 * tri + i].pairedHalfedge =
+          FlipHalfedge(halfedge[3 * tri + i].pairedHalfedge);
+    }
   }
 };
 
@@ -158,25 +201,24 @@ struct ReindexTriVerts {
   }
 };
 
-struct InitializeBaryRef {
+struct InitializeTriRef {
   const int meshID;
   const Halfedge* halfedge;
 
-  __host__ __device__ void operator()(thrust::tuple<BaryRef&, int> inOut) {
-    BaryRef& baryRef = thrust::get<0>(inOut);
+  __host__ __device__ void operator()(thrust::tuple<TriRef&, int> inOut) {
+    TriRef& baryRef = thrust::get<0>(inOut);
     int tri = thrust::get<1>(inOut);
 
     baryRef.meshID = meshID;
     baryRef.originalID = meshID;
     baryRef.tri = tri;
-    baryRef.vertBary = {-3, -2, -1};
   }
 };
 
 struct MarkMeshID {
   HashTableD<uint32_t> table;
 
-  __host__ __device__ void operator()(BaryRef& ref) {
+  __host__ __device__ void operator()(TriRef& ref) {
     if (table.Full()) return;
     table.Insert(ref.meshID, 1);
   }
@@ -186,18 +228,8 @@ struct UpdateMeshID {
   const HashTableD<uint32_t> meshIDold2new;
   const int meshIDoffset;
 
-  __host__ __device__ void operator()(BaryRef& ref) {
+  __host__ __device__ void operator()(TriRef& ref) {
     ref.meshID = meshIDold2new[ref.meshID] + meshIDoffset;
-  }
-};
-
-struct CheckProperties {
-  const int numSets;
-
-  __host__ __device__ bool operator()(glm::ivec3 triProp) {
-    bool good = true;
-    for (int i : {0, 1, 2}) good &= (triProp[i] >= 0 && triProp[i] < numSets);
-    return good;
   }
 };
 
@@ -205,6 +237,7 @@ struct CoplanarEdge {
   float* triArea;
   const Halfedge* halfedge;
   const glm::vec3* vertPos;
+  const TriRef* triRef;
   const glm::ivec3* triProp;
   const float* prop;
   const float* propTol;
@@ -212,19 +245,40 @@ struct CoplanarEdge {
   const float precision;
 
   __host__ __device__ void operator()(
-      thrust::tuple<thrust::pair<int, int>&, int> inOut) {
+      thrust::tuple<thrust::pair<int, int>&, thrust::pair<int, int>&, int>
+          inOut) {
     thrust::pair<int, int>& face2face = thrust::get<0>(inOut);
-    const int edgeIdx = thrust::get<1>(inOut);
+    thrust::pair<int, int>& vert2vert = thrust::get<1>(inOut);
+    const int edgeIdx = thrust::get<2>(inOut);
 
     const Halfedge edge = halfedge[edgeIdx];
     if (!edge.IsForward()) return;
     const Halfedge pair = halfedge[edge.pairedHalfedge];
+    if (triRef[edge.face].meshID != triRef[pair.face].meshID) return;
+
     const glm::vec3 base = vertPos[edge.startVert];
 
     const int baseNum = edgeIdx - 3 * edge.face;
     const int jointNum = edge.pairedHalfedge - 3 * pair.face;
     const int edgeNum = baseNum == 0 ? 2 : baseNum - 1;
     const int pairNum = jointNum == 0 ? 2 : jointNum - 1;
+
+    if (numProp > 0) {
+      const int prop0 = triProp[edge.face][baseNum];
+      const int prop1 = triProp[edge.face][edgeNum];
+      bool propEqual = true;
+      for (int p = 0; p < numProp; ++p) {
+        if (glm::abs(prop[numProp * prop0 + p] - prop[numProp * prop1 + p]) >
+            propTol[p]) {
+          propEqual = false;
+          break;
+        }
+      }
+      if (propEqual) {
+        vert2vert.first = prop0;
+        vert2vert.second = prop1;
+      }
+    }
 
     const glm::vec3 jointVec = vertPos[pair.startVert] - base;
     const glm::vec3 edgeVec =
@@ -238,6 +292,8 @@ struct CoplanarEdge {
     glm::vec3 normal = glm::cross(jointVec, edgeVec);
     const float area = glm::length(normal);
     const float areaPair = glm::length(glm::cross(pairVec, jointVec));
+    triArea[edge.face] = area;
+    triArea[pair.face] = areaPair;
     // Don't link degenerate triangles
     if (area < length * precision || areaPair < lengthPair * precision) return;
 
@@ -265,16 +321,14 @@ struct CoplanarEdge {
             pairVec + normal * scale * (pairProp - baseProp);
 
         glm::vec3 cross = glm::cross(iJointVec, iEdgeVec);
-        const float area = glm::max(
+        const float areaP = glm::max(
             glm::length(cross), glm::length(glm::cross(iPairVec, iJointVec)));
-        const float volume = glm::abs(glm::dot(cross, iPairVec));
+        const float volumeP = glm::abs(glm::dot(cross, iPairVec));
         // Only operate on consistent triangles
-        if (volume > area * precision) return;
+        if (volumeP > areaP * precision) return;
       }
     }
 
-    triArea[edge.face] = area;
-    triArea[pair.face] = areaPair;
     face2face.first = edge.face;
     face2face.second = pair.face;
   }
@@ -290,24 +344,181 @@ struct EdgeBox {
   }
 };
 
+int GetLabels(std::vector<int>& components,
+              const VecDH<thrust::pair<int, int>>& edges, int numNodes) {
+  Graph graph;
+  for (int i = 0; i < numNodes; ++i) {
+    graph.add_nodes(i);
+  }
+  for (int i = 0; i < edges.size(); ++i) {
+    const thrust::pair<int, int> edge = edges[i];
+    if (edge.first < 0) continue;
+    graph.add_edge(edge.first, edge.second);
+  }
+
+  return ConnectedComponents(components, graph);
+}
+
+void DedupePropVerts(manifold::VecDH<glm::ivec3>& triProp,
+                     const VecDH<thrust::pair<int, int>>& vert2vert) {
+  std::vector<int> vertLabels;
+  const int numLabels = GetLabels(vertLabels, vert2vert, vert2vert.size());
+
+  std::vector<int> label2vert(numLabels);
+  for (int v = 0; v < vert2vert.size(); ++v) {
+    label2vert[vertLabels[v]] = v;
+  }
+  for (int tri = 0; tri < triProp.size(); ++tri) {
+    for (int i : {0, 1, 2})
+      triProp[tri][i] = label2vert[vertLabels[triProp[tri][i]]];
+  }
+}
 }  // namespace
 
 namespace manifold {
 
-std::atomic<int> Manifold::Impl::meshIDCounter_(1);
+std::atomic<uint32_t> Manifold::Impl::meshIDCounter_(1);
+
+uint32_t Manifold::Impl::ReserveIDs(uint32_t n) {
+  return Manifold::Impl::meshIDCounter_.fetch_add(n, std::memory_order_relaxed);
+}
+
+Manifold::Impl::Impl(const MeshGL& meshGL,
+                     std::vector<float> propertyTolerance) {
+  Mesh mesh;
+  const int numVert = meshGL.NumVert();
+  const int numTri = meshGL.NumTri();
+
+  if (meshGL.numProp < 3) {
+    MarkFailure(Error::MISSING_POSITION_PROPERTIES);
+    return;
+  }
+
+  mesh.triVerts.resize(numTri);
+  if (meshGL.mergeFromVert.size() != meshGL.mergeToVert.size()) {
+    MarkFailure(Error::MERGE_VECTORS_DIFFERENT_LENGTHS);
+    return;
+  }
+
+  if (!meshGL.transform.empty() &&
+      12 * meshGL.originalID.size() != meshGL.transform.size()) {
+    MarkFailure(Error::TRANSFORM_WRONG_LENGTH);
+    return;
+  }
+
+  if (!meshGL.originalID.empty() && !meshGL.runIndex.empty() &&
+      meshGL.originalID.size() + 1 != meshGL.runIndex.size()) {
+    MarkFailure(Error::RUN_INDEX_WRONG_LENGTH);
+    return;
+  }
+
+  if (!meshGL.faceID.empty() && meshGL.faceID.size() != meshGL.NumTri()) {
+    MarkFailure(Error::FACE_ID_WRONG_LENGTH);
+    return;
+  }
+
+  std::vector<int> prop2vert(numVert);
+  std::iota(prop2vert.begin(), prop2vert.end(), 0);
+  for (int i = 0; i < meshGL.mergeFromVert.size(); ++i) {
+    const int from = meshGL.mergeFromVert[i];
+    const int to = meshGL.mergeToVert[i];
+    if (from >= numVert || to >= numVert) {
+      MarkFailure(Error::MERGE_INDEX_OUT_OF_BOUNDS);
+      return;
+    }
+    prop2vert[from] = to;
+  }
+  for (int i = 0; i < numTri; ++i) {
+    for (const int j : {0, 1, 2}) {
+      const int vert = meshGL.triVerts[3 * i + j];
+      if (vert < 0 || vert >= numVert) {
+        MarkFailure(Error::VERTEX_INDEX_OUT_OF_BOUNDS);
+        return;
+      }
+      mesh.triVerts[i][j] = prop2vert[vert];
+    }
+  }
+
+  MeshRelationD relation;
+
+  if (meshGL.numProp > 3) {
+    relation.triProperties.resize(numTri);
+    for (int i = 0; i < numTri; ++i) {
+      for (const int j : {0, 1, 2}) {
+        relation.triProperties[i][j] = meshGL.triVerts[3 * i + j];
+      }
+    }
+  }
+
+  const int numProp = meshGL.numProp - 3;
+  relation.numProp = numProp;
+  relation.properties.resize(meshGL.NumVert() * numProp);
+  // This will have unreferenced duplicate positions that will be removed by
+  // Impl::RemoveUnreferencedVerts().
+  mesh.vertPos.resize(meshGL.NumVert());
+
+  for (int i = 0; i < meshGL.NumVert(); ++i) {
+    for (const int j : {0, 1, 2})
+      mesh.vertPos[i][j] = meshGL.vertProperties[meshGL.numProp * i + j];
+    for (int j = 0; j < numProp; ++j)
+      relation.properties[i * numProp + j] =
+          meshGL.vertProperties[meshGL.numProp * i + 3 + j];
+  }
+
+  mesh.halfedgeTangent.resize(meshGL.halfedgeTangent.size() / 4);
+  for (int i = 0; i < mesh.halfedgeTangent.size(); ++i) {
+    for (const int j : {0, 1, 2, 3})
+      mesh.halfedgeTangent[i][j] = meshGL.halfedgeTangent[4 * i + j];
+  }
+
+  if (meshGL.originalID.empty()) {
+    relation.originalID = Impl::ReserveIDs(1);
+  } else {
+    std::vector<uint32_t> runIndex = meshGL.runIndex;
+    if (runIndex.empty()) {
+      runIndex = {0, 3 * meshGL.NumTri()};
+    }
+    relation.triRef.resize(meshGL.NumTri());
+    const int startID = Impl::ReserveIDs(meshGL.originalID.size());
+    for (int i = 0; i < meshGL.originalID.size(); ++i) {
+      const int meshID = startID + i;
+      const int originalID = meshGL.originalID[i];
+      for (int tri = runIndex[i] / 3; tri < runIndex[i + 1] / 3; ++tri) {
+        TriRef& ref = relation.triRef[tri];
+        ref.meshID = meshID;
+        ref.originalID = originalID;
+        ref.tri = meshGL.faceID.empty() ? tri : meshGL.faceID[tri];
+      }
+
+      if (meshGL.transform.empty()) {
+        relation.meshIDtransform[meshID] = {};
+      } else {
+        const float* m = meshGL.transform.data() + 12 * i;
+        relation.meshIDtransform[meshID] = {{m[0], m[1], m[2], m[3], m[4], m[5],
+                                             m[6], m[7], m[8], m[9], m[10],
+                                             m[11]}};
+      }
+    }
+  }
+
+  *this = Impl(mesh, relation, propertyTolerance, !meshGL.faceID.empty());
+
+  // A Manifold created from an input mesh is never an original - the input is
+  // the original.
+  meshRelation_.originalID = -1;
+}
 
 /**
  * Create a manifold from an input triangle Mesh. Will return an empty Manifold
  * and set an Error Status if the Mesh is not manifold or otherwise invalid.
  * TODO: update halfedgeTangent during SimplifyTopology.
  */
-Manifold::Impl::Impl(const Mesh& mesh,
-                     const std::vector<glm::ivec3>& triProperties,
-                     const std::vector<float>& properties,
-                     const std::vector<float>& propertyTolerance)
+Manifold::Impl::Impl(const Mesh& mesh, const MeshRelationD& relation,
+                     const std::vector<float>& propertyTolerance,
+                     bool hasFaceIDs)
     : vertPos_(mesh.vertPos),
       halfedgeTangent_(mesh.halfedgeTangent),
-      meshids(1) {
+      meshRelation_(relation) {
   VecDH<glm::ivec3> triVerts = mesh.triVerts;
   if (!IsIndexInBounds(triVerts)) {
     MarkFailure(Error::VERTEX_INDEX_OUT_OF_BOUNDS);
@@ -328,8 +539,11 @@ Manifold::Impl::Impl(const Mesh& mesh,
     return;
   }
   CalculateNormals();
-  InitializeNewReference(triProperties, properties, propertyTolerance);
-  if (status_ != Error::NO_ERROR) return;
+
+  InitializeOriginal();
+  if (!hasFaceIDs) {
+    CreateFaces(propertyTolerance);
+  }
 
   SimplifyTopology();
   Finish();
@@ -339,7 +553,7 @@ Manifold::Impl::Impl(const Mesh& mesh,
  * Create either a unit tetrahedron, cube or octahedron. The cube is in the
  * first octant, while the others are symmetric about the origin.
  */
-Manifold::Impl::Impl(Shape shape) : meshids(1) {
+Manifold::Impl::Impl(Shape shape) {
   std::vector<glm::vec3> vertPos;
   std::vector<glm::ivec3> triVerts;
   switch (shape) {
@@ -382,7 +596,9 @@ Manifold::Impl::Impl(Shape shape) : meshids(1) {
   vertPos_ = vertPos;
   CreateHalfedges(triVerts);
   Finish();
-  InitializeNewReference();
+  meshRelation_.originalID = ReserveIDs(1);
+  InitializeOriginal();
+  CreateFaces();
 }
 
 void Manifold::Impl::RemoveUnreferencedVerts(VecDH<glm::ivec3>& triVerts) {
@@ -405,68 +621,42 @@ void Manifold::Impl::RemoveUnreferencedVerts(VecDH<glm::ivec3>& triVerts) {
            ReindexTriVerts({vertOld2New.cptrD()}));
 }
 
-void Manifold::Impl::ReinitializeReference(int meshID) {
-  // instead of storing the meshID, we store 0 and set the mapping to
-  // 0 -> meshID, because the meshID after boolean operation also starts from 0.
+void Manifold::Impl::InitializeOriginal() {
+  const int meshID = meshRelation_.originalID;
+  // Don't initialize if it's not an original
+  if (meshID < 0) return;
+  meshRelation_.triRef.resize(NumTri());
   for_each_n(autoPolicy(NumTri()),
-             zip(meshRelation_.triBary.begin(), countAt(0)), NumTri(),
-             InitializeBaryRef({meshID, halfedge_.cptrD()}));
-  meshRelation_.originalID = meshID;
-  meshids = 1;
+             zip(meshRelation_.triRef.begin(), countAt(0)), NumTri(),
+             InitializeTriRef({meshID, halfedge_.cptrD()}));
+  meshRelation_.meshIDtransform.clear();
+  meshRelation_.meshIDtransform[meshID] = {};
 }
 
-int Manifold::Impl::InitializeNewReference(
-    const std::vector<glm::ivec3>& triProperties,
-    const std::vector<float>& properties,
-    const std::vector<float>& propertyTolerance) {
-  meshRelation_.triBary.resize(NumTri());
-  const int nextMeshID = meshIDCounter_.fetch_add(1, std::memory_order_relaxed);
-  ReinitializeReference(nextMeshID);
-
-  const int numProps = propertyTolerance.size();
-
-  VecDH<glm::ivec3> triPropertiesD(triProperties);
-  VecDH<float> propertiesD(properties);
-  VecDH<float> propertyToleranceD(propertyTolerance);
-
-  if (numProps > 0) {
-    if (triProperties.size() != NumTri() && triProperties.size() != 0) {
-      MarkFailure(Error::TRI_PROPERTIES_WRONG_LENGTH);
-      return nextMeshID;
-    };
-    if (properties.size() % numProps != 0) {
-      MarkFailure(Error::PROPERTIES_WRONG_LENGTH);
-      return nextMeshID;
-    };
-
-    const int numSets = properties.size() / numProps;
-    if (!all_of(autoPolicy(triProperties.size()), triPropertiesD.begin(),
-                triPropertiesD.end(), CheckProperties({numSets}))) {
-      MarkFailure(Error::TRI_PROPERTIES_OUT_OF_BOUNDS);
-      return nextMeshID;
-    };
-  }
+void Manifold::Impl::CreateFaces(const std::vector<float>& propertyTolerance) {
+  VecDH<float> propertyToleranceD =
+      propertyTolerance.empty()
+          ? VecDH<float>(meshRelation_.numProp, kTolerance)
+          : propertyTolerance;
 
   VecDH<thrust::pair<int, int>> face2face(halfedge_.size(), {-1, -1});
+  VecDH<thrust::pair<int, int>> vert2vert(halfedge_.size(), {-1, -1});
   VecDH<float> triArea(NumTri());
-  for_each_n(autoPolicy(halfedge_.size()), zip(face2face.begin(), countAt(0)),
-             halfedge_.size(),
-             CoplanarEdge({triArea.ptrD(), halfedge_.cptrD(), vertPos_.cptrD(),
-                           triPropertiesD.cptrD(), propertiesD.cptrD(),
-                           propertyToleranceD.cptrD(), numProps, precision_}));
+  for_each_n(
+      autoPolicy(halfedge_.size()),
+      zip(face2face.begin(), vert2vert.begin(), countAt(0)), halfedge_.size(),
+      CoplanarEdge(
+          {triArea.ptrD(), halfedge_.cptrD(), vertPos_.cptrD(),
+           meshRelation_.triRef.cptrD(), meshRelation_.triProperties.cptrD(),
+           meshRelation_.properties.cptrD(), propertyToleranceD.cptrD(),
+           meshRelation_.numProp, precision_}));
 
-  Graph graph;
-  for (int i = 0; i < NumTri(); ++i) {
-    graph.add_nodes(i);
-  }
-  for (int i = 0; i < face2face.size(); ++i) {
-    const thrust::pair<int, int> edge = face2face[i];
-    if (edge.first < 0) continue;
-    graph.add_edge(edge.first, edge.second);
+  if (meshRelation_.triProperties.size() > 0) {
+    DedupePropVerts(meshRelation_.triProperties, vert2vert);
   }
 
   std::vector<int> components;
-  const int numComponent = ConnectedComponents(components, graph);
+  const int numComponent = GetLabels(components, face2face, NumTri());
 
   std::vector<int> comp2tri(numComponent, -1);
   for (int tri = 0; tri < NumTri(); ++tri) {
@@ -478,51 +668,9 @@ int Manifold::Impl::InitializeNewReference(
     }
   }
 
-  VecDH<BaryRef>& triBary = meshRelation_.triBary;
-  std::map<std::pair<int, int>, int> triVert2bary;
-
-  for (int tri = 0; tri < NumTri(); ++tri) {
-    const int refTri = comp2tri[components[tri]];
-    if (refTri == tri) continue;
-
-    glm::mat3 triPos;
-    for (int i : {0, 1, 2}) {
-      const int vert = halfedge_[3 * refTri + i].startVert;
-      triPos[i] = vertPos_[vert];
-      triVert2bary[{refTri, vert}] = i - 3;
-    }
-
-    glm::ivec3 vertBary;
-    bool coplanar = true;
-    for (int i : {0, 1, 2}) {
-      const int vert = halfedge_[3 * tri + i].startVert;
-      if (triVert2bary.find({refTri, vert}) == triVert2bary.end()) {
-        const glm::vec3 uvw =
-            GetBarycentric(vertPos_[vert], triPos, precision_);
-        if (isnan(uvw[0])) {
-          coplanar = false;
-          triVert2bary[{refTri, vert}] = -4;
-          break;
-        }
-        triVert2bary[{refTri, vert}] = meshRelation_.barycentric.size();
-        meshRelation_.barycentric.push_back(uvw);
-      }
-      const int bary = triVert2bary[{refTri, vert}];
-      if (bary < -3) {
-        coplanar = false;
-        break;
-      }
-      vertBary[i] = bary;
-    }
-
-    if (coplanar) {
-      BaryRef& ref = triBary[tri];
-      ref.tri = refTri;
-      ref.vertBary = vertBary;
-    }
-  }
-
-  return nextMeshID;
+  VecDH<TriRef>& triRef = meshRelation_.triRef;
+  for (int tri = 0; tri < NumTri(); ++tri)
+    triRef[tri].tri = comp2tri[components[tri]];
 }
 
 /**
@@ -554,8 +702,8 @@ void Manifold::Impl::CreateHalfedges(const VecDH<glm::ivec3>& triVerts) {
 }
 
 /**
- * Does a full recalculation of the face bounding boxes, including updating the
- * collider, but does not resort the faces.
+ * Does a full recalculation of the face bounding boxes, including updating
+ * the collider, but does not resort the faces.
  */
 void Manifold::Impl::Update() {
   CalculateBBox();
@@ -580,13 +728,16 @@ Manifold::Impl Manifold::Impl::Transform(const glm::mat4x3& transform_) const {
   if (transform_ == glm::mat4x3(1.0f)) return *this;
   auto policy = autoPolicy(NumVert());
   Impl result;
-  result.meshids = meshids;
   result.collider_ = collider_;
   result.meshRelation_ = meshRelation_;
   result.precision_ = precision_;
   result.bBox_ = bBox_;
   result.halfedge_ = halfedge_;
-  result.halfedgeTangent_ = halfedgeTangent_;
+  result.halfedgeTangent_.resize(halfedgeTangent_.size());
+
+  for (auto& m : result.meshRelation_.meshIDtransform) {
+    m.second.transform = transform_ * glm::mat4(m.second.transform);
+  }
 
   result.vertPos_.resize(NumVert());
   result.faceNormal_.resize(faceNormal_.size());
@@ -594,12 +745,27 @@ Manifold::Impl Manifold::Impl::Transform(const glm::mat4x3& transform_) const {
   transform(policy, vertPos_.begin(), vertPos_.end(), result.vertPos_.begin(),
             Transform4x3({transform_}));
 
-  glm::mat3 normalTransform =
-      glm::inverse(glm::transpose(glm::mat3(transform_)));
+  glm::mat3 normalTransform = NormalTransform(transform_);
   transform(policy, faceNormal_.begin(), faceNormal_.end(),
             result.faceNormal_.begin(), TransformNormals({normalTransform}));
   transform(policy, vertNormal_.begin(), vertNormal_.end(),
             result.vertNormal_.begin(), TransformNormals({normalTransform}));
+
+  const bool invert = glm::determinant(glm::mat3(transform_)) < 0;
+
+  if (halfedgeTangent_.size() > 0) {
+    for_each_n(
+        policy, zip(result.halfedgeTangent_.begin(), countAt(0)),
+        halfedgeTangent_.size(),
+        TransformTangents({glm::mat3(transform_), invert,
+                           halfedgeTangent_.cptrD(), halfedge_.cptrD()}));
+  }
+
+  if (invert) {
+    for_each_n(policy, zip(result.meshRelation_.triRef.begin(), countAt(0)),
+               result.NumTri(), FlipTris({result.halfedge_.ptrD()}));
+  }
+
   // This optimization does a cheap collider update if the transform is
   // axis-aligned.
   if (!result.collider_.Transform(transform_)) result.Update();
@@ -616,8 +782,8 @@ Manifold::Impl Manifold::Impl::Transform(const glm::mat4x3& transform_) const {
 }
 
 /**
- * Sets the precision based on the bounding box, and limits its minimum value by
- * the optional input.
+ * Sets the precision based on the bounding box, and limits its minimum value
+ * by the optional input.
  */
 void Manifold::Impl::SetPrecision(float minPrecision) {
   precision_ = glm::max(minPrecision, kTolerance * bBox_.Scale());
@@ -627,13 +793,13 @@ void Manifold::Impl::SetPrecision(float minPrecision) {
 /**
  * If face normals are already present, this function uses them to compute
  * vertex normals (angle-weighted pseudo-normals); otherwise it also computes
- * the face normals. Face normals are only calculated when needed because nearly
- * degenerate faces will accrue rounding error, while the Boolean can retain
- * their original normal, which is more accurate and can help with merging
- * coplanar faces.
+ * the face normals. Face normals are only calculated when needed because
+ * nearly degenerate faces will accrue rounding error, while the Boolean can
+ * retain their original normal, which is more accurate and can help with
+ * merging coplanar faces.
  *
- * If the face normals have been invalidated by an operation like Warp(), ensure
- * you do faceNormal_.resize(0) before calling this function to force
+ * If the face normals have been invalidated by an operation like Warp(),
+ * ensure you do faceNormal_.resize(0) before calling this function to force
  * recalculation.
  */
 void Manifold::Impl::CalculateNormals() {
@@ -656,34 +822,43 @@ void Manifold::Impl::CalculateNormals() {
  * Remaps all the contained meshIDs to new unique values to represent new
  * instances of these meshes.
  */
-void Manifold::Impl::IncrementMeshIDs(int start, int length) {
-  VecDH<BaryRef>& triBary = meshRelation_.triBary;
-  ASSERT(start >= 0 && length >= 0 && start + length <= triBary.size(),
-         logicErr, "out of bounds");
-  const auto policy = autoPolicy(length);
-  HashTable<uint32_t> meshidTable(std::max(16u, meshids * 2));
+void Manifold::Impl::IncrementMeshIDs() {
+  const int numTri = NumTri();
+  const auto policy = autoPolicy(numTri);
+  HashTable<uint32_t> meshIDold2new(meshRelation_.meshIDtransform.size() * 2);
 
-  auto begin = triBary.begin() + start;
-  auto end = begin + length;
   while (1) {
-    for_each(policy, begin, end, MarkMeshID({meshidTable.D()}));
-    if (!meshidTable.Full()) break;
-    meshidTable = HashTable<uint32_t>(meshidTable.Size() * 2);
+    for_each_n(policy, meshRelation_.triRef.begin(), numTri,
+               MarkMeshID({meshIDold2new.D()}));
+    if (!meshIDold2new.Full()) break;
+    meshIDold2new = HashTable<uint32_t>(meshIDold2new.Size() * 2);
   }
-  inclusive_scan(
-      autoPolicy(meshidTable.Size()), meshidTable.GetValueStore().begin(),
-      meshidTable.GetValueStore().end(), meshidTable.GetValueStore().begin());
-  const int numMeshIDs = meshidTable.GetValueStore().back();
-  const int meshIDstart = Manifold::Impl::meshIDCounter_.fetch_add(
-      numMeshIDs, std::memory_order_relaxed);
-  // We do start - 1 because the inclusive scan makes our first index 1 instead
-  // of 0.
-  for_each(policy, begin, end, UpdateMeshID({meshidTable.D(), meshIDstart}));
+  inclusive_scan(autoPolicy(meshIDold2new.Size()),
+                 meshIDold2new.GetValueStore().begin(),
+                 meshIDold2new.GetValueStore().end(),
+                 meshIDold2new.GetValueStore().begin());
+  const int numMeshIDs = meshIDold2new.GetValueStore().back();
+  const int meshIDstart = ReserveIDs(numMeshIDs);
+  // We do start - 1 because the inclusive scan makes our first index 1
+  // instead of 0.
+  for_each_n(policy, meshRelation_.triRef.begin(), numTri,
+             UpdateMeshID({meshIDold2new.D(), meshIDstart}));
+  // Update keys of the transform map
+  std::map<int, Relation> oldTransforms;
+  std::swap(meshRelation_.meshIDtransform, oldTransforms);
+  const int tableSize = meshIDold2new.Size();
+  for (int i = 0; i < tableSize; ++i) {
+    const auto oldID = meshIDold2new.D().KeyAt(i);
+    if (oldID != HashTable<uint32_t>::Open()) {
+      meshRelation_.meshIDtransform[meshIDold2new.D().At(i) + meshIDstart] =
+          oldTransforms[oldID];
+    }
+  }
 }
 
 /**
- * Returns a sparse array of the bounding box overlaps between the edges of the
- * input manifold, Q and the faces of this manifold. Returned indices only
+ * Returns a sparse array of the bounding box overlaps between the edges of
+ * the input manifold, Q and the faces of this manifold. Returned indices only
  * point to forward halfedges.
  */
 SparseIndices Manifold::Impl::EdgeCollisions(const Impl& Q) const {

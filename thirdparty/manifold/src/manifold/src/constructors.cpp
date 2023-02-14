@@ -11,9 +11,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include <thrust/version.h>
-#include <thrust/detail/config.h>
+
 #include <thrust/sequence.h>
+
 #include "csg_tree.h"
 #include "graph.h"
 #include "impl.h"
@@ -61,6 +61,48 @@ namespace manifold {
  * No higher-order derivatives are considered, as the interpolation is
  * independent per triangle, only sharing constraints on their boundaries.
  *
+ * @param meshGL input MeshGL.
+ * @param sharpenedEdges If desired, you can supply a vector of sharpened
+ * halfedges, which should in general be a small subset of all halfedges. Order
+ * of entries doesn't matter, as each one specifies the desired smoothness
+ * (between zero and one, with one the default for all unspecified halfedges)
+ * and the halfedge index (3 * triangle index + [0,1,2] where 0 is the edge
+ * between triVert 0 and 1, etc).
+ *
+ * At a smoothness value of zero, a sharp crease is made. The smoothness is
+ * interpolated along each edge, so the specified value should be thought of as
+ * an average. Where exactly two sharpened edges meet at a vertex, their
+ * tangents are rotated to be colinear so that the sharpened edge can be
+ * continuous. Vertices with only one sharpened edge are completely smooth,
+ * allowing sharpened edges to smoothly vanish at termination. A single vertex
+ * can be sharpened by sharping all edges that are incident on it, allowing
+ * cones to be formed.
+ */
+Manifold Manifold::Smooth(const MeshGL& meshGL,
+                          const std::vector<Smoothness>& sharpenedEdges) {
+  ASSERT(meshGL.halfedgeTangent.empty(), std::runtime_error,
+         "when supplying tangents, the normal constructor should be used "
+         "rather than Smooth().");
+
+  // Don't allow any triangle merging.
+  std::vector<float> propertyTolerance(meshGL.numProp - 3, -1);
+  std::shared_ptr<Impl> impl =
+      std::make_shared<Impl>(meshGL, propertyTolerance);
+  impl->CreateTangents(sharpenedEdges);
+  return Manifold(impl);
+}
+
+/**
+ * Constructs a smooth version of the input mesh by creating tangents; this
+ * method will throw if you have supplied tangents with your mesh already. The
+ * actual triangle resolution is unchanged; use the Refine() method to
+ * interpolate to a higher-resolution curve.
+ *
+ * By default, every edge is calculated for maximum smoothness (very much
+ * approximately), attempting to minimize the maximum mean Curvature magnitude.
+ * No higher-order derivatives are considered, as the interpolation is
+ * independent per triangle, only sharing constraints on their boundaries.
+ *
  * @param mesh input Mesh.
  * @param sharpenedEdges If desired, you can supply a vector of sharpened
  * halfedges, which should in general be a small subset of all halfedges. Order
@@ -84,7 +126,8 @@ Manifold Manifold::Smooth(const Mesh& mesh,
          "when supplying tangents, the normal constructor should be used "
          "rather than Smooth().");
 
-  std::shared_ptr<Impl> impl = std::make_shared<Impl>(mesh);
+  Impl::MeshRelationD relation = {(int)ReserveIDs(1)};
+  std::shared_ptr<Impl> impl = std::make_shared<Impl>(mesh, relation);
   impl->CreateTangents(sharpenedEdges);
   return Manifold(impl);
 }
@@ -108,7 +151,7 @@ Manifold Manifold::Cube(glm::vec3 size, bool center) {
   auto cube = Manifold(std::make_shared<Impl>(Impl::Shape::CUBE));
   cube = cube.Scale(size);
   if (center) cube = cube.Translate(-size / 2.0f);
-  return cube;
+  return cube.AsOriginal();
 }
 
 /**
@@ -138,7 +181,8 @@ Manifold Manifold::Cylinder(float height, float radiusLow, float radiusHigh,
   Manifold cylinder =
       Manifold::Extrude(circle, height, 0, 0.0f, glm::vec2(scale));
   if (center)
-    cylinder = cylinder.Translate(glm::vec3(0.0f, 0.0f, -height / 2.0f));
+    cylinder =
+        cylinder.Translate(glm::vec3(0.0f, 0.0f, -height / 2.0f)).AsOriginal();
   return cylinder;
 }
 
@@ -161,7 +205,7 @@ Manifold Manifold::Sphere(float radius, int circularSegments) {
              pImpl_->NumVert(), ToSphere({radius}));
   pImpl_->Finish();
   // Ignore preceding octahedron.
-  pImpl_->ReinitializeReference(Impl::meshIDCounter_.fetch_add(1));
+  pImpl_->InitializeOriginal();
   return Manifold(pImpl_);
 }
 
@@ -239,7 +283,9 @@ Manifold Manifold::Extrude(Polygons crossSection, float height, int nDivisions,
 
   pImpl_->CreateHalfedges(triVertsDH);
   pImpl_->Finish();
-  pImpl_->InitializeNewReference();
+  pImpl_->meshRelation_.originalID = ReserveIDs(1);
+  pImpl_->InitializeOriginal();
+  pImpl_->CreateFaces();
   return Manifold(pImpl_);
 }
 
@@ -338,7 +384,9 @@ Manifold Manifold::Revolve(const Polygons& crossSection, int circularSegments) {
 
   pImpl_->CreateHalfedges(triVertsDH);
   pImpl_->Finish();
-  pImpl_->InitializeNewReference();
+  pImpl_->meshRelation_.originalID = ReserveIDs(1);
+  pImpl_->InitializeOriginal();
+  pImpl_->CreateFaces();
   return Manifold(pImpl_);
 }
 
@@ -357,12 +405,7 @@ Manifold Manifold::Compose(const std::vector<Manifold>& manifolds) {
   return Manifold(std::make_shared<Impl>(CsgLeafNode::Compose(children)));
 }
 
-/**
- * This operation returns a vector of Manifolds that are topologically
- * disconnected. If everything is connected, the vector is length one,
- * containing a copy of the original. It is the inverse operation of Compose().
- */
-std::vector<Manifold> Manifold::Decompose() const {
+Components Manifold::GetComponents() const {
   Graph graph;
   auto pImpl_ = GetCsgLeafNode().GetImpl();
   for (int i = 0; i < NumVert(); ++i) {
@@ -374,16 +417,21 @@ std::vector<Manifold> Manifold::Decompose() const {
   }
   std::vector<int> components;
   const int numLabel = ConnectedComponents(components, graph);
+  return {components, numLabel};
+}
 
-  if (numLabel == 1) {
+std::vector<Manifold> Manifold::Decompose(Components components) const {
+  auto pImpl_ = GetCsgLeafNode().GetImpl();
+
+  if (components.numComponents == 1) {
     std::vector<Manifold> meshes(1);
     meshes[0] = *this;
     return meshes;
   }
-  VecDH<int> vertLabel(components);
+  VecDH<int> vertLabel(components.indices);
 
   std::vector<Manifold> meshes;
-  for (int i = 0; i < numLabel; ++i) {
+  for (int i = 0; i < components.numComponents; ++i) {
     auto impl = std::make_shared<Impl>();
     // inherit original object's precision
     impl->precision_ = pImpl_->precision_;
@@ -417,5 +465,14 @@ std::vector<Manifold> Manifold::Decompose() const {
     meshes.push_back(Manifold(impl));
   }
   return meshes;
+}
+
+/**
+ * This operation returns a vector of Manifolds that are topologically
+ * disconnected. If everything is connected, the vector is length one,
+ * containing a copy of the original. It is the inverse operation of Compose().
+ */
+std::vector<Manifold> Manifold::Decompose() const {
+  return Decompose(GetComponents());
 }
 }  // namespace manifold
