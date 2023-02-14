@@ -42,9 +42,9 @@
 #include "core/templates/vector.h"
 #include "scene/resources/material.h"
 
-#include "../../thirdparty/manifold/third_party/glm/glm/ext/vector_int3.hpp"
+#include "thirdparty/glm/glm/ext/vector_int3.hpp"
 #include "thirdparty/manifold/src/manifold/include/manifold.h"
-#include "thirdparty/manifold/third_party/glm/glm/ext/vector_float3.hpp"
+#include "thirdparty/glm/glm/ext/vector_float3.hpp"
 
 struct CSGBrush {
 	struct Face {
@@ -89,7 +89,9 @@ struct CSGBrush {
 	}
 
 	enum {
-		MANIFOLD_PROPERTY_INVERT = 0,
+		MANIFOLD_PROPERTY_POSITION = 0,
+		MANIFOLD_PROPERTY_NORMAL = MANIFOLD_PROPERTY_POSITION + 3,
+		MANIFOLD_PROPERTY_INVERT,
 		MANIFOLD_PROPERTY_SMOOTH_GROUP,
 		MANIFOLD_PROPERTY_UV_X_0,
 		MANIFOLD_PROPERTY_UV_X_1,
@@ -97,8 +99,8 @@ struct CSGBrush {
 		MANIFOLD_PROPERTY_UV_Y_0,
 		MANIFOLD_PROPERTY_UV_Y_1,
 		MANIFOLD_PROPERTY_UV_Y_2,
-		MANIFOLD_PROPERTY_PLACEHOLDER_MATERIAL,
-		MANIFOLD_MAX
+		MANIFOLD_PROPERTY_MATERIAL,
+		MANIFOLD_PROPERTY_MAX
 	};
 	void create_manifold();
 	void convert_manifold_to_brush();

@@ -28,7 +28,9 @@ thirdparty_sources = [
     "src/utilities/src/detect_cuda.cpp",
     "src/third_party/graphlite/src/connected_components.cpp",
 ]
-
+env_csg.Prepend(CPPPATH=["#thirdparty/manifold/src/utilities/include"])
+env_csg.Prepend(CPPPATH=["#thirdparty/glm"])
+env_csg.Prepend(CPPPATH=["#thirdparty/thrust"])
 env_csg.Append(CPPDEFINES=["THRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CPP"])
 env_csg.Append(LINKFLAGS=["-fno-exceptions"])
 env_csg.Append(LINKFLAGS=["-fno-duplicated-branches"])

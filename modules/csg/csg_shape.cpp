@@ -30,7 +30,7 @@
 
 #include "csg_shape.h"
 
-#include "../../thirdparty/manifold/third_party/glm/glm/ext/vector_int3.hpp"
+#include "thirdparty/glm/glm/ext/vector_int3.hpp"
 #include "core/math/geometry_2d.h"
 #include "thirdparty/manifold/src/manifold/include/manifold.h"
 
@@ -167,8 +167,8 @@ void CSGShape3D::_make_dirty(bool p_parent_removing) {
 #include "scene/resources/mesh_data_tool.h"
 #include "scene/resources/surface_tool.h"
 
-#include "../../thirdparty/manifold/src/manifold/include/manifold.h"
-#include "../../thirdparty/manifold/third_party/glm/glm/ext/vector_float3.hpp"
+#include "thirdparty/manifold/src/manifold/include/manifold.h"
+#include "thirdparty/glm/glm/ext/vector_float3.hpp"
 #include <stdint.h>
 #include <algorithm>
 #include <vector>
