@@ -39,7 +39,7 @@ thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
 if not env.msvc:
     env_psd.Append(CPPFLAGS=["-isystem", Dir(thirdparty_dir).path])
 else:
-	env_psd.Prepend(CPPPATH=[thirdparty_dir])
+    env_psd.Prepend(CPPPATH=[thirdparty_dir])
 
 env_thirdparty = env_psd.Clone()
 env_thirdparty.disable_warnings()

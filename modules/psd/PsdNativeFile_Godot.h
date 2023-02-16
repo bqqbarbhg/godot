@@ -32,6 +32,7 @@
 
 #include "PsdFile.h"
 
+#include "core/io/stream_peer.h"
 
 PSD_NAMESPACE_BEGIN
 
@@ -59,13 +60,8 @@ private:
 
 	virtual uint64_t DoGetSize(void) const PSD_OVERRIDE;
 
-	// internally, this is a HANDLE, but we don't want to include Windows.h just for that
-	void* m_file;
-
-
- 	const uint8_t *buf;
- 	size_t buf_size;
-
+	Ref<StreamPeerBuffer> stream;
+	PackedByteArray buf;
 };
 
 PSD_NAMESPACE_END

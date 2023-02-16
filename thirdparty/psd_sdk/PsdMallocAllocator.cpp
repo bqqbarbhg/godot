@@ -26,7 +26,7 @@ void* MallocAllocator::DoAllocate(size_t size, size_t alignment)
     }
     errno = posix_memalign(&m, minAlignment, size);
     return errno ? NULL : m;
-#elif defined(__GNUG__)
+#elif defined(__GNUG__) && !defined(__MINGW32__)
 	return memalign(alignment, size);
 #else
 	return _aligned_malloc(size, alignment);
@@ -38,7 +38,7 @@ void* MallocAllocator::DoAllocate(size_t size, size_t alignment)
 // ---------------------------------------------------------------------------------------------------------------------
 void MallocAllocator::DoFree(void* ptr)
 {
-#if defined(__APPLE__) || defined(__GNUG__)
+#if defined(__APPLE__) || (defined(__GNUG__) && !defined(__MINGW32__))
 	free(ptr);
 #else
 	_aligned_free(ptr);

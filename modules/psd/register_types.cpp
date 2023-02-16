@@ -31,12 +31,13 @@
 #include "register_types.h"
 
 #include "psd_texture.h"
-#include "psd_layer.h"
 
 #ifdef TOOLS_ENABLED
 #include "core/config/engine.h"
-#include "resource_importer_psd.h"
+#include "psd_texture.h"
 #endif
+
+static Ref<PSDTexture> image_loader_psd;
 
 void initialize_psd_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
@@ -44,18 +45,15 @@ void initialize_psd_module(ModuleInitializationLevel p_level) {
 	}
 
 #ifdef TOOLS_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		Ref<ResourceImporterPSD> psd_import;
-		psd_import.instantiate();
-		ResourceFormatImporter::get_singleton()->add_importer(psd_import);
-	}
+	image_loader_psd.instantiate();
+	ImageLoader::add_image_format_loader(image_loader_psd);
 #endif
-	GDREGISTER_CLASS(PSDTexture);
-	GDREGISTER_CLASS(PSDLayer);
 }
 
 void uninitialize_psd_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
 		return;
 	}
+	ImageLoader::remove_image_format_loader(image_loader_psd);
+	image_loader_psd.unref();
 }

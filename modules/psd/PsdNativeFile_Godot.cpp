@@ -37,97 +37,78 @@
 #include "PsdLog.h"
 #include "Psdinttypes.h"
 
-
 PSD_NAMESPACE_BEGIN
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 NativeFile::NativeFile(Allocator* allocator)
 	: File(allocator)
-	, m_file(INVALID_HANDLE_VALUE)
 {
 }
-
 
 void NativeFile::OpenBuffer(const uint8_t *p_buf, size_t p_buf_size) {
-	buf = p_buf;
-	buf_size = p_buf_size;
+	stream.instantiate();
+	buf.resize(p_buf_size);
+	memcpy(buf.ptrw(), p_buf, p_buf_size);
+	stream->set_data_array(buf);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-bool NativeFile::DoOpenRead(const wchar_t* filename)
-{
+bool NativeFile::DoOpenRead(const wchar_t *filename) {
 	return true;
 }
 
-
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-bool NativeFile::DoOpenWrite(const wchar_t* filename)
-{
-
+bool NativeFile::DoOpenWrite(const wchar_t *filename) {
 	return true;
 }
 
-
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-bool NativeFile::DoClose(void)
-{
+bool NativeFile::DoClose(void) {
 	return true;
 }
 
-
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-File::ReadOperation NativeFile::DoRead(void* buffer, uint32_t count, uint64_t position)
-{
-	OVERLAPPED* operation = memoryUtil::Allocate<OVERLAPPED>(m_allocator);
-	operation->hEvent = nullptr;
-	operation->Offset = static_cast<DWORD>(position & 0xFFFFFFFFull);
-	operation->OffsetHigh = static_cast<DWORD>((position >> 32u) & 0xFFFFFFFFull);
-
-	
-    memcpy(buffer, buf + position, count);
-    
-	return static_cast<File::ReadOperation>(operation);
+File::ReadOperation NativeFile::DoRead(void *buffer, uint32_t count, uint64_t position) {
+	stream->seek(position);
+	const Error result = stream->get_data((uint8_t *)buffer, count);
+	if (result != OK) {
+		return static_cast<File::ReadOperation>(stream.ptr());
+	}
+	return static_cast<File::ReadOperation>(stream.ptr());
 }
 
-
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-bool NativeFile::DoWaitForRead(File::ReadOperation& operation)
-{
-	OVERLAPPED* overlapped = static_cast<OVERLAPPED*>(operation);
-	
-	memoryUtil::Free(m_allocator, overlapped);
-
+bool NativeFile::DoWaitForRead(File::ReadOperation &operation) {
 	return true;
 }
 
-
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-File::WriteOperation NativeFile::DoWrite(const void* buffer, uint32_t count, uint64_t position)
-{
-	return nullptr;
+File::WriteOperation NativeFile::DoWrite(const void *buffer, uint32_t count, uint64_t position) {
+	stream->seek(position);
+	const Error result = stream->put_data((uint8_t *)buffer, count);
+	if (result != OK) {
+		return static_cast<File::WriteOperation>(stream.ptr());
+	}
+	return static_cast<File::WriteOperation>(stream.ptr());
 }
 
-
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-bool NativeFile::DoWaitForWrite(File::WriteOperation& operation)
-{
+bool NativeFile::DoWaitForWrite(File::WriteOperation &operation) {
 	return true;
 }
 
-
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t NativeFile::DoGetSize(void) const
-{
-	return static_cast<uint64_t>(buf_size);
+uint64_t NativeFile::DoGetSize(void) const {
+	return static_cast<uint64_t>(stream->get_size());
 }
 
 PSD_NAMESPACE_END
