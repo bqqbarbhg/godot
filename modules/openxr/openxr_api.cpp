@@ -596,6 +596,12 @@ void OpenXRAPI::destroy_instance() {
 		xrDestroyInstance(instance);
 		instance = XR_NULL_HANDLE;
 	}
+
+	if (graphics_extension) {
+		memdelete(graphics_extension);
+		graphics_extension = nullptr;
+	}
+
 	enabled_extensions.clear();
 
 	if (graphics_extension != nullptr) {
