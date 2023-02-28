@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  register_core_types.h                                                 */
+/*  libgodot_callable.h                                                   */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,15 +28,31 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef REGISTER_CORE_TYPES_H
-#define REGISTER_CORE_TYPES_H
+#ifndef LIBGODOT_CALLABLE_H
+#define LIBGODOT_CALLABLE_H
 
-void register_core_types();
-void register_core_settings();
-void register_core_extensions();
-void register_core_starting_singletons();
-void register_core_singletons();
-void unregister_core_types();
-void unregister_core_extensions();
+#ifdef LIBRARY_ENABLED
+#include "core/templates/vector.h"
+#include "core/variant/callable.h"
+#include "core/variant/variant.h"
 
-#endif // REGISTER_CORE_TYPES_H
+class LibGodotCallable : public CallableCustom {
+	void *customObject;
+
+	static bool _equal_func(const CallableCustom *p_a, const CallableCustom *p_b);
+	static bool _less_func(const CallableCustom *p_a, const CallableCustom *p_b);
+
+public:
+	uint32_t hash() const override;
+	String get_as_text() const override;
+	CompareEqualFunc get_compare_equal_func() const override;
+	CompareLessFunc get_compare_less_func() const override;
+	ObjectID get_object() const override;
+	void call(const Variant **p_arguments, int p_argcount, Variant &r_return_value, Callable::CallError &r_call_error) const override;
+
+	LibGodotCallable(void *target);
+	~LibGodotCallable();
+};
+#endif
+
+#endif // LIBGODOT_CALLABLE_H
