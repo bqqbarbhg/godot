@@ -81,6 +81,8 @@ class ClassDB {
 public:
 	enum APIType {
 		API_CORE,
+		API_SERVERS,
+		API_SCENE,
 		API_EDITOR,
 		API_EXTENSION,
 		API_EDITOR_EXTENSION,
