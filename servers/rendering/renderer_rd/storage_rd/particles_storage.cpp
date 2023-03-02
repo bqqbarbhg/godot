@@ -1538,7 +1538,10 @@ Dependency *ParticlesStorage::particles_get_dependency(RID p_particles) const {
 }
 
 bool ParticlesStorage::particles_is_inactive(RID p_particles) const {
-	ERR_FAIL_COND_V_MSG(RSG::threaded, false, "This function should never be used with threaded rendering, as it stalls the renderer.");
+	if (RSG::threaded) {
+		ERR_PRINT_ONCE("This function should never be used with threaded rendering, as it stalls the renderer.");
+		return false;
+	}
 	const Particles *particles = particles_owner.get_or_null(p_particles);
 	ERR_FAIL_COND_V(!particles, false);
 	return !particles->emitting && particles->inactive;
