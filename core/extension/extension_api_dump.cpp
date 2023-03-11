@@ -761,7 +761,7 @@ Dictionary GDExtensionAPIDump::generate_extension_api() {
 
 			{
 				ClassDB::APIType api = ClassDB::get_api_type(class_name);
-				static const char *api_type[5] = { "core", "editor", "extension", "editor_extension" };
+				static const char *api_type[6] = { "core", "servers", "scene", "editor", "extension", "editor_extension" };
 				d["api_type"] = api_type[api];
 			}
 
@@ -864,7 +864,6 @@ Dictionary GDExtensionAPIDump::generate_extension_api() {
 
 					} else if (F.name.begins_with("_")) {
 						//hidden method, ignore
-
 					} else {
 						Dictionary d2;
 						d2["name"] = String(method_name);
