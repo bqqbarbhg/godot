@@ -39,13 +39,13 @@
 #include "core/math/vector3.h"
 #include "core/templates/sort_array.h"
 #include "core/variant/variant.h"
-#include "thirdparty/glm/glm/ext/vector_float4.hpp"
-#include "thirdparty/manifold/src/manifold/include/manifold.h"
-#include "thirdparty/manifold/src/utilities/include/public.h"
 #include "scene/resources/material.h"
 #include "scene/resources/mesh.h"
 #include "scene/resources/mesh_data_tool.h"
 #include "scene/resources/surface_tool.h"
+#include "thirdparty/glm/glm/ext/vector_float4.hpp"
+#include "thirdparty/manifold/src/manifold/include/manifold.h"
+#include "thirdparty/manifold/src/utilities/include/public.h"
 
 // CSGBrush
 
@@ -121,8 +121,7 @@ void CSGBrush::build_from_faces(const Vector<Vector3> &p_vertices, const Vector<
 }
 
 void CSGBrush::convert_manifold_to_brush() {
-	manifold::MeshGL &mesh = manifold.GetMeshGL();
-	size_t vertex_count = mesh.NumVert();
+	manifold::MeshGL mesh = manifold.GetMeshGL();
 	size_t triangle_count = mesh.NumTri();
 	faces.resize(triangle_count);
 	for (size_t triangle_i = 0; triangle_i < triangle_count; triangle_i++) {
@@ -179,7 +178,6 @@ void CSGBrush::create_manifold() {
 			st->add_vertex(face.vertices[vertex_i]);
 		}
 	}
-	st->index();
 	Ref<MeshDataTool> mdt;
 	mdt.instantiate();
 	mdt->create_from_surface(st->commit(), 0);
@@ -187,7 +185,7 @@ void CSGBrush::create_manifold() {
 	// Vector<Ref<Material>> triangle_material;
 	// triangle_material.resize(face_count);
 	// triangle_material.fill(Ref<Material>());
-	//mesh.numProp = MANIFOLD_PROPERTY_MAX;
+	mesh.numProp = MANIFOLD_PROPERTY_MAX;
 	const int32_t VERTICES_IN_TRIANGLE = 3;
 	int32_t number_of_triangles = mdt->get_face_count();
 	mesh.triVerts.resize(number_of_triangles * VERTICES_IN_TRIANGLE);
@@ -198,18 +196,17 @@ void CSGBrush::create_manifold() {
 	for (int triangle_i = 0; triangle_i < mdt->get_face_count(); triangle_i++) {
 		for (int32_t face_index_i = 0; face_index_i < VERTICES_IN_TRIANGLE; face_index_i++) {
 			size_t vertex_index = mdt->get_face_vertex(triangle_i, face_index_i);
-			mesh.triVerts[triangle_i * VERTICES_IN_TRIANGLE + face_index_i] = vertex_index;
+			mesh.triVerts[triangle_i * VERTICES_IN_TRIANGLE + MANIFOLD_PROPERTY_POSITION + face_index_i] = vertex_index;
 		}
+		SWAP(mesh.triVerts[triangle_i * VERTICES_IN_TRIANGLE + MANIFOLD_PROPERTY_POSITION + 0], mesh.triVerts[triangle_i * VERTICES_IN_TRIANGLE + MANIFOLD_PROPERTY_POSITION + 2]);
 	}
 	// Swap around indices, convert cw to ccw for the front face.
-	for (int vertex_i = 0; vertex_i < number_of_triangles; vertex_i++) {
-		Vector3 pos = mdt->get_vertex(vertex_i);
-		for (int32_t i = 0; i < 3; i++) {
-			mesh.vertProperties[vertex_i * mesh.numProp + i] = pos[i];
+	for (int triangle_i = 0; triangle_i < number_of_triangles; triangle_i++) {
+		for (int32_t face_index_i = 0; face_index_i < VERTICES_IN_TRIANGLE; face_index_i++) {
+			int32_t vertex_i = mdt->get_face_vertex(triangle_i, face_index_i);
+			Vector3 pos = mdt->get_vertex(vertex_i);
+			mesh.vertProperties[vertex_i * mesh.numProp + face_index_i] = pos[face_index_i];
 		}
-	}
-	for (int k = 0; k < number_of_triangles; k += 3) {
-		SWAP(mesh.triVerts[k + 0], mesh.triVerts[k + 2]);
 	}
 	for (int triangle_i = 0; triangle_i < number_of_triangles; triangle_i++) {
 		for (int32_t face_index_i = 0; face_index_i < VERTICES_IN_TRIANGLE; face_index_i++) {

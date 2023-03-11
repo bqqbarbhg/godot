@@ -55,6 +55,19 @@ struct CSGBrush {
 		bool invert = false;
 		int material = 0;
 	};
+	enum class ManfifoldError {
+		NoError,
+		NonFiniteVertex,
+		NotManifold,
+		VertexOutOfBounds,
+		PropertiesWrongLength,
+		MissingPositionProperties,
+		MergeVectorsDifferentLengths,
+		MergeIndexOutOfBounds,
+		TransformWrongLength,
+		RunIndexWrongLength,
+		FaceIDWrongLength,
+	};
 	CSGBrush() { }
 	CSGBrush(CSGBrush &p_brush, const Transform3D &p_xform) {
 		faces = p_brush.faces;
@@ -94,12 +107,12 @@ struct CSGBrush {
 		MANIFOLD_PROPERTY_INVERT,
 		MANIFOLD_PROPERTY_SMOOTH_GROUP,
 		MANIFOLD_PROPERTY_UV_X_0,
-		MANIFOLD_PROPERTY_UV_X_1,
-		MANIFOLD_PROPERTY_UV_X_2,
+		//MANIFOLD_PROPERTY_UV_X_1,
+		//MANIFOLD_PROPERTY_UV_X_2,
 		MANIFOLD_PROPERTY_UV_Y_0,
-		MANIFOLD_PROPERTY_UV_Y_1,
-		MANIFOLD_PROPERTY_UV_Y_2,
-		MANIFOLD_PROPERTY_MATERIAL,
+		//MANIFOLD_PROPERTY_UV_Y_1,
+		//MANIFOLD_PROPERTY_UV_Y_2,
+		//MANIFOLD_PROPERTY_MATERIAL,
 		MANIFOLD_PROPERTY_MAX
 	};
 	void create_manifold();
