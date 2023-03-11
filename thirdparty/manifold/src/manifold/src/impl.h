@@ -16,8 +16,9 @@
 #include <map>
 
 #include "collider.h"
-#include "manifold.h"
+#include "../include/manifold.h"
 #include "optional_assert.h"
+#include "polygon.h"
 #include "shared.h"
 #include "sparse.h"
 #include "utils.h"
@@ -28,6 +29,7 @@ namespace manifold {
 /** @ingroup Private */
 struct Manifold::Impl {
   struct Relation {
+    int originalID = -1;
     glm::mat4x3 transform = glm::mat4x3(1);
     bool backSide = false;
   };
@@ -43,7 +45,7 @@ struct Manifold::Impl {
 
   Box bBox_;
   float precision_ = -1;
-  Error status_ = Error::NO_ERROR;
+  Error status_ = Error::NoError;
   VecDH<glm::vec3> vertPos_;
   VecDH<Halfedge> halfedge_;
   VecDH<glm::vec3> vertNormal_;
@@ -56,7 +58,7 @@ struct Manifold::Impl {
   static uint32_t ReserveIDs(uint32_t);
 
   Impl() {}
-  enum class Shape { TETRAHEDRON, CUBE, OCTAHEDRON };
+  enum class Shape { Tetrahedron, Cube, Octahedron };
   Impl(Shape);
 
   Impl(const MeshGL&, std::vector<float> propertyTolerance = {});
@@ -111,8 +113,8 @@ struct Manifold::Impl {
 
   // face_op.cu
   void Face2Tri(const VecDH<int>& faceEdge, const VecDH<TriRef>& halfedgeRef);
-  Polygons Face2Polygons(int face, glm::mat3x2 projection,
-                         const VecDH<int>& faceEdge) const;
+  PolygonsIdx Face2Polygons(int face, glm::mat3x2 projection,
+                            const VecDH<int>& faceEdge) const;
 
   // edge_op.cu
   void SimplifyTopology();

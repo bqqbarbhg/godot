@@ -29,17 +29,14 @@ using namespace manifold;
 ExecutionParams params;
 
 #ifdef MANIFOLD_DEBUG
-struct Polyedge {
+struct PolyEdge {
   int startVert, endVert;
 };
 
 bool OverlapAssert(bool condition, const char *file, int line,
                    const std::string &cond, const std::string &msg) {
-  if (!params.processOverlaps && !condition) {
-    std::ostringstream output;
-    output << "Error in file: " << file << " (" << line << "): \'" << cond
-           << "\' is false: " << msg;
-    throw geometryErr(output.str());
+  if (!params.processOverlaps) {
+    ASSERT(condition, geometryErr, msg);
   }
   return condition;
 }
@@ -66,8 +63,8 @@ bool OverlapAssert(bool condition, const char *file, int line,
 #define PRINT(msg) \
   if (params.verbose) std::cout << msg << std::endl;
 
-std::vector<Polyedge> Polygons2Edges(const Polygons &polys) {
-  std::vector<Polyedge> halfedges;
+std::vector<PolyEdge> Polygons2Edges(const PolygonsIdx &polys) {
+  std::vector<PolyEdge> halfedges;
   for (const auto &poly : polys) {
     for (int i = 1; i < poly.size(); ++i) {
       halfedges.push_back({poly[i - 1].idx, poly[i].idx});
@@ -77,9 +74,9 @@ std::vector<Polyedge> Polygons2Edges(const Polygons &polys) {
   return halfedges;
 }
 
-std::vector<Polyedge> Triangles2Edges(
+std::vector<PolyEdge> Triangles2Edges(
     const std::vector<glm::ivec3> &triangles) {
-  std::vector<Polyedge> halfedges;
+  std::vector<PolyEdge> halfedges;
   for (const glm::ivec3 &tri : triangles) {
     halfedges.push_back({tri[0], tri[1]});
     halfedges.push_back({tri[1], tri[2]});
@@ -88,26 +85,26 @@ std::vector<Polyedge> Triangles2Edges(
   return halfedges;
 }
 
-void CheckTopology(const std::vector<Polyedge> &halfedges) {
+void CheckTopology(const std::vector<PolyEdge> &halfedges) {
   ASSERT(halfedges.size() % 2 == 0, topologyErr, "Odd number of halfedges.");
   size_t n_edges = halfedges.size() / 2;
-  std::vector<Polyedge> forward(halfedges.size()), backward(halfedges.size());
+  std::vector<PolyEdge> forward(halfedges.size()), backward(halfedges.size());
 
   auto end = std::copy_if(halfedges.begin(), halfedges.end(), forward.begin(),
-                          [](Polyedge e) { return e.endVert > e.startVert; });
+                          [](PolyEdge e) { return e.endVert > e.startVert; });
   ASSERT(std::distance(forward.begin(), end) == n_edges, topologyErr,
          "Half of halfedges should be forward.");
   forward.resize(n_edges);
 
   end = std::copy_if(halfedges.begin(), halfedges.end(), backward.begin(),
-                     [](Polyedge e) { return e.endVert < e.startVert; });
+                     [](PolyEdge e) { return e.endVert < e.startVert; });
   ASSERT(std::distance(backward.begin(), end) == n_edges, topologyErr,
          "Half of halfedges should be backward.");
   backward.resize(n_edges);
 
   std::for_each(backward.begin(), backward.end(),
-                [](Polyedge &e) { std::swap(e.startVert, e.endVert); });
-  auto cmp = [](const Polyedge &a, const Polyedge &b) {
+                [](PolyEdge &e) { std::swap(e.startVert, e.endVert); });
+  auto cmp = [](const PolyEdge &a, const PolyEdge &b) {
     return a.startVert < b.startVert ||
            (a.startVert == b.startVert && a.endVert < b.endVert);
   };
@@ -129,17 +126,17 @@ void CheckTopology(const std::vector<Polyedge> &halfedges) {
 }
 
 void CheckTopology(const std::vector<glm::ivec3> &triangles,
-                   const Polygons &polys) {
-  std::vector<Polyedge> halfedges = Triangles2Edges(triangles);
-  std::vector<Polyedge> openEdges = Polygons2Edges(polys);
-  for (Polyedge e : openEdges) {
+                   const PolygonsIdx &polys) {
+  std::vector<PolyEdge> halfedges = Triangles2Edges(triangles);
+  std::vector<PolyEdge> openEdges = Polygons2Edges(polys);
+  for (PolyEdge e : openEdges) {
     halfedges.push_back({e.endVert, e.startVert});
   }
   CheckTopology(halfedges);
 }
 
 void CheckGeometry(const std::vector<glm::ivec3> &triangles,
-                   const Polygons &polys, float precision) {
+                   const PolygonsIdx &polys, float precision) {
   std::map<int, glm::vec2> vertPos;
   for (const auto &poly : polys) {
     for (int i = 0; i < poly.size(); ++i) {
@@ -154,7 +151,7 @@ void CheckGeometry(const std::vector<glm::ivec3> &triangles,
          geometryErr, "triangulation is not entirely CCW!");
 }
 
-void Dump(const Polygons &polys) {
+void Dump(const PolygonsIdx &polys) {
   for (auto poly : polys) {
     std::cout << "polys.push_back({" << std::setprecision(9) << std::endl;
     for (auto v : poly) {
@@ -172,7 +169,7 @@ void Dump(const Polygons &polys) {
   }
 }
 
-void PrintFailure(const std::exception &e, const Polygons &polys,
+void PrintFailure(const std::exception &e, const PolygonsIdx &polys,
                   std::vector<glm::ivec3> &triangles, float precision) {
   std::cout << "-----------------------------------" << std::endl;
   std::cout << "Triangulation failed! Precision = " << precision << std::endl;
@@ -196,10 +193,10 @@ void PrintFailure(const std::exception &e, const Polygons &polys,
  */
 class Monotones {
  public:
-  Monotones(const Polygons &polys, float precision) : precision_(precision) {
+  Monotones(const PolygonsIdx &polys, float precision) : precision_(precision) {
     VertItr start, last, current;
     float bound = 0;
-    for (const SimplePolygon &poly : polys) {
+    for (const SimplePolygonIdx &poly : polys) {
       for (int i = 0; i < poly.size(); ++i) {
         monotones_.push_back({poly[i].pos,  //
                               poly[i].idx,  //
@@ -275,7 +272,7 @@ class Monotones {
   void Check() {
 #ifdef MANIFOLD_DEBUG
     if (!params.intermediateChecks) return;
-    std::vector<Polyedge> edges;
+    std::vector<PolyEdge> edges;
     for (VertItr vert = monotones_.begin(); vert != monotones_.end(); vert++) {
       vert->SetProcessed(false);
       edges.push_back({vert->mesh_idx, vert->right->mesh_idx});
@@ -309,7 +306,7 @@ class Monotones {
   typedef std::list<VertAdj>::iterator VertItr;
   struct EdgePair;
   typedef std::list<EdgePair>::iterator PairItr;
-  enum VertType { START, WESTSIDE, EASTSIDE, MERGE, END, SKIP };
+  enum VertType { Start, WestSide, EastSide, Merge, End, Skip };
 
   std::list<VertAdj> monotones_;     // sweep-line list of verts
   std::list<EdgePair> activePairs_;  // west to east list of monotone edge pairs
@@ -489,8 +486,8 @@ class Monotones {
   }
 
   PairItr GetPair(VertItr vert, VertType type) const {
-    // MERGE returns westPair, as this is the one that will be removed.
-    return type == WESTSIDE ? vert->eastPair : vert->westPair;
+    // Merge returns westPair, as this is the one that will be removed.
+    return type == WestSide ? vert->eastPair : vert->westPair;
   }
 
   bool Coincident(glm::vec2 p0, glm::vec2 p1) const {
@@ -518,46 +515,46 @@ class Monotones {
       if (vert->left->Processed()) {
         if (westPair == eastPair) {
           // facing in
-          PRINT("END");
+          PRINT("End");
           CloseEnd(vert);
-          return END;
+          return End;
         } else if (westPair != activePairs_.end() &&
                    std::next(westPair) == eastPair) {
           // facing out
-          PRINT("MERGE");
+          PRINT("Merge");
           CloseEnd(vert);
           // westPair will be removed and eastPair takes over.
           SetVWest(eastPair, westPair->vWest);
-          return MERGE;
+          return Merge;
         } else {  // not neighbors
-          PRINT("SKIP");
-          return SKIP;
+          PRINT("Skip");
+          return Skip;
         }
       } else {
         if (!eastPair->vEast->right->IsPast(vert, precision_) &&
             vert->IsPast(eastPair->vEast, precision_) &&
             vert->pos.x > eastPair->vEast->right->pos.x + precision_) {
-          PRINT("SKIP WEST");
-          return SKIP;
+          PRINT("Skip WEST");
+          return Skip;
         }
         SetVWest(eastPair, vert);
-        PRINT("WESTSIDE");
-        return WESTSIDE;
+        PRINT("WestSide");
+        return WestSide;
       }
     } else {
       if (vert->left->Processed()) {
         if (!westPair->vWest->left->IsPast(vert, precision_) &&
             vert->IsPast(westPair->vWest, precision_) &&
             vert->pos.x < westPair->vWest->left->pos.x - precision_) {
-          PRINT("SKIP EAST");
-          return SKIP;
+          PRINT("Skip EAST");
+          return Skip;
         }
         SetVEast(westPair, vert);
-        PRINT("EASTSIDE");
-        return EASTSIDE;
+        PRINT("EastSide");
+        return EastSide;
       } else {
-        PRINT("START");
-        return START;
+        PRINT("Start");
+        return Start;
       }
     }
   }
@@ -573,12 +570,12 @@ class Monotones {
   }
 
   /**
-   * When vert is a START, this determines if it is backwards (forming a void or
+   * When vert is a Start, this determines if it is backwards (forming a void or
    * hole). Usually the first return is adequate, but if it is degenerate, the
    * function will continue to search up the neighbors until the degeneracy is
    * broken and a certain answer is returned. Like CCW, this function returns 1
    * for a hole, -1 for a start, and 0 only if the entire polygon degenerates to
-   * a polyline.
+   * a line.
    */
   int IsHole(VertItr vert) const {
     VertItr left = vert->left;
@@ -822,7 +819,7 @@ class Monotones {
 
       PairItr newPair = activePairs_.end();
       bool isHole = false;
-      if (type == START) {
+      if (type == Start) {
         newPair = activePairs_.insert(
             activePairs_.begin(), {vert, vert, monotones_.end(),
                                    activePairs_.end(), false, false, false});
@@ -839,13 +836,13 @@ class Monotones {
       }
 
       const PairItr pair = GetPair(vert, type);
-      OVERLAP_ASSERT(type == SKIP || pair != activePairs_.end(),
+      OVERLAP_ASSERT(type == Skip || pair != activePairs_.end(),
                      "No active pair!");
 
-      if (type != SKIP && ShiftEast(vert, pair, isHole)) type = SKIP;
-      if (type != SKIP && ShiftWest(vert, pair, isHole)) type = SKIP;
+      if (type != Skip && ShiftEast(vert, pair, isHole)) type = Skip;
+      if (type != Skip && ShiftWest(vert, pair, isHole)) type = Skip;
 
-      if (type == SKIP) {
+      if (type == Skip) {
         OVERLAP_ASSERT(std::next(insertAt) != monotones_.end(),
                        "Not Geometrically Valid! Tried to skip final vert.");
         OVERLAP_ASSERT(
@@ -868,23 +865,23 @@ class Monotones {
         monotones_.splice(insertAt, monotones_, vert);
 
       switch (type) {
-        case WESTSIDE:
+        case WestSide:
           nextAttached.push(vert->left);
           break;
-        case EASTSIDE:
+        case EastSide:
           nextAttached.push(vert->right);
           break;
-        case START:
+        case Start:
           nextAttached.push(vert->left);
           nextAttached.push(vert->right);
           break;
-        case MERGE:
+        case Merge:
           // Mark merge as hole for sweep-back.
           pair->vMerge = vert;
-        case END:
+        case End:
           RemovePair(pair);
           break;
-        case SKIP:
+        case Skip:
           break;
       }
 
@@ -947,29 +944,29 @@ class Monotones {
       if (vert->Processed()) continue;
 
       VertType type = ProcessVert(vert);
-      OVERLAP_ASSERT(type != SKIP, "SKIP should not happen on reverse sweep!");
+      OVERLAP_ASSERT(type != Skip, "Skip should not happen on reverse sweep!");
 
       PairItr westPair = GetPair(vert, type);
       OVERLAP_ASSERT(westPair != activePairs_.end(), "No active pair!");
 
       switch (type) {
-        case MERGE: {
+        case Merge: {
           PairItr eastPair = std::next(westPair);
           if (eastPair->vMerge != monotones_.end())
             vert = SplitVerts(vert, eastPair->vMerge);
           eastPair->vMerge = vert;
         }
-        case END:
+        case End:
           RemovePair(westPair);
-        case WESTSIDE:
-        case EASTSIDE:
+        case WestSide:
+        case EastSide:
           if (westPair->vMerge != monotones_.end()) {
             VertItr eastVert = SplitVerts(vert, westPair->vMerge);
-            if (type == WESTSIDE) westPair->vWest = eastVert;
+            if (type == WestSide) westPair->vWest = eastVert;
             westPair->vMerge = monotones_.end();
           }
           break;
-        case START: {
+        case Start: {
           // Due to sweeping in the opposite direction, east and west are
           // swapped and what was the next pair is now the previous pair and
           // begin and end are swapped.
@@ -999,7 +996,7 @@ class Monotones {
           }
           break;
         }
-        case SKIP:
+        case Skip:
           break;
       }
 
@@ -1045,7 +1042,7 @@ namespace manifold {
  * @return std::vector<glm::ivec3> The triangles, referencing the original
  * vertex indicies.
  */
-std::vector<glm::ivec3> Triangulate(const Polygons &polys, float precision) {
+std::vector<glm::ivec3> Triangulate(const PolygonsIdx &polys, float precision) {
   std::vector<glm::ivec3> triangles;
   try {
     Monotones monotones(polys, precision);

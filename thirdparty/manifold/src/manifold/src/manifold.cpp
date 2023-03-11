@@ -79,7 +79,7 @@ Manifold& Manifold::operator=(const Manifold& other) {
 }
 
 CsgLeafNode& Manifold::GetCsgLeafNode() const {
-  if (pNode_->GetNodeType() != CsgNodeType::LEAF) {
+  if (pNode_->GetNodeType() != CsgNodeType::Leaf) {
     pNode_ = pNode_->ToLeafNode();
   }
   return *std::static_pointer_cast<CsgLeafNode>(pNode_);
@@ -167,8 +167,9 @@ MeshGL Manifold::GetMeshGL(glm::ivec3 normalIdx) const {
   const int numVert = NumPropVert();
   const int numTri = NumTri();
 
+  const bool isOriginal = impl.meshRelation_.originalID >= 0;
   const bool updateNormals =
-      glm::all(glm::greaterThan(normalIdx, glm::ivec3(2)));
+      !isOriginal && glm::all(glm::greaterThan(normalIdx, glm::ivec3(2)));
 
   MeshGL out;
   out.numProp = 3 + numProp;
@@ -190,7 +191,7 @@ MeshGL Manifold::GetMeshGL(glm::ivec3 normalIdx) const {
   std::iota(triNew2Old.begin(), triNew2Old.end(), 0);
   const TriRef* triRef = impl.meshRelation_.triRef.cptrD();
   // Don't sort originals - keep them in order
-  if (impl.meshRelation_.originalID < 0) {
+  if (!isOriginal) {
     std::sort(triNew2Old.begin(), triNew2Old.end(), [triRef](int a, int b) {
       return triRef[a].originalID == triRef[b].originalID
                  ? triRef[a].meshID < triRef[b].meshID
@@ -199,31 +200,45 @@ MeshGL Manifold::GetMeshGL(glm::ivec3 normalIdx) const {
   }
 
   std::vector<glm::mat3> runNormalTransform;
+
+  auto addRun = [updateNormals, isOriginal](
+                    MeshGL& out, std::vector<glm::mat3>& runNormalTransform,
+                    int tri, const Impl::Relation& rel) {
+    out.runIndex.push_back(3 * tri);
+    out.runOriginalID.push_back(rel.originalID);
+    if (updateNormals) {
+      runNormalTransform.push_back(NormalTransform(rel.transform) *
+                                   (rel.backSide ? -1.0f : 1.0f));
+    }
+    if (!isOriginal) {
+      for (const int col : {0, 1, 2, 3}) {
+        for (const int row : {0, 1, 2}) {
+          out.runTransform.push_back(rel.transform[col][row]);
+        }
+      }
+    }
+  };
+
+  auto meshIDtransform = impl.meshRelation_.meshIDtransform;
   int lastID = -1;
   for (int tri = 0; tri < numTri; ++tri) {
     const int oldTri = triNew2Old[tri];
     const auto ref = triRef[oldTri];
     const int meshID = ref.meshID;
-    if (meshID != lastID) {
-      out.runIndex.push_back(3 * tri);
-      out.originalID.push_back(ref.originalID);
-      const Impl::Relation& m = impl.meshRelation_.meshIDtransform.at(meshID);
-      if (updateNormals) {
-        runNormalTransform.push_back(NormalTransform(m.transform) *
-                                     (m.backSide ? -1.0f : 1.0f));
-      }
-      if (impl.meshRelation_.originalID < 0) {
-        for (const int col : {0, 1, 2, 3}) {
-          for (const int row : {0, 1, 2}) {
-            out.transform.push_back(m.transform[col][row]);
-          }
-        }
-      }
-      lastID = meshID;
-    }
+
     out.faceID[tri] = ref.tri;
     for (const int i : {0, 1, 2})
       out.triVerts[3 * tri + i] = impl.halfedge_[3 * oldTri + i].startVert;
+
+    if (meshID != lastID) {
+      addRun(out, runNormalTransform, tri, meshIDtransform.at(meshID));
+      meshIDtransform.erase(meshID);
+      lastID = meshID;
+    }
+  }
+  // Add runs for originals that did not contribute any faces to the output
+  for (const auto& pair : meshIDtransform) {
+    addRun(out, runNormalTransform, numTri, pair.second);
   }
   out.runIndex.push_back(3 * numTri);
 
@@ -242,7 +257,7 @@ MeshGL Manifold::GetMeshGL(glm::ivec3 normalIdx) const {
   // Duplicate verts with different props
   std::vector<int> vert2idx(impl.NumVert(), -1);
   std::map<std::pair<int, int>, int> vertPropPair;
-  for (int run = 0; run < out.originalID.size(); ++run) {
+  for (int run = 0; run < out.runOriginalID.size(); ++run) {
     for (int tri = out.runIndex[run] / 3; tri < out.runIndex[run + 1] / 3;
          ++tri) {
       const glm::ivec3 triProp =
@@ -291,66 +306,6 @@ MeshGL Manifold::GetMeshGL(glm::ivec3 normalIdx) const {
   return out;
 }
 
-int Manifold::circularSegments_ = 0;
-float Manifold::circularAngle_ = 10.0f;
-float Manifold::circularEdgeLength_ = 1.0f;
-
-/**
- * Sets an angle constraint the default number of circular segments for the
- * Cylinder(), Sphere(), and Revolve() constructors. The number of segments will
- * be rounded up to the nearest factor of four.
- *
- * @param angle The minimum angle in degrees between consecutive segments. The
- * angle will increase if the the segments hit the minimum edge length. Default
- * is 10 degrees.
- */
-void Manifold::SetMinCircularAngle(float angle) {
-  if (angle <= 0) return;
-  Manifold::circularAngle_ = angle;
-}
-
-/**
- * Sets a length constraint the default number of circular segments for the
- * Cylinder(), Sphere(), and Revolve() constructors. The number of segments will
- * be rounded up to the nearest factor of four.
- *
- * @param length The minimum length of segments. The length will
- * increase if the the segments hit the minimum angle. Default is 1.0.
- */
-void Manifold::SetMinCircularEdgeLength(float length) {
-  if (length <= 0) return;
-  Manifold::circularEdgeLength_ = length;
-}
-
-/**
- * Sets the default number of circular segments for the
- * Cylinder(), Sphere(), and Revolve() constructors. Overrides the edge length
- * and angle constraints and sets the number of segments to exactly this value.
- *
- * @param number Number of circular segments. Default is 0, meaning no
- * constraint is applied.
- */
-void Manifold::SetCircularSegments(int number) {
-  if (number < 3 && number != 0) return;
-  Manifold::circularSegments_ = number;
-}
-
-/**
- * Determine the result of the SetMinCircularAngle(),
- * SetMinCircularEdgeLength(), and SetCircularSegments() defaults.
- *
- * @param radius For a given radius of circle, determine how many default
- * segments there will be.
- */
-int Manifold::GetCircularSegments(float radius) {
-  if (Manifold::circularSegments_ > 0) return Manifold::circularSegments_;
-  int nSegA = 360.0f / Manifold::circularAngle_;
-  int nSegL = 2.0f * radius * glm::pi<float>() / Manifold::circularEdgeLength_;
-  int nSeg = fmin(nSegA, nSegL) + 3;
-  nSeg -= nSeg % 4;
-  return nSeg;
-}
-
 /**
  * Does the Manifold have any triangles?
  */
@@ -358,9 +313,9 @@ bool Manifold::IsEmpty() const { return GetCsgLeafNode().GetImpl()->IsEmpty(); }
 /**
  * Returns the reason for an input Mesh producing an empty Manifold. This Status
  * only applies to Manifolds newly-created from an input Mesh - once they are
- * combined into a new Manifold via operations, the status reverts to NO_ERROR,
+ * combined into a new Manifold via operations, the status reverts to NoError,
  * simply processing the problem mesh as empty. Likewise, empty meshes may still
- * show NO_ERROR, for instance if they are small enough relative to their
+ * show NoError, for instance if they are small enough relative to their
  * precision to be collapsed to nothing.
  */
 Manifold::Error Manifold::Status() const {
@@ -467,7 +422,7 @@ Manifold Manifold::AsOriginal() const {
 /**
  * Returns the first of n sequential new unique mesh IDs for marking sets of
  * triangles that can be looked up after further operations. Assign to
- * MeshGL.originalID vector.
+ * MeshGL.runOriginalID vector.
  */
 uint32_t Manifold::ReserveIDs(uint32_t n) {
   return Manifold::Impl::ReserveIDs(n);
@@ -563,6 +518,23 @@ Manifold Manifold::Transform(const glm::mat4x3& m) const {
 }
 
 /**
+ * Mirror this Manifold over the plane described by the unit form of the given
+ * normal vector. If the length of the normal is zero, an empty Manifold is
+ * returned. This operation can be chained. Transforms are combined and applied
+ * lazily.
+ *
+ * @param normal The normal vector of the plane to be mirrored over
+ */
+Manifold Manifold::Mirror(glm::vec3 normal) const {
+  if (glm::length(normal) == 0.) {
+    return Manifold();
+  }
+  auto n = glm::normalize(normal);
+  auto m = glm::mat4x3(glm::mat3(1.0f) - 2.0f * glm::outerProduct(n, n));
+  return Manifold(pNode_->Transform(m));
+}
+
+/**
  * This function does not change the topology, but allows the vertices to be
  * moved according to any arbitrary input function. It is easy to create a
  * function that warps a geometrically valid object into one which overlaps, but
@@ -633,7 +605,7 @@ Manifold Manifold::BatchBoolean(const std::vector<Manifold>& manifolds,
  * Shorthand for Boolean Union.
  */
 Manifold Manifold::operator+(const Manifold& Q) const {
-  return Boolean(Q, OpType::ADD);
+  return Boolean(Q, OpType::Add);
 }
 
 /**
@@ -648,7 +620,7 @@ Manifold& Manifold::operator+=(const Manifold& Q) {
  * Shorthand for Boolean Difference.
  */
 Manifold Manifold::operator-(const Manifold& Q) const {
-  return Boolean(Q, OpType::SUBTRACT);
+  return Boolean(Q, OpType::Subtract);
 }
 
 /**
@@ -663,7 +635,7 @@ Manifold& Manifold::operator-=(const Manifold& Q) {
  * Shorthand for Boolean Intersection.
  */
 Manifold Manifold::operator^(const Manifold& Q) const {
-  return Boolean(Q, OpType::INTERSECT);
+  return Boolean(Q, OpType::Intersect);
 }
 
 /**
@@ -685,11 +657,11 @@ std::pair<Manifold, Manifold> Manifold::Split(const Manifold& cutter) const {
   auto impl1 = GetCsgLeafNode().GetImpl();
   auto impl2 = cutter.GetCsgLeafNode().GetImpl();
 
-  Boolean3 boolean(*impl1, *impl2, OpType::SUBTRACT);
+  Boolean3 boolean(*impl1, *impl2, OpType::Subtract);
   auto result1 = std::make_shared<CsgLeafNode>(
-      std::make_unique<Impl>(boolean.Result(OpType::INTERSECT)));
+      std::make_unique<Impl>(boolean.Result(OpType::Intersect)));
   auto result2 = std::make_shared<CsgLeafNode>(
-      std::make_unique<Impl>(boolean.Result(OpType::SUBTRACT)));
+      std::make_unique<Impl>(boolean.Result(OpType::Subtract)));
   return std::make_pair(Manifold(result1), Manifold(result2));
 }
 

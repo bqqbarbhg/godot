@@ -16,7 +16,8 @@
 #include <functional>
 #include <memory>
 
-#include "../../utilities/include/public.h"
+#include "thirdparty/manifold/src/cross_section/include/cross_section.h"
+#include "thirdparty/manifold/src/utilities/include/public.h"
 
 namespace manifold {
 
@@ -62,10 +63,10 @@ class Manifold {
                            float radiusHigh = -1.0f, int circularSegments = 0,
                            bool center = false);
   static Manifold Sphere(float radius, int circularSegments = 0);
-  static Manifold Extrude(Polygons crossSection, float height,
+  static Manifold Extrude(const CrossSection& crossSection, float height,
                           int nDivisions = 0, float twistDegrees = 0.0f,
                           glm::vec2 scaleTop = glm::vec2(1.0f));
-  static Manifold Revolve(const Polygons& crossSection,
+  static Manifold Revolve(const CrossSection& crossSection,
                           int circularSegments = 0);
   ///@}
 
@@ -80,21 +81,6 @@ class Manifold {
   std::vector<Manifold> Decompose() const;
   ///@}
 
-  /** @name Defaults
-   * These static properties control how circular shapes are quantized by
-   * default on construction. If circularSegments is specified, it takes
-   * precedence. If it is zero, then instead the minimum is used of the segments
-   * calculated based on edge length and angle, rounded up to the nearest
-   * multiple of four. To get numbers not divisible by four, circularSegments
-   * must be specified.
-   */
-  ///@{
-  static void SetMinCircularAngle(float degrees);
-  static void SetMinCircularEdgeLength(float length);
-  static void SetCircularSegments(int number);
-  static int GetCircularSegments(float radius);
-  ///@}
-
   /** @name Information
    *  Details of the manifold
    */
@@ -103,17 +89,17 @@ class Manifold {
   MeshGL GetMeshGL(glm::ivec3 normalIdx = glm::ivec3(0)) const;
   bool IsEmpty() const;
   enum class Error {
-    NO_ERROR,
-    NON_FINITE_VERTEX,
-    NOT_MANIFOLD,
-    VERTEX_INDEX_OUT_OF_BOUNDS,
-    PROPERTIES_WRONG_LENGTH,
-    MISSING_POSITION_PROPERTIES,
-    MERGE_VECTORS_DIFFERENT_LENGTHS,
-    MERGE_INDEX_OUT_OF_BOUNDS,
-    TRANSFORM_WRONG_LENGTH,
-    RUN_INDEX_WRONG_LENGTH,
-    FACE_ID_WRONG_LENGTH,
+    NoError,
+    NonFiniteVertex,
+    NotManifold,
+    VertexOutOfBounds,
+    PropertiesWrongLength,
+    MissingPositionProperties,
+    MergeVectorsDifferentLengths,
+    MergeIndexOutOfBounds,
+    TransformWrongLength,
+    RunIndexWrongLength,
+    FaceIDWrongLength,
   };
   Error Status() const;
   int NumVert() const;
@@ -146,6 +132,7 @@ class Manifold {
   Manifold Rotate(float xDegrees, float yDegrees = 0.0f,
                   float zDegrees = 0.0f) const;
   Manifold Transform(const glm::mat4x3&) const;
+  Manifold Mirror(glm::vec3) const;
   Manifold Warp(std::function<void(glm::vec3&)>) const;
   Manifold Refine(int) const;
   // Manifold RefineToLength(float);
@@ -156,19 +143,15 @@ class Manifold {
    *  Combine two manifolds
    */
   ///@{
-  /**
-   * Boolean operation type: ADD (Union), SUBTRACT (Difference), and INTERSECT.
-   */
-  enum class OpType { ADD, SUBTRACT, INTERSECT };
   Manifold Boolean(const Manifold& second, OpType op) const;
   static Manifold BatchBoolean(const std::vector<Manifold>& manifolds,
                                OpType op);
   // Boolean operation shorthand
-  Manifold operator+(const Manifold&) const;  // ADD (Union)
+  Manifold operator+(const Manifold&) const;  // Add (Union)
   Manifold& operator+=(const Manifold&);
-  Manifold operator-(const Manifold&) const;  // SUBTRACT (Difference)
+  Manifold operator-(const Manifold&) const;  // Subtract (Difference)
   Manifold& operator-=(const Manifold&);
-  Manifold operator^(const Manifold&) const;  // INTERSECT
+  Manifold operator^(const Manifold&) const;  // Intersect
   Manifold& operator^=(const Manifold&);
   std::pair<Manifold, Manifold> Split(const Manifold&) const;
   std::pair<Manifold, Manifold> SplitByPlane(glm::vec3 normal,

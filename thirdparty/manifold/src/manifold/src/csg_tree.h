@@ -13,11 +13,12 @@
 // limitations under the License.
 
 #pragma once
-#include "manifold.h"
+#include "thirdparty/manifold/src/manifold/include/manifold.h"
+#include "utils.h"
 
 namespace manifold {
 
-enum class CsgNodeType { UNION, INTERSECTION, DIFFERENCE, LEAF };
+enum class CsgNodeType { Union, Intersection, Difference, Leaf };
 
 class CsgLeafNode;
 
@@ -63,36 +64,34 @@ class CsgOpNode final : public CsgNode {
  public:
   CsgOpNode();
 
-  CsgOpNode(const std::vector<std::shared_ptr<CsgNode>> &children,
-            Manifold::OpType op);
+  CsgOpNode(const std::vector<std::shared_ptr<CsgNode>> &children, OpType op);
 
-  CsgOpNode(std::vector<std::shared_ptr<CsgNode>> &&children,
-            Manifold::OpType op);
+  CsgOpNode(std::vector<std::shared_ptr<CsgNode>> &&children, OpType op);
 
   std::shared_ptr<CsgNode> Transform(const glm::mat4x3 &m) const override;
 
   std::shared_ptr<CsgLeafNode> ToLeafNode() const override;
 
-  CsgNodeType GetNodeType() const override { return impl_->op_; }
+  CsgNodeType GetNodeType() const override { return op_; }
 
   glm::mat4x3 GetTransform() const override;
 
  private:
   struct Impl {
-    CsgNodeType op_;
-    mutable std::vector<std::shared_ptr<CsgNode>> children_;
-    mutable bool simplified_ = false;
-    mutable bool flattened_ = false;
+    std::vector<std::shared_ptr<CsgNode>> children_;
+    bool simplified_ = false;
+    bool flattened_ = false;
   };
-  std::shared_ptr<Impl> impl_ = nullptr;
+  mutable ConcurrentSharedPtr<Impl> impl_ = ConcurrentSharedPtr<Impl>(Impl{});
+  CsgNodeType op_;
   glm::mat4x3 transform_ = glm::mat4x3(1.0f);
   // the following fields are for lazy evaluation, so they are mutable
   mutable std::shared_ptr<CsgLeafNode> cache_ = nullptr;
 
-  void SetOp(Manifold::OpType);
+  void SetOp(OpType);
 
-  static void BatchBoolean(
-      Manifold::OpType operation,
+  static std::shared_ptr<Manifold::Impl> BatchBoolean(
+      OpType operation,
       std::vector<std::shared_ptr<const Manifold::Impl>> &results);
 
   void BatchUnion() const;

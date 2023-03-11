@@ -14,11 +14,11 @@
 
 #pragma once
 #define GLM_FORCE_EXPLICIT_CTOR
-#include "thirdparty/glm/glm/ext/matrix_transform.hpp"
-#include "thirdparty/glm/glm/glm.hpp"
-#include "thirdparty/glm/glm/gtc/constants.hpp"
-#include "thirdparty/glm/glm/gtx/compatibility.hpp"
-#include "thirdparty/glm/glm/gtx/rotate_vector.hpp"
+#include "../../../../glm/glm/ext/matrix_transform.hpp"
+#include "../../../../glm/glm/glm.hpp"
+#include "../../../../glm/glm/gtc/constants.hpp"
+#include "../../../../glm/glm/gtx/compatibility.hpp"
+#include "../../../../glm/glm/gtx/rotate_vector.hpp"
 #include <limits>
 #include <memory>
 #include <unordered_map>
@@ -112,27 +112,12 @@ inline HOST_DEVICE int CCW(glm::vec2 p0, glm::vec2 p1, glm::vec2 p2,
     return area > 0 ? 1 : -1;
 }
 
-/** @defgroup Polygon
- *  @brief Polygon data structures
- * @{
- */
-
-/**
- * Polygon vertex.
- */
-struct PolyVert {
-  /// X-Y position
-  glm::vec2 pos;
-  /// ID or index into another vertex vector
-  int idx;
-};
-
 /**
  * Single polygon contour, wound CCW. First and last point are implicitly
  * connected. Should ensure all input is
  * [&epsilon;-valid](https://github.com/elalish/manifold/wiki/Manifold-Library#definition-of-%CE%B5-valid).
  */
-using SimplePolygon = std::vector<PolyVert>;
+using SimplePolygon = std::vector<glm::vec2>;
 
 /**
  * Set of polygons with holes. Order of contours is arbitrary. Can contain any
@@ -141,7 +126,6 @@ using SimplePolygon = std::vector<PolyVert>;
  * [&epsilon;-valid](https://github.com/elalish/manifold/wiki/Manifold-Library#definition-of-%CE%B5-valid).
  */
 using Polygons = std::vector<SimplePolygon>;
-/** @} */
 
 /**
  * The triangle-mesh input and output of this library.
@@ -193,7 +177,7 @@ struct MeshGL {
   std::vector<uint32_t> mergeToVert;
   /// Optional: Indicates runs of triangles that correspond to a particular
   /// input mesh instance. The runs encompass all of triVerts and are sorted
-  /// by originalID. Run i begins at triVerts[runIndex[i]] and ends at
+  /// by runOriginalID. Run i begins at triVerts[runIndex[i]] and ends at
   /// triVerts[runIndex[i+1]]. All runIndex values are divisible by 3.
   std::vector<uint32_t> runIndex;
   /// Optional: The OriginalID of the mesh this triangle run came from. This ID
@@ -201,12 +185,12 @@ struct MeshGL {
   /// have the same ID, e.g. representing different copies of the same input
   /// mesh. If you create an input MeshGL that you want to be able to reference
   /// as one or more originals, be sure to set unique values from ReserveIDs().
-  std::vector<uint32_t> originalID;
+  std::vector<uint32_t> runOriginalID;
   /// Optional: For each run, a 3x4 transform is stored representing how the
   /// corresponding original mesh was transformed to create this triangle run.
   /// This matrix is stored in column-major order and the length of the overall
-  /// vector is 12 * originalID.size().
-  std::vector<float> transform;
+  /// vector is 12 * runOriginalID.size().
+  std::vector<float> runTransform;
   /// Optional: Length NumTri, contains an ID of the source face this triangle
   /// comes from. When auto-generated, this ID will be a triangle index into the
   /// original mesh. All neighboring coplanar triangles from that input mesh
@@ -278,12 +262,7 @@ struct Components {
   std::vector<int> indices;
   int numComponents;
 };
-/** @} */
 
-/**
- * @ingroup Connections
- * Axis-aligned bounding box
- */
 struct Box {
   glm::vec3 min = glm::vec3(std::numeric_limits<float>::infinity());
   glm::vec3 max = glm::vec3(-std::numeric_limits<float>::infinity());
@@ -431,6 +410,92 @@ struct Box {
     return glm::all(glm::isfinite(min)) && glm::all(glm::isfinite(max));
   }
 };
+/** @} */
+
+/** @addtogroup Core
+ *  @{
+ */
+
+/**
+ * Boolean operation type: Add (Union), Subtract (Difference), and Intersect.
+ */
+enum class OpType { Add, Subtract, Intersect };
+
+/**
+ * These static properties control how circular shapes are quantized by
+ * default on construction. If circularSegments is specified, it takes
+ * precedence. If it is zero, then instead the minimum is used of the segments
+ * calculated based on edge length and angle, rounded up to the nearest
+ * multiple of four. To get numbers not divisible by four, circularSegments
+ * must be specified.
+ */
+class Quality {
+ private:
+  inline static int circularSegments_ = 0;
+  inline static float circularAngle_ = 10.0f;
+  inline static float circularEdgeLength_ = 1.0f;
+
+ public:
+  /**
+   * Sets an angle constraint the default number of circular segments for the
+   * CrossSection::Circle(), Manifold::Cylinder(), Manifold::Sphere(), and
+   * Manifold::Revolve() constructors. The number of segments will be rounded up
+   * to the nearest factor of four.
+   *
+   * @param angle The minimum angle in degrees between consecutive segments. The
+   * angle will increase if the the segments hit the minimum edge length.
+   * Default is 10 degrees.
+   */
+  static void SetMinCircularAngle(float angle) {
+    if (angle <= 0) return;
+    circularAngle_ = angle;
+  }
+
+  /**
+   * Sets a length constraint the default number of circular segments for the
+   * CrossSection::Circle(), Manifold::Cylinder(), Manifold::Sphere(), and
+   * Manifold::Revolve() constructors. The number of segments will be rounded up
+   * to the nearest factor of four.
+   *
+   * @param length The minimum length of segments. The length will
+   * increase if the the segments hit the minimum angle. Default is 1.0.
+   */
+  static void SetMinCircularEdgeLength(float length) {
+    if (length <= 0) return;
+    circularEdgeLength_ = length;
+  }
+
+  /**
+   * Sets the default number of circular segments for the
+   * CrossSection::Circle(), Manifold::Cylinder(), Manifold::Sphere(), and
+   * Manifold::Revolve() constructors. Overrides the edge length and angle
+   * constraints and sets the number of segments to exactly this value.
+   *
+   * @param number Number of circular segments. Default is 0, meaning no
+   * constraint is applied.
+   */
+  static void SetCircularSegments(int number) {
+    if (number < 3 && number != 0) return;
+    circularSegments_ = number;
+  }
+
+  /**
+   * Determine the result of the SetMinCircularAngle(),
+   * SetMinCircularEdgeLength(), and SetCircularSegments() defaults.
+   *
+   * @param radius For a given radius of circle, determine how many default
+   * segments there will be.
+   */
+  static int GetCircularSegments(float radius) {
+    if (circularSegments_ > 0) return circularSegments_;
+    int nSegA = 360.0f / circularAngle_;
+    int nSegL = 2.0f * radius * glm::pi<float>() / circularEdgeLength_;
+    int nSeg = fmin(nSegA, nSegL) + 3;
+    nSeg -= nSeg % 4;
+    return nSeg;
+  }
+};
+/** @} */
 
 /** @defgroup Debug
  *  @brief Debugging features
@@ -474,7 +539,7 @@ struct ExecutionParams {
   bool verbose = false;
   /// If processOverlaps is false, a geometric check will be performed to assert
   /// all triangles are CCW.
-  bool processOverlaps = false;
+  bool processOverlaps = true;
   /// Suppresses printed errors regarding CW triangles. Has no effect if
   /// processOverlaps is true.
   bool suppressErrors = false;

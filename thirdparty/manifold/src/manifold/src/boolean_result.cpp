@@ -539,31 +539,31 @@ void CreateProperties(Manifold::Impl &outR, const VecDH<TriRef> &refPQ,
 
 namespace manifold {
 
-Manifold::Impl Boolean3::Result(Manifold::OpType op) const {
+Manifold::Impl Boolean3::Result(OpType op) const {
 #ifdef MANIFOLD_DEBUG
   Timer assemble;
   assemble.Start();
 #endif
 
-  ASSERT((expandP_ > 0) == (op == Manifold::OpType::ADD), logicErr,
+  ASSERT((expandP_ > 0) == (op == OpType::Add), logicErr,
          "Result op type not compatible with constructor op type.");
-  const int c1 = op == Manifold::OpType::INTERSECT ? 0 : 1;
-  const int c2 = op == Manifold::OpType::ADD ? 1 : 0;
-  const int c3 = op == Manifold::OpType::INTERSECT ? 1 : -1;
+  const int c1 = op == OpType::Intersect ? 0 : 1;
+  const int c2 = op == OpType::Add ? 1 : 0;
+  const int c3 = op == OpType::Intersect ? 1 : -1;
 
   if (w03_.size() == 0) {
-    if (w30_.size() != 0 && op == Manifold::OpType::ADD) {
+    if (w30_.size() != 0 && op == OpType::Add) {
       return inQ_;
     }
     return Manifold::Impl();
   } else if (w30_.size() == 0) {
-    if (op == Manifold::OpType::INTERSECT) {
+    if (op == OpType::Intersect) {
       return Manifold::Impl();
     }
     return inP_;
   }
 
-  const bool invertQ = op == Manifold::OpType::SUBTRACT;
+  const bool invertQ = op == OpType::Subtract;
 
   // Convert winding numbers to inclusion values based on operation type.
   VecDH<int> i12(x12_.size());

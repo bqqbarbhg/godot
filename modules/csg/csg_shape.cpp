@@ -30,9 +30,15 @@
 
 #include "csg_shape.h"
 
-#include "thirdparty/glm/glm/ext/vector_int3.hpp"
 #include "core/math/geometry_2d.h"
+#include "scene/resources/mesh_data_tool.h"
+#include "scene/resources/surface_tool.h"
+#include "thirdparty/glm/glm/ext/vector_float3.hpp"
+#include "thirdparty/glm/glm/ext/vector_int3.hpp"
 #include "thirdparty/manifold/src/manifold/include/manifold.h"
+#include <stdint.h>
+#include <algorithm>
+#include <vector>
 
 void CSGShape3D::set_use_collision(bool p_enable) {
 	if (use_collision == p_enable) {
@@ -164,15 +170,6 @@ void CSGShape3D::_make_dirty(bool p_parent_removing) {
 	dirty = true;
 }
 
-#include "scene/resources/mesh_data_tool.h"
-#include "scene/resources/surface_tool.h"
-
-#include "thirdparty/manifold/src/manifold/include/manifold.h"
-#include "thirdparty/glm/glm/ext/vector_float3.hpp"
-#include <stdint.h>
-#include <algorithm>
-#include <vector>
-
 CSGBrush *CSGShape3D::_get_brush() {
 	if (dirty) {
 		if (brush) {
@@ -205,13 +202,13 @@ CSGBrush *CSGShape3D::_get_brush() {
 				CSGBrush *nn2 = memnew(CSGBrush(*n2, child->get_transform()));
 				switch (child->get_operation()) {
 					case CSGShape3D::OPERATION_UNION:
-						nn->manifold = n->manifold.Boolean(nn2->manifold, manifold::Manifold::OpType::ADD);
+						nn->manifold = n->manifold + nn2->manifold;
 						break;
 					case CSGShape3D::OPERATION_INTERSECTION:
-						nn->manifold = n->manifold.Boolean(nn2->manifold, manifold::Manifold::OpType::INTERSECT);
+						nn->manifold = n->manifold ^ nn2->manifold;
 						break;
 					case CSGShape3D::OPERATION_SUBTRACTION:
-						nn->manifold = n->manifold.Boolean(nn2->manifold, manifold::Manifold::OpType::SUBTRACT);
+						nn->manifold = n->manifold - nn2->manifold;
 						break;
 				}
 				nn->merge_manifold_properties(n->mesh_id_properties, n->mesh_id_triangle_property_indices, n->mesh_id_materials,

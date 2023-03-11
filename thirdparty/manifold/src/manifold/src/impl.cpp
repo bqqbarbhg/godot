@@ -215,21 +215,11 @@ struct InitializeTriRef {
   }
 };
 
-struct MarkMeshID {
-  HashTableD<uint32_t> table;
-
-  __host__ __device__ void operator()(TriRef& ref) {
-    if (table.Full()) return;
-    table.Insert(ref.meshID, 1);
-  }
-};
-
 struct UpdateMeshID {
   const HashTableD<uint32_t> meshIDold2new;
-  const int meshIDoffset;
 
   __host__ __device__ void operator()(TriRef& ref) {
-    ref.meshID = meshIDold2new[ref.meshID] + meshIDoffset;
+    ref.meshID = meshIDold2new[ref.meshID];
   }
 };
 
@@ -390,30 +380,30 @@ Manifold::Impl::Impl(const MeshGL& meshGL,
   const int numTri = meshGL.NumTri();
 
   if (meshGL.numProp < 3) {
-    MarkFailure(Error::MISSING_POSITION_PROPERTIES);
+    MarkFailure(Error::MissingPositionProperties);
     return;
   }
 
   mesh.triVerts.resize(numTri);
   if (meshGL.mergeFromVert.size() != meshGL.mergeToVert.size()) {
-    MarkFailure(Error::MERGE_VECTORS_DIFFERENT_LENGTHS);
+    MarkFailure(Error::MergeVectorsDifferentLengths);
     return;
   }
 
-  if (!meshGL.transform.empty() &&
-      12 * meshGL.originalID.size() != meshGL.transform.size()) {
-    MarkFailure(Error::TRANSFORM_WRONG_LENGTH);
+  if (!meshGL.runTransform.empty() &&
+      12 * meshGL.runOriginalID.size() != meshGL.runTransform.size()) {
+    MarkFailure(Error::TransformWrongLength);
     return;
   }
 
-  if (!meshGL.originalID.empty() && !meshGL.runIndex.empty() &&
-      meshGL.originalID.size() + 1 != meshGL.runIndex.size()) {
-    MarkFailure(Error::RUN_INDEX_WRONG_LENGTH);
+  if (!meshGL.runOriginalID.empty() && !meshGL.runIndex.empty() &&
+      meshGL.runOriginalID.size() + 1 != meshGL.runIndex.size()) {
+    MarkFailure(Error::RunIndexWrongLength);
     return;
   }
 
   if (!meshGL.faceID.empty() && meshGL.faceID.size() != meshGL.NumTri()) {
-    MarkFailure(Error::FACE_ID_WRONG_LENGTH);
+    MarkFailure(Error::FaceIDWrongLength);
     return;
   }
 
@@ -423,7 +413,7 @@ Manifold::Impl::Impl(const MeshGL& meshGL,
     const int from = meshGL.mergeFromVert[i];
     const int to = meshGL.mergeToVert[i];
     if (from >= numVert || to >= numVert) {
-      MarkFailure(Error::MERGE_INDEX_OUT_OF_BOUNDS);
+      MarkFailure(Error::MergeIndexOutOfBounds);
       return;
     }
     prop2vert[from] = to;
@@ -432,7 +422,7 @@ Manifold::Impl::Impl(const MeshGL& meshGL,
     for (const int j : {0, 1, 2}) {
       const int vert = meshGL.triVerts[3 * i + j];
       if (vert < 0 || vert >= numVert) {
-        MarkFailure(Error::VERTEX_INDEX_OUT_OF_BOUNDS);
+        MarkFailure(Error::VertexOutOfBounds);
         return;
       }
       mesh.triVerts[i][j] = prop2vert[vert];
@@ -471,7 +461,7 @@ Manifold::Impl::Impl(const MeshGL& meshGL,
       mesh.halfedgeTangent[i][j] = meshGL.halfedgeTangent[4 * i + j];
   }
 
-  if (meshGL.originalID.empty()) {
+  if (meshGL.runOriginalID.empty()) {
     relation.originalID = Impl::ReserveIDs(1);
   } else {
     std::vector<uint32_t> runIndex = meshGL.runIndex;
@@ -479,10 +469,10 @@ Manifold::Impl::Impl(const MeshGL& meshGL,
       runIndex = {0, 3 * meshGL.NumTri()};
     }
     relation.triRef.resize(meshGL.NumTri());
-    const int startID = Impl::ReserveIDs(meshGL.originalID.size());
-    for (int i = 0; i < meshGL.originalID.size(); ++i) {
+    const int startID = Impl::ReserveIDs(meshGL.runOriginalID.size());
+    for (int i = 0; i < meshGL.runOriginalID.size(); ++i) {
       const int meshID = startID + i;
-      const int originalID = meshGL.originalID[i];
+      const int originalID = meshGL.runOriginalID[i];
       for (int tri = runIndex[i] / 3; tri < runIndex[i + 1] / 3; ++tri) {
         TriRef& ref = relation.triRef[tri];
         ref.meshID = meshID;
@@ -490,13 +480,14 @@ Manifold::Impl::Impl(const MeshGL& meshGL,
         ref.tri = meshGL.faceID.empty() ? tri : meshGL.faceID[tri];
       }
 
-      if (meshGL.transform.empty()) {
-        relation.meshIDtransform[meshID] = {};
+      if (meshGL.runTransform.empty()) {
+        relation.meshIDtransform[meshID] = {originalID};
       } else {
-        const float* m = meshGL.transform.data() + 12 * i;
-        relation.meshIDtransform[meshID] = {{m[0], m[1], m[2], m[3], m[4], m[5],
-                                             m[6], m[7], m[8], m[9], m[10],
-                                             m[11]}};
+        const float* m = meshGL.runTransform.data() + 12 * i;
+        relation.meshIDtransform[meshID] = {
+            originalID,
+            {m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9], m[10],
+             m[11]}};
       }
     }
   }
@@ -521,21 +512,21 @@ Manifold::Impl::Impl(const Mesh& mesh, const MeshRelationD& relation,
       meshRelation_(relation) {
   VecDH<glm::ivec3> triVerts = mesh.triVerts;
   if (!IsIndexInBounds(triVerts)) {
-    MarkFailure(Error::VERTEX_INDEX_OUT_OF_BOUNDS);
+    MarkFailure(Error::VertexOutOfBounds);
     return;
   }
   RemoveUnreferencedVerts(triVerts);
 
   CalculateBBox();
   if (!IsFinite()) {
-    MarkFailure(Error::NON_FINITE_VERTEX);
+    MarkFailure(Error::NonFiniteVertex);
     return;
   }
   SetPrecision();
 
   CreateHalfedges(triVerts);
   if (!IsManifold()) {
-    MarkFailure(Error::NOT_MANIFOLD);
+    MarkFailure(Error::NotManifold);
     return;
   }
   CalculateNormals();
@@ -557,14 +548,14 @@ Manifold::Impl::Impl(Shape shape) {
   std::vector<glm::vec3> vertPos;
   std::vector<glm::ivec3> triVerts;
   switch (shape) {
-    case Shape::TETRAHEDRON:
+    case Shape::Tetrahedron:
       vertPos = {{-1.0f, -1.0f, 1.0f},
                  {-1.0f, 1.0f, -1.0f},
                  {1.0f, -1.0f, -1.0f},
                  {1.0f, 1.0f, 1.0f}};
       triVerts = {{2, 0, 1}, {0, 3, 1}, {2, 3, 0}, {3, 2, 1}};
       break;
-    case Shape::CUBE:
+    case Shape::Cube:
       vertPos = {{0.0f, 0.0f, 0.0f},  //
                  {1.0f, 0.0f, 0.0f},  //
                  {1.0f, 1.0f, 0.0f},  //
@@ -580,7 +571,7 @@ Manifold::Impl::Impl(Shape shape) {
                   {2, 3, 7}, {2, 7, 6},  //
                   {3, 0, 4}, {3, 4, 7}};
       break;
-    case Shape::OCTAHEDRON:
+    case Shape::Octahedron:
       vertPos = {{1.0f, 0.0f, 0.0f},   //
                  {-1.0f, 0.0f, 0.0f},  //
                  {0.0f, 1.0f, 0.0f},   //
@@ -630,7 +621,7 @@ void Manifold::Impl::InitializeOriginal() {
              zip(meshRelation_.triRef.begin(), countAt(0)), NumTri(),
              InitializeTriRef({meshID, halfedge_.cptrD()}));
   meshRelation_.meshIDtransform.clear();
-  meshRelation_.meshIDtransform[meshID] = {};
+  meshRelation_.meshIDtransform[meshID] = {meshID};
 }
 
 void Manifold::Impl::CreateFaces(const std::vector<float>& propertyTolerance) {
@@ -735,6 +726,7 @@ Manifold::Impl Manifold::Impl::Transform(const glm::mat4x3& transform_) const {
   result.halfedge_ = halfedge_;
   result.halfedgeTangent_.resize(halfedgeTangent_.size());
 
+  result.meshRelation_.originalID = -1;
   for (auto& m : result.meshRelation_.meshIDtransform) {
     m.second.transform = transform_ * glm::mat4(m.second.transform);
   }
@@ -823,37 +815,20 @@ void Manifold::Impl::CalculateNormals() {
  * instances of these meshes.
  */
 void Manifold::Impl::IncrementMeshIDs() {
-  const int numTri = NumTri();
-  const auto policy = autoPolicy(numTri);
   HashTable<uint32_t> meshIDold2new(meshRelation_.meshIDtransform.size() * 2);
-
-  while (1) {
-    for_each_n(policy, meshRelation_.triRef.begin(), numTri,
-               MarkMeshID({meshIDold2new.D()}));
-    if (!meshIDold2new.Full()) break;
-    meshIDold2new = HashTable<uint32_t>(meshIDold2new.Size() * 2);
-  }
-  inclusive_scan(autoPolicy(meshIDold2new.Size()),
-                 meshIDold2new.GetValueStore().begin(),
-                 meshIDold2new.GetValueStore().end(),
-                 meshIDold2new.GetValueStore().begin());
-  const int numMeshIDs = meshIDold2new.GetValueStore().back();
-  const int meshIDstart = ReserveIDs(numMeshIDs);
-  // We do start - 1 because the inclusive scan makes our first index 1
-  // instead of 0.
-  for_each_n(policy, meshRelation_.triRef.begin(), numTri,
-             UpdateMeshID({meshIDold2new.D(), meshIDstart}));
   // Update keys of the transform map
   std::map<int, Relation> oldTransforms;
   std::swap(meshRelation_.meshIDtransform, oldTransforms);
-  const int tableSize = meshIDold2new.Size();
-  for (int i = 0; i < tableSize; ++i) {
-    const auto oldID = meshIDold2new.D().KeyAt(i);
-    if (oldID != HashTable<uint32_t>::Open()) {
-      meshRelation_.meshIDtransform[meshIDold2new.D().At(i) + meshIDstart] =
-          oldTransforms[oldID];
-    }
+  const int numMeshIDs = oldTransforms.size();
+  int nextMeshID = ReserveIDs(numMeshIDs);
+  for (const auto& pair : oldTransforms) {
+    meshIDold2new.D().Insert(pair.first, nextMeshID);
+    meshRelation_.meshIDtransform[nextMeshID++] = pair.second;
   }
+
+  const int numTri = NumTri();
+  for_each_n(autoPolicy(numTri), meshRelation_.triRef.begin(), numTri,
+             UpdateMeshID({meshIDold2new.D()}));
 }
 
 /**

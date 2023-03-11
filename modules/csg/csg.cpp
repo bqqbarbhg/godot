@@ -39,9 +39,9 @@
 #include "core/math/vector3.h"
 #include "core/templates/sort_array.h"
 #include "core/variant/variant.h"
-#include "glm/ext/vector_float4.hpp"
-#include "manifold.h"
-#include "public.h"
+#include "thirdparty/glm/glm/ext/vector_float4.hpp"
+#include "thirdparty/manifold/src/manifold/include/manifold.h"
+#include "thirdparty/manifold/src/utilities/include/public.h"
 #include "scene/resources/material.h"
 #include "scene/resources/mesh.h"
 #include "scene/resources/mesh_data_tool.h"
@@ -158,11 +158,14 @@ void CSGBrush::convert_manifold_to_brush() {
 }
 
 void CSGBrush::create_manifold() {
+	if (!faces.size()) {
+		manifold = manifold::Manifold();
+		return;
+	}
 	Ref<SurfaceTool> st;
 	st.instantiate();
 	st->begin(Mesh::PRIMITIVE_TRIANGLES);
-	for (int face_i = 0; face_i < faces.size(); face_i++) {
-		const CSGBrush::Face &face = faces[face_i];
+	for (const CSGBrush::Face &face : faces) {
 		for (int32_t vertex_i = 0; vertex_i < 3; vertex_i++) {
 			st->set_smooth_group(face.smooth);
 			Vector2 uvs = face.uvs[vertex_i];
@@ -177,64 +180,64 @@ void CSGBrush::create_manifold() {
 		}
 	}
 	st->index();
-	//st->generate_normals();
 	Ref<MeshDataTool> mdt;
 	mdt.instantiate();
 	mdt->create_from_surface(st->commit(), 0);
 	manifold::MeshGL mesh;
-	 // Vector<Ref<Material>> triangle_material;
-	 // triangle_material.resize(face_count);
-	 // triangle_material.fill(Ref<Material>());
-	 //mesh.numProp = MANIFOLD_PROPERTY_MAX;
-	 const int32_t VERTICES_IN_TRIANGLE = 3;
-	 mesh.triVerts.resize(mdt->get_face_count() * VERTICES_IN_TRIANGLE);
-	 mesh.vertProperties.resize(mdt->get_vertex_count() * mesh.numProp);
-	 //mesh.halfedgeTangent.resize(mesh.NumVert() * 4);
-	 HashMap<int32_t, Ref<Material>> vertex_material;
-	 //int32_t material_id = materials.find(mdt->get_material());
-	 for (int triangle_i = 0; triangle_i < mdt->get_face_count(); triangle_i++) {
-	 	for (int32_t face_index_i = 0; face_index_i < VERTICES_IN_TRIANGLE; face_index_i++) {
-	 		size_t vertex_index = mdt->get_face_vertex(triangle_i, face_index_i);
-	 		mesh.triVerts[triangle_i * VERTICES_IN_TRIANGLE + face_index_i] = vertex_index;
-	 	}
-	 }
-	 for (int vertex_i = 0; vertex_i < mdt->get_vertex_count(); vertex_i++) {
-	 	Vector3 pos = mdt->get_vertex(vertex_i);
-	 	for (int32_t i = 0; i < 3; i++) {
-	 		mesh.vertProperties[vertex_i * mesh.numProp + i] = pos[i];
-	 	}
-	 }
-	 // Swap around indices, convert cw to ccw for the front face.
-	 const int is = mesh.triVerts.size();
-	 for (int k = 0; k < is; k += 3) {
-	 	SWAP(mesh.triVerts[k + 0], mesh.triVerts[k + 2]);
-	 }
-	for (int vertex_i = 0; vertex_i < mesh.NumVert(); vertex_i++) {
-		//Vector3 normal = -mdt->get_vertex_normal(mesh_vertex);
-		//mesh.vertProperties[mesh_vertex * mesh.numProp + MANIFOLD_PROPERTY_NORMAL + 0] = normal.x;
-		//mesh.vertProperties[mesh_vertex * mesh.numProp + MANIFOLD_PROPERTY_NORMAL + 1] = normal.y;
-		//mesh.vertProperties[mesh_vertex * mesh.numProp + MANIFOLD_PROPERTY_NORMAL + 2] = normal.z;
-		////Plane tangent = mdt->get_vertex_tangent(vertex_i);
-		////mesh.halfedgeTangent[vertex_i * 4 + 0] = tangent.normal.x;
-		////mesh.halfedgeTangent[vertex_i * 4 + 1] = tangent.normal.y;
-		////mesh.halfedgeTangent[vertex_i * 4 + 2] = tangent.normal.z;
-		////mesh.halfedgeTangent[vertex_i * 4 + 3] = tangent.d;
-		////mesh.vertProperties[vertex_i * mesh.numProp + MANIFOLD_PROPERTY_MATERIAL] = mdt->get_material();
-		//Vector2 uv = mdt->get_vertex_uv(mesh_vertex);
-		//mesh.vertProperties[mesh_vertex * mesh.numProp + MANIFOLD_PROPERTY_UV_X_0] = uv.x;
-		//mesh.vertProperties[mesh_vertex * mesh.numProp + MANIFOLD_PROPERTY_UV_Y_0] = uv.y;
-		// if (material_id != -1) {
-		// 	vertex_material[triangle_i * face_count + face_index_i] = materials[material_id];
-		// } else {
-		// 	vertex_material[triangle_i * face_count + face_index_i] = Ref<Material>();
-		// }
-		//	}
-		//	// triangle_material.write[triangle_i] = material_id;
-		//}
+	// Vector<Ref<Material>> triangle_material;
+	// triangle_material.resize(face_count);
+	// triangle_material.fill(Ref<Material>());
+	//mesh.numProp = MANIFOLD_PROPERTY_MAX;
+	const int32_t VERTICES_IN_TRIANGLE = 3;
+	int32_t number_of_triangles = mdt->get_face_count();
+	mesh.triVerts.resize(number_of_triangles * VERTICES_IN_TRIANGLE);
+	mesh.vertProperties.resize(number_of_triangles * mesh.numProp);
+	//mesh.halfedgeTangent.resize(mesh.NumVert() * 4);
+	HashMap<int32_t, Ref<Material>> vertex_material;
+	//int32_t material_id = materials.find(mdt->get_material());
+	for (int triangle_i = 0; triangle_i < mdt->get_face_count(); triangle_i++) {
+		for (int32_t face_index_i = 0; face_index_i < VERTICES_IN_TRIANGLE; face_index_i++) {
+			size_t vertex_index = mdt->get_face_vertex(triangle_i, face_index_i);
+			mesh.triVerts[triangle_i * VERTICES_IN_TRIANGLE + face_index_i] = vertex_index;
+		}
+	}
+	// Swap around indices, convert cw to ccw for the front face.
+	for (int vertex_i = 0; vertex_i < number_of_triangles; vertex_i++) {
+		Vector3 pos = mdt->get_vertex(vertex_i);
+		for (int32_t i = 0; i < 3; i++) {
+			mesh.vertProperties[vertex_i * mesh.numProp + i] = pos[i];
+		}
+	}
+	for (int k = 0; k < number_of_triangles; k += 3) {
+		SWAP(mesh.triVerts[k + 0], mesh.triVerts[k + 2]);
+	}
+	for (int triangle_i = 0; triangle_i < number_of_triangles; triangle_i++) {
+		for (int32_t face_index_i = 0; face_index_i < VERTICES_IN_TRIANGLE; face_index_i++) {
+			int32_t vertex_i = mdt->get_face_vertex(triangle_i, face_index_i);
+			Vector3 normal = -mdt->get_vertex_normal(vertex_i);
+			mesh.vertProperties[triangle_i * mesh.numProp + MANIFOLD_PROPERTY_NORMAL + 0] = normal.x;
+			mesh.vertProperties[triangle_i * mesh.numProp + MANIFOLD_PROPERTY_NORMAL + 1] = normal.y;
+			mesh.vertProperties[triangle_i * mesh.numProp + MANIFOLD_PROPERTY_NORMAL + 2] = normal.z;
+			//Plane tangent = mdt->get_vertex_tangent(vertex_i);
+			//mesh.halfedgeTangent[vertex_i * 4 + 0] = tangent.normal.x;
+			//mesh.halfedgeTangent[vertex_i * 4 + 1] = tangent.normal.y;
+			//mesh.halfedgeTangent[vertex_i * 4 + 2] = tangent.normal.z;
+			//mesh.halfedgeTangent[vertex_i * 4 + 3] = tangent.d;
+			//mesh.vertProperties[vertex_i * mesh.numProp + MANIFOLD_PROPERTY_MATERIAL] = mdt->get_material();
+			Vector2 uv = mdt->get_vertex_uv(vertex_i);
+			mesh.vertProperties[triangle_i * mesh.numProp + MANIFOLD_PROPERTY_UV_X_0] = uv.x;
+			mesh.vertProperties[triangle_i * mesh.numProp + MANIFOLD_PROPERTY_UV_Y_0] = uv.y;
+			//if (material_id != -1) {
+			//	vertex_material[triangle_i * face_count + face_index_i] = materials[material_id];
+			//} else {
+			//	vertex_material[triangle_i * face_count + face_index_i] = Ref<Material>();
+			//}
+			// triangle_material.write[triangle_i] = material_id;
+		}
 	}
 	manifold = manifold::Manifold(mesh);
 	manifold::Manifold::Error error = manifold.Status();
-	if (error != manifold::Manifold::Error::NO_ERROR) {
+	if (error != manifold::Manifold::Error::NoError) {
 		print_line(vformat("Cannot copy the other brush. %d", int(error)));
 	}
 }
