@@ -1182,7 +1182,7 @@ void Skeleton3DEditor::_bone_enabled_changed(const int p_bone_id) {
 
 void Skeleton3DEditor::_update_gizmo_visible() {
 	_subgizmo_selection_change();
-	if (edit_mode) {
+	if (edit_mode && skeleton) {
 		if (selected_bone == -1) {
 #ifdef TOOLS_ENABLED
 			skeleton->set_transform_gizmo_visible(false);
