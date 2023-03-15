@@ -2523,7 +2523,9 @@ Error GLTFDocument::_serialize_meshes(Ref<GLTFState> p_state) {
 		ERR_FAIL_COND_V(target_names.size() != weights.size(), FAILED);
 
 		gltf_mesh["extras"] = e;
-
+		if (!primitives.size()) {
+			continue;
+		}
 		gltf_mesh["primitives"] = primitives;
 
 		meshes.push_back(gltf_mesh);
@@ -4901,6 +4903,7 @@ Error GLTFDocument::_serialize_animations(Ref<GLTFState> p_state) {
 		}
 	}
 	Array animations;
+	Array samplers;
 	for (GLTFAnimationIndex animation_i = 0; animation_i < p_state->animations.size(); animation_i++) {
 		Dictionary d;
 		Ref<GLTFAnimation> gltf_animation = p_state->animations[animation_i];
@@ -4912,7 +4915,6 @@ Error GLTFDocument::_serialize_animations(Ref<GLTFState> p_state) {
 			d["name"] = gltf_animation->get_name();
 		}
 		Array channels;
-		Array samplers;
 
 		for (KeyValue<int, GLTFAnimation::Track> &track_i : gltf_animation->get_tracks()) {
 			GLTFAnimation::Track track = track_i.value;
