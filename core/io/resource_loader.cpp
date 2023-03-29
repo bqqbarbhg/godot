@@ -338,13 +338,7 @@ Error ResourceLoader::load_threaded_request(const String &p_path, const String &
 		load_task.cache_mode = p_cache_mode;
 		load_task.use_sub_threads = p_use_sub_threads;
 
-		{ //must check if resource is already loaded before attempting to load it in a thread
-
-			if (load_task.loader_id == Thread::get_caller_id()) {
-				thread_load_mutex->unlock();
-				ERR_FAIL_V_MSG(ERR_INVALID_PARAMETER, "Attempted to load a resource already being loaded from this thread, cyclic reference?");
-			}
-
+		{
 			Ref<Resource> existing = ResourceCache::get_ref(local_path);
 
 			if (existing.is_valid()) {
