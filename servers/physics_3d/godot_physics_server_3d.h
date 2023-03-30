@@ -250,6 +250,8 @@ public:
 
 	virtual void body_set_ray_pickable(RID p_body, bool p_enable) override;
 
+	virtual void body_reset_state(RID p_body) override;
+
 	virtual bool body_test_motion(RID p_body, const MotionParameters &p_parameters, MotionResult *r_result = nullptr) override;
 
 	// this function only works on physics process, errors and returns null otherwise

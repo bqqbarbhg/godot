@@ -437,6 +437,17 @@ Variant GodotBody3D::get_state(PhysicsServer3D::BodyState p_state) const {
 	return Variant();
 }
 
+void GodotBody3D::reset_state() {
+	prev_linear_velocity = Vector3();
+	prev_angular_velocity = Vector3();
+	biased_linear_velocity = Vector3();
+	biased_angular_velocity = Vector3();
+	total_linear_damp = 0.0;
+	total_angular_damp = 0.0;
+	gravity = Vector3();
+	clear_constraint_map();
+}
+
 void GodotBody3D::set_space(GodotSpace3D *p_space) {
 	if (get_space()) {
 		if (mass_properties_update_list.in_list()) {

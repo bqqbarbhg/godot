@@ -515,6 +515,8 @@ public:
 
 	virtual void body_set_ray_pickable(RID p_body, bool p_enable) = 0;
 
+	virtual void body_reset_state(RID p_body) = 0;
+
 	// this function only works on physics process, errors and returns null otherwise
 	virtual PhysicsDirectBodyState3D *body_get_direct_state(RID p_body) = 0;
 

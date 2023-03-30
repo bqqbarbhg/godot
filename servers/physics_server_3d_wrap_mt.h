@@ -260,6 +260,8 @@ public:
 
 	FUNC2(body_set_ray_pickable, RID, bool);
 
+	FUNC1(body_reset_state, RID);
+
 	bool body_test_motion(RID p_body, const MotionParameters &p_parameters, MotionResult *r_result = nullptr) override {
 		ERR_FAIL_COND_V(main_thread != Thread::get_caller_id(), false);
 		return physics_server_3d->body_test_motion(p_body, p_parameters, r_result);

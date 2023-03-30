@@ -909,6 +909,12 @@ void GodotPhysicsServer3D::body_set_ray_pickable(RID p_body, bool p_enable) {
 	body->set_ray_pickable(p_enable);
 }
 
+void GodotPhysicsServer3D::body_reset_state(RID p_body) {
+	GodotBody3D *body = body_owner.get_or_null(p_body);
+	ERR_FAIL_COND(!body);
+	body->reset_state();
+}
+
 bool GodotPhysicsServer3D::body_test_motion(RID p_body, const MotionParameters &p_parameters, MotionResult *r_result) {
 	GodotBody3D *body = body_owner.get_or_null(p_body);
 	ERR_FAIL_COND_V(!body, false);

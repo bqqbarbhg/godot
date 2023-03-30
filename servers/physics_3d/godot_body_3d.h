@@ -301,6 +301,8 @@ public:
 	_FORCE_INLINE_ void set_continuous_collision_detection(bool p_enable) { continuous_cd = p_enable; }
 	_FORCE_INLINE_ bool is_continuous_collision_detection_enabled() const { return continuous_cd; }
 
+	void reset_state();
+
 	void set_space(GodotSpace3D *p_space) override;
 
 	void update_mass_properties();

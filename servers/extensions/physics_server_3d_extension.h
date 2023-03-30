@@ -382,6 +382,8 @@ public:
 
 	EXBIND2(body_set_ray_pickable, RID, bool)
 
+	EXBIND1(body_reset_state, RID)
+
 	GDVIRTUAL8RC(bool, _body_test_motion, RID, const Transform3D &, const Vector3 &, real_t, int, bool, bool, GDExtensionPtr<PhysicsServer3DExtensionMotionResult>)
 
 	thread_local static const HashSet<RID> *exclude_bodies;
