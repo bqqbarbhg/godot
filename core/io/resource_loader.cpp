@@ -357,13 +357,7 @@ Error ResourceLoader::_load_threaded_request_whitelisted_int(const String &p_pat
 		load_task.external_path_whitelist = p_external_path_whitelist;
 		load_task.type_whitelist = p_type_whitelist;
 
-		{ //must check if resource is already loaded before attempting to load it in a thread
-
-			if (load_task.loader_id == Thread::get_caller_id()) {
-				thread_load_mutex->unlock();
-				ERR_FAIL_V_MSG(ERR_INVALID_PARAMETER, "Attempted to load a resource already being loaded from this thread, cyclic reference?");
-			}
-
+		{
 			Ref<Resource> existing = ResourceCache::get_ref(local_path);
 
 			if (existing.is_valid()) {
