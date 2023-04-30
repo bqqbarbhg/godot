@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/V-Sekai/renik
+	branch = master
+	commit = ead84356d1b50eeba74100157d70d5e580687c12
+	parent = fdf66b3472e5ca254a4f90c32f26c4702d46828b
+	method = merge
+	cmdver = 0.4.6
