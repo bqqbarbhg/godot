@@ -57,9 +57,7 @@ elif env["platform"] == "windows":
 
 # Explicit static libraries
 wasmer_library = env.File(
-    "wasmer/lib/{}wasmer{}".format(
-        env["LIBPREFIX"], module_env.get("LIBWASMERSUFFIX", module_env["LIBSUFFIX"])
-    )
+    "wasmer/lib/{}wasmer{}".format(env["LIBPREFIX"], module_env.get("LIBWASMERSUFFIX", module_env["LIBSUFFIX"]))
 )
 
 # Linked libraries (global env) and includes (cloned env)
