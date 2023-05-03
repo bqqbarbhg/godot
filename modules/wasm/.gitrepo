@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/V-Sekai/godot-wasm.git
 	branch = godot-4
-	commit = e6bb0ee8ee2f0583295d73d23c4afa74c076a3f8
-	parent = fdf66b3472e5ca254a4f90c32f26c4702d46828b
+	commit = f1c47cc6d36f99cefc33fc8cb20685feb13a459e
+	parent = 5ea12c367bbf8dc0cc3de7ef8f84ce5a76af349f
 	method = merge
 	cmdver = 0.4.6
