@@ -141,11 +141,11 @@ bool CSGShape3D::is_root_shape() const {
 }
 
 void CSGShape3D::set_snap(float p_snap) {
-	snap = p_snap;
+	snap = p_snap / 100;
 }
 
 float CSGShape3D::get_snap() const {
-	return snap;
+	return snap * 100;
 }
 
 void CSGShape3D::_make_dirty(bool p_parent_removing) {
@@ -653,7 +653,7 @@ void CSGShape3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_meshes"), &CSGShape3D::get_meshes);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "operation", PROPERTY_HINT_ENUM, "Union,Intersection,Subtraction"), "set_operation", "get_operation");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "snap", PROPERTY_HINT_RANGE, "0.0001,1,0.001,suffix:m"), "set_snap", "get_snap");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "snap", PROPERTY_HINT_RANGE, "0.001,1,0.001,suffix:mm"), "set_snap", "get_snap");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "calculate_tangents"), "set_calculate_tangents", "is_calculating_tangents");
 
 	ADD_GROUP("Collision", "collision_");
