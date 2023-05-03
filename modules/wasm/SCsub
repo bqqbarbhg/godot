@@ -1,0 +1,75 @@
+import shutil
+import re
+import os
+from urllib import request
+import tarfile
+
+# Import env and create module-specific clone
+Import("env")
+module_env = env.Clone()
+
+wasmer_version = "v3.1.1"
+
+
+def download_tarfile(url, dest, rename={}):
+    filename = "tmp.tar.gz"
+    os.makedirs(dest, exist_ok=True)
+    request.urlretrieve(url, filename)
+    file = tarfile.open(filename)
+    file.extractall(dest)
+    file.close()
+    for k, v in rename.items():
+        os.rename(k, v)
+    os.remove(filename)
+
+
+shutil.rmtree("wasmer", True)
+
+base_url = "https://github.com/wasmerio/wasmer/releases/download/{}/wasmer-{}.tar.gz"
+if env["platform"] in ["osx", "macos"]:
+    # For macOS, we need to universalize the AMD and ARM libraries
+    download_tarfile(
+        base_url.format(wasmer_version, "darwin-amd64"),
+        "wasmer",
+        {"wasmer/lib/libwasmer.a": "wasmer/lib/libwasmer.amd64.a"},
+    )
+    download_tarfile(
+        base_url.format(wasmer_version, "darwin-arm64"),
+        "wasmer",
+        {"wasmer/lib/libwasmer.a": "wasmer/lib/libwasmer.arm64.a"},
+    )
+    os.system("lipo wasmer/lib/libwasmer.*64.a -output wasmer/lib/libwasmer.a -create")
+elif env["platform"] == "linux":
+    download_tarfile(base_url.format(wasmer_version, "linux-amd64"), "wasmer")
+elif env["platform"] == "windows":
+    download_tarfile(base_url.format(wasmer_version, "windows-amd64"), "wasmer")
+
+# Check platform specifics
+if env["platform"] in ["linux", "linuxbsd"]:
+    module_env["LIBWASMERSUFFIX"] = ".a"
+    module_env.Append(CXXFLAGS=["-std=c++17"])
+elif env["platform"] in ["osx", "macos"]:
+    module_env["LIBWASMERSUFFIX"] = ".a"
+    module_env.Append(CXXFLAGS=["-std=c++17"])
+    env.Append(LINKFLAGS=["-framework", "Security"])
+elif env["platform"] == "windows":
+    module_env["LIBWASMERSUFFIX"] = ".dll.lib"
+
+# Explicit static libraries
+wasmer_library = env.File(
+    "wasmer/lib/{}wasmer{}".format(env["LIBPREFIX"], module_env.get("LIBWASMERSUFFIX", module_env["LIBSUFFIX"]))
+)
+
+# Linked libraries (global env) and includes (cloned env)
+env.Append(LIBPATH=[env.Dir("wasmer/lib").abspath])
+env.Append(LIBS=[wasmer_library])
+module_env.Append(CPPPATH=[env.Dir("wasmer/include").abspath])
+
+# Defines for module agnosticism
+module_env.Append(CPPDEFINES=["GODOT_MODULE"])
+
+# Module sources
+module_env.add_source_files(
+    env.modules_sources,
+    ["register_types.cpp", env.Glob("src/*.cpp", exclude="src/godot-library.cpp")],
+)
