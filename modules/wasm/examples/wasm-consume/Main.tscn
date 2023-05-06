@@ -1,0 +1,323 @@
+[gd_scene load_steps=9 format=3 uid="uid://cwest8oxftjmf"]
+
+[ext_resource type="Script" path="res://Main.gd" id="1"]
+[ext_resource type="FontFile" uid="uid://dt0kw4fn3kgdr" path="res://Inter-Bold.ttf" id="2"]
+[ext_resource type="FontFile" uid="uid://o157w1pvd3ym" path="res://Fira-Mono.ttf" id="3"]
+
+[sub_resource type="FontFile" id="4"]
+fallbacks = Array[Font]([ExtResource("2")])
+face_index = null
+embolden = null
+transform = null
+cache/0/16/0/ascent = 0.0
+cache/0/16/0/descent = 0.0
+cache/0/16/0/underline_position = 0.0
+cache/0/16/0/underline_thickness = 0.0
+cache/0/16/0/scale = 1.0
+cache/0/16/0/kerning_overrides/16/0 = Vector2(0, 0)
+
+[sub_resource type="StyleBoxFlat" id="3"]
+content_margin_bottom = 6.0
+bg_color = Color(0.247059, 0.568627, 0.427451, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+expand_margin_left = 10.0
+expand_margin_top = 6.0
+expand_margin_right = 10.0
+
+[sub_resource type="FontFile" id="6"]
+fallbacks = Array[Font]([ExtResource("3")])
+face_index = null
+embolden = null
+transform = null
+cache/0/16/0/ascent = 0.0
+cache/0/16/0/descent = 0.0
+cache/0/16/0/underline_position = 0.0
+cache/0/16/0/underline_thickness = 0.0
+cache/0/16/0/scale = 1.0
+cache/0/16/0/kerning_overrides/16/0 = Vector2(0, 0)
+
+[sub_resource type="StyleBoxFlat" id="5"]
+content_margin_left = 6.0
+content_margin_right = 6.0
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+expand_margin_left = 2.0
+expand_margin_right = 2.0
+
+[sub_resource type="FontFile" id="7"]
+fallbacks = Array[Font]([ExtResource("3")])
+face_index = null
+embolden = null
+transform = null
+cache/0/16/0/ascent = 0.0
+cache/0/16/0/descent = 0.0
+cache/0/16/0/underline_position = 0.0
+cache/0/16/0/underline_thickness = 0.0
+cache/0/16/0/scale = 1.0
+cache/0/16/0/kerning_overrides/16/0 = Vector2(0, 0)
+
+[node name="HBoxContainer" type="MarginContainer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -427.0
+offset_top = -240.0
+offset_right = 427.0
+offset_bottom = 240.0
+script = ExtResource("1")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="ModuleInfo" type="PanelContainer" parent="HBoxContainer"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+mouse_filter = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/ModuleInfo"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="HBoxContainer/ModuleInfo/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = SubResource("4")
+theme_override_styles/normal = SubResource("3")
+text = "Wasm Module Info"
+
+[node name="InfoText" type="RichTextLabel" parent="HBoxContainer/ModuleInfo/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_fonts/bold_font = SubResource("4")
+theme_override_fonts/mono_font = SubResource("6")
+bbcode_enabled = true
+text = "?"
+scroll_active = false
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="Benchmarks" type="PanelContainer" parent="HBoxContainer/VBoxContainer"]
+layout_mode = 2
+mouse_filter = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/VBoxContainer/Benchmarks"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="HBoxContainer/VBoxContainer/Benchmarks/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = SubResource("4")
+theme_override_styles/normal = SubResource("3")
+text = "Benchmarks"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer/VBoxContainer/Benchmarks/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 10
+
+[node name="Label1" type="Label" parent="HBoxContainer/VBoxContainer/Benchmarks/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Highest prime up to"
+
+[node name="PrimeLimit" type="SpinBox" parent="HBoxContainer/VBoxContainer/Benchmarks/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 26)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+max_value = 999999.0
+value = 1000.0
+rounded = true
+
+[node name="Label2" type="Label" parent="HBoxContainer/VBoxContainer/Benchmarks/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "="
+
+[node name="PrimeAnswer" type="Label" parent="HBoxContainer/VBoxContainer/Benchmarks/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+text = "?"
+
+[node name="GridContainer" type="GridContainer" parent="HBoxContainer/VBoxContainer/Benchmarks/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/h_separation = 26
+columns = 2
+
+[node name="Label1" type="Label" parent="HBoxContainer/VBoxContainer/Benchmarks/VBoxContainer/GridContainer"]
+layout_mode = 2
+text = "GDScript"
+
+[node name="TimeGDScript" type="Label" parent="HBoxContainer/VBoxContainer/Benchmarks/VBoxContainer/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "?"
+
+[node name="Label2" type="Label" parent="HBoxContainer/VBoxContainer/Benchmarks/VBoxContainer/GridContainer"]
+layout_mode = 2
+text = "Wasm"
+
+[node name="TimeWasm" type="Label" parent="HBoxContainer/VBoxContainer/Benchmarks/VBoxContainer/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "?"
+
+[node name="MemoryOperations" type="PanelContainer" parent="HBoxContainer/VBoxContainer"]
+layout_mode = 2
+mouse_filter = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/VBoxContainer/MemoryOperations"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="HBoxContainer/VBoxContainer/MemoryOperations/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = SubResource("4")
+theme_override_styles/normal = SubResource("3")
+text = "Memory Operations"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer/VBoxContainer/MemoryOperations/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 10
+
+[node name="Label1" type="Label" parent="HBoxContainer/VBoxContainer/MemoryOperations/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Write"
+
+[node name="MemoryType" type="OptionButton" parent="HBoxContainer/VBoxContainer/MemoryOperations/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 26)
+layout_mode = 2
+size_flags_horizontal = 0
+mouse_default_cursor_shape = 2
+
+[node name="Label2" type="Label" parent="HBoxContainer/VBoxContainer/MemoryOperations/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "to memory position"
+
+[node name="MemoryOffset" type="SpinBox" parent="HBoxContainer/VBoxContainer/MemoryOperations/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 26)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+max_value = 7.0
+rounded = true
+
+[node name="MemoryInput" type="VBoxContainer" parent="HBoxContainer/VBoxContainer/MemoryOperations/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="MemoryInt" type="SpinBox" parent="HBoxContainer/VBoxContainer/MemoryOperations/VBoxContainer/MemoryInput"]
+custom_minimum_size = Vector2(200, 26)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+min_value = -2.14748e+09
+max_value = 2.14748e+09
+rounded = true
+
+[node name="MemoryFloat" type="SpinBox" parent="HBoxContainer/VBoxContainer/MemoryOperations/VBoxContainer/MemoryInput"]
+visible = false
+custom_minimum_size = Vector2(200, 26)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+min_value = -2.14748e+09
+max_value = 2.14748e+09
+step = 0.001
+
+[node name="MemoryString" type="LineEdit" parent="HBoxContainer/VBoxContainer/MemoryOperations/VBoxContainer/MemoryInput"]
+visible = false
+custom_minimum_size = Vector2(200, 26)
+layout_mode = 2
+theme_override_styles/normal = SubResource("5")
+placeholder_text = "Enter String"
+max_length = 16
+
+[node name="GridContainer" type="GridContainer" parent="HBoxContainer/VBoxContainer/MemoryOperations/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/h_separation = 26
+columns = 2
+
+[node name="Label1" type="Label" parent="HBoxContainer/VBoxContainer/MemoryOperations/VBoxContainer/GridContainer"]
+layout_mode = 2
+text = "Global Value"
+
+[node name="GlobalValue" type="Label" parent="HBoxContainer/VBoxContainer/MemoryOperations/VBoxContainer/GridContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+theme_override_fonts/font = SubResource("7")
+text = "?"
+uppercase = true
+
+[node name="Label2" type="Label" parent="HBoxContainer/VBoxContainer/MemoryOperations/VBoxContainer/GridContainer"]
+layout_mode = 2
+text = "Memory Read"
+
+[node name="ReadValue" type="Label" parent="HBoxContainer/VBoxContainer/MemoryOperations/VBoxContainer/GridContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+theme_override_fonts/font = SubResource("7")
+text = "?"
+uppercase = true
+
+[node name="Callbacks" type="PanelContainer" parent="HBoxContainer/VBoxContainer"]
+layout_mode = 2
+mouse_filter = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/VBoxContainer/Callbacks"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="HBoxContainer/VBoxContainer/Callbacks/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = SubResource("4")
+theme_override_styles/normal = SubResource("3")
+text = "Import Functions"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer/VBoxContainer/Callbacks/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 10
+
+[node name="CallbackButton" type="Button" parent="HBoxContainer/VBoxContainer/Callbacks/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 26)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "Callback"
+
+[node name="Label1" type="Label" parent="HBoxContainer/VBoxContainer/Callbacks/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "invoked"
+
+[node name="CallbackCount" type="Label" parent="HBoxContainer/VBoxContainer/Callbacks/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = SubResource("7")
+text = "0"
+
+[node name="Label2" type="Label" parent="HBoxContainer/VBoxContainer/Callbacks/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "times"
