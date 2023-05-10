@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/V-Sekai/godot-wasm.git
+	branch = godot-4
+	commit = 82f354443844c4d9f20e52648c8959b50db1cbf9
+	parent = d023e51363a800a89a8ef30259ac4410dd544354
+	method = merge
+	cmdver = 0.4.6
