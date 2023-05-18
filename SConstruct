@@ -740,7 +740,6 @@ if selected_platform in platform_list:
 
         if env["warnings"] == "extra":
             env.Append(CCFLAGS=["-Wall", "-Wextra", "-Wwrite-strings", "-Wno-unused-parameter"] + common_warnings)
-            env.Append(CXXFLAGS=["-Wctor-dtor-privacy", "-Wnon-virtual-dtor"])
             if methods.using_gcc(env):
                 env.Append(
                     CCFLAGS=[
