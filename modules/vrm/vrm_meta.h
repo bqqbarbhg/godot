@@ -32,6 +32,7 @@
 #define VRM_META_H
 
 #include "core/io/resource.h"
+#include "scene/resources/bone_map.h"
 #include "scene/resources/texture.h"
 
 class VRMMeta : public Resource {
@@ -51,7 +52,7 @@ private:
 	String other_permission_url;
 	String license_name;
 	String other_license_url;
-	Dictionary humanoid_bone_mapping;
+	Ref<BoneMap> humanoid_bone_mapping;
 	NodePath humanoid_skeleton_path;
 	Vector3 eye_offset;
 	String exporter_version;
@@ -109,7 +110,7 @@ protected:
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "other_permission_url"), "set_other_permission_url", "get_other_permission_url");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "license_name"), "set_license_name", "get_license_name");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "other_license_url"), "set_other_license_url", "get_other_license_url");
-		ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "humanoid_bone_mapping"), "set_humanoid_bone_mapping", "get_humanoid_bone_mapping");
+		ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "humanoid_bone_mapping", PROPERTY_HINT_RESOURCE_TYPE, "BoneMap"), "set_humanoid_bone_mapping", "get_humanoid_bone_mapping");
 		ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "humanoid_skeleton_path"), "set_humanoid_skeleton_path", "get_humanoid_skeleton_path");
 		ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "eye_offset"), "set_eye_offset", "get_eye_offset");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "exporter_version"), "set_exporter_version", "get_exporter_version");
@@ -130,7 +131,7 @@ public:
 	String get_other_permission_url() const { return other_permission_url; }
 	String get_license_name() const { return license_name; }
 	String get_other_license_url() const { return other_license_url; }
-	Dictionary get_humanoid_bone_mapping() const { return humanoid_bone_mapping; }
+	Ref<BoneMap> get_humanoid_bone_mapping() const { return humanoid_bone_mapping; }
 	NodePath get_humanoid_skeleton_path() const { return humanoid_skeleton_path; }
 	Vector3 get_eye_offset() const { return eye_offset; }
 	String get_exporter_version() const { return exporter_version; }
@@ -149,7 +150,7 @@ public:
 	void set_other_permission_url(const String &p_other_permission_url) { other_permission_url = p_other_permission_url; }
 	void set_license_name(const String &p_license_name) { license_name = p_license_name; }
 	void set_other_license_url(const String &p_other_license_url) { other_license_url = p_other_license_url; }
-	void set_humanoid_bone_mapping(const Dictionary &p_humanoid_bone_mapping) { humanoid_bone_mapping = p_humanoid_bone_mapping; }
+	void set_humanoid_bone_mapping(const Ref<BoneMap> &p_humanoid_bone_mapping) { humanoid_bone_mapping = p_humanoid_bone_mapping; }
 	void set_humanoid_skeleton_path(const NodePath &p_humanoid_skeleton_path) { humanoid_skeleton_path = p_humanoid_skeleton_path; }
 	void set_eye_offset(const Vector3 &p_eye_offset) { eye_offset = p_eye_offset; }
 	void set_exporter_version(const String &p_exporter_version) { exporter_version = p_exporter_version; }

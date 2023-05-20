@@ -327,7 +327,17 @@ TypedArray<Basis> VRMExtension::skeleton_rotate(Node *p_base_scene, Skeleton3D *
 		}
 
 		if (src_skeleton->get_bone_parent(src_idx) >= 0) {
-			diffs[src_idx] = (src_skeleton->get_bone_rest(src_idx).basis.xform(tgt_rot.inverse().xform(diffs[src_skeleton->get_bone_parent(src_idx)])));
+            // Inverse transform the target rotation
+            Basis inverse_tgt_rot = tgt_rot.inverse();
+
+            // Apply the inverse transformation to the parent bone's difference
+            Vector3 parent_diff_transformed = inverse_tgt_rot.xform(diffs[src_skeleton->get_bone_parent(src_idx)]);
+
+            // Get the source bone rest basis
+            Basis src_bone_rest_basis = src_skeleton->get_bone_rest(src_idx).basis;
+
+            // Calculate the final difference for the current bone
+            diffs[src_idx] = src_bone_rest_basis.xform(parent_diff_transformed);
 		} else {
 			diffs[src_idx] = tgt_rot.inverse() * src_skeleton->get_bone_rest(src_idx).basis;
 		}
@@ -338,7 +348,17 @@ TypedArray<Basis> VRMExtension::skeleton_rotate(Node *p_base_scene, Skeleton3D *
 			diff = diffs[src_skeleton->get_bone_parent(src_idx)];
 		}
 
-		src_skeleton->set_bone_rest(src_idx, Transform3D(tgt_rot, diff.xform(src_skeleton->get_bone_rest(src_idx).origin)));
+        // Get the source bone rest origin
+        Vector3 src_bone_rest_origin = src_skeleton->get_bone_rest(src_idx).origin;
+        
+        // Transform the source bone rest origin using the difference
+        Vector3 transformed_src_bone_rest_origin = diff.xform(src_bone_rest_origin);
+        
+        // Create a new Transform3D with the target rotation and transformed origin
+        Transform3D new_transform = Transform3D(tgt_rot, transformed_src_bone_rest_origin);
+        
+        // Set the new bone rest transform for the source skeleton
+        src_skeleton->set_bone_rest(src_idx, new_transform);
 	}
 
 	prof_skeleton->queue_free();
@@ -763,6 +783,11 @@ Ref<Resource> VRMExtension::_create_meta(Node *root_node, Dictionary vrm_extensi
 	vrm_meta.instantiate();
 
 	vrm_meta->set_name("CLICK TO SEE METADATA");
+
+	vrm_meta->set_humanoid_skeleton_path(NodePath("../GeneralSkeleton"));
+
+    vrm_meta->set_humanoid_bone_mapping(humanBones);
+
 	if (vrm_extension.has("exporterVersion")) {
 		vrm_meta->set_exporter_version(vrm_extension["exporterVersion"]);
 	}
@@ -1402,7 +1427,7 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 
 	Ref<BoneMap> human_bones_map;
 	human_bones_map.instantiate();
-	human_bones_map->set_profile(memnew(SkeletonProfileHumanoid));
+	human_bones_map->set_profile(Ref<SkeletonProfile>(memnew(SkeletonProfileHumanoid)));
 
 	Ref<VRMConstants> vrmconst_inst = memnew(VRMConstants(is_vrm_0)); // vrm 0.0
 	Array human_bone_keys = human_bone_to_idx.keys();
