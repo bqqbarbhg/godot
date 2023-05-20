@@ -136,7 +136,7 @@ public:
 	Ref<Material> _process_vrm_material(Ref<Material> orig_mat, Array gltf_images, Dictionary vrm_mat_props);
 	void _update_materials(Dictionary vrm_extension, Ref<GLTFState> gstate);
 	Node *_get_skel_godot_node(Ref<GLTFState> gstate, Array nodes, Array skeletons, int skel_id);
-	Ref<Resource> _create_meta(Node *root_node, AnimationPlayer *animplayer, Dictionary vrm_extension, Ref<GLTFState> gstate, Skeleton3D *skeleton, Ref<BoneMap> humanBones, Dictionary human_bone_to_idx, TypedArray<Basis> pose_diffs);
+	Ref<Resource> _create_meta(Node *root_node, Dictionary vrm_extension, Ref<GLTFState> gstate, Ref<BoneMap> humanBones, Dictionary human_bone_to_idx, TypedArray<Basis> pose_diffs);
 	AnimationPlayer *create_animation_player(AnimationPlayer *animplayer, Dictionary vrm_extension, Ref<GLTFState> gstate, Dictionary human_bone_to_idx, TypedArray<Basis> pose_diffs);
 	void parse_secondary_node(Node3D *secondary_node, Dictionary vrm_extension, Ref<GLTFState> gstate, Array pose_diffs, bool is_vrm_0);
 	void add_joints_recursive(Dictionary &new_joints_set, Array gltf_nodes, int bone, bool include_child_meshes = false);

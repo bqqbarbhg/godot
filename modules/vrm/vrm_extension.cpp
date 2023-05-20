@@ -743,14 +743,8 @@ Node *VRMExtension::_get_skel_godot_node(Ref<GLTFState> gstate, Array nodes, Arr
 	return nullptr;
 }
 
-Ref<Resource> VRMExtension::_create_meta(Node *root_node, AnimationPlayer *animplayer, Dictionary vrm_extension, Ref<GLTFState> gstate, Skeleton3D *skeleton, Ref<BoneMap> humanBones, Dictionary human_bone_to_idx, TypedArray<Basis> pose_diffs) {
+Ref<Resource> VRMExtension::_create_meta(Node *root_node, Dictionary vrm_extension, Ref<GLTFState> gstate, Ref<BoneMap> humanBones, Dictionary human_bone_to_idx, TypedArray<Basis> pose_diffs) {
 	TypedArray<GLTFNode> nodes = gstate->get_nodes();
-
-	NodePath skeletonPath = root_node->get_path_to(skeleton);
-	root_node->set("vrm_skeleton", skeletonPath);
-
-	NodePath animPath = root_node->get_path_to(animplayer);
-	root_node->set("vrm_animplayer", animPath);
 
 	Dictionary firstperson = vrm_extension.get("firstPerson", Variant());
 	Vector3 eyeOffset;
@@ -769,81 +763,67 @@ Ref<Resource> VRMExtension::_create_meta(Node *root_node, AnimationPlayer *animp
 	vrm_meta.instantiate();
 
 	vrm_meta->set_name("CLICK TO SEE METADATA");
-	bool is_valid = false;
-	String exporter_version = vrm_extension.get("exporterVersion", &is_valid);
-	if (is_valid) {
-		vrm_meta->set_exporter_version(exporter_version);
+	if (vrm_extension.has("exporterVersion")) {
+		vrm_meta->set_exporter_version(vrm_extension["exporterVersion"]);
 	}
-	String spec_version = vrm_extension.get("specVersion", &is_valid);
-	if (is_valid) {
-		vrm_meta->set_spec_version(spec_version);
-	}
+
+	if (vrm_extension.has("specVersion"))) {
+			vrm_meta->set_spec_version(vrm_extension["specVersion"]);
+		}
 
 	Dictionary vrm_extension_meta = vrm_extension["meta"];
 	if (!vrm_extension_meta.is_empty()) {
-		String title = vrm_extension_meta.get("title", &is_valid);
-		if (is_valid) {
-			vrm_meta->set_title(title);
+		if (vrm_extension_meta.has("title"))) {
+				vrm_meta->set_title(vrm_extension_meta["title"]);
+			}
+
+		if (vrm_extension_meta.has("version")) {
+			vrm_meta->set_version(vrm_extension_meta["version"]);
 		}
 
-		String version = vrm_extension_meta.get("version", &is_valid);
-		if (is_valid) {
-			vrm_meta->set_version(version);
+		if (vrm_extension_meta.has("author")) {
+			vrm_meta->set_author(vrm_extension_meta["author"]);
 		}
 
-		String author = vrm_extension_meta.get("author", &is_valid);
-		if (is_valid) {
-			vrm_meta->set_author(author);
+		if (vrm_extension_meta.has("contactInformation"))) {
+				vrm_meta->set_contact_information(vrm_extension_meta["contactInformation"]);
+			}
+
+		if (vrm_extension_meta.has("reference")) {
+			vrm_meta->set_reference_information(vrm_extension_meta["reference"]);
 		}
 
-		String contact_information = vrm_extension_meta.get("contactInformation", &is_valid);
-		if (is_valid) {
-			vrm_meta->set_contact_information(contact_information);
-		}
-
-		String reference_information = vrm_extension_meta.get("reference", &is_valid);
-		if (is_valid) {
-			vrm_meta->set_reference_information(reference_information);
-		}
-
-		int tex = vrm_extension_meta.get("texture", is_valid);
-		if (is_valid) {
+		if (vrm_extension_meta.has("texture")) {
+			int32_t tex = vrm_extension_meta["texture"];
 			Ref<GLTFTexture> gltftex = gstate->get_textures()[tex];
 			vrm_meta->set_texture(gstate->get_images()[gltftex->get_src_image()]);
 		}
-		String allowed_user_name = vrm_extension_meta.get("allowedUserName", &is_valid);
-		if (is_valid) {
-			vrm_meta->set_allowed_user_name(allowed_user_name);
+		if (vrm_extension_meta.has("allowedUserName")) {
+			vrm_meta->set_allowed_user_name(vrm_extension_meta["allowedUserName"]);
 		}
 
-		String violent_usage = vrm_extension_meta.get("violentUssageName", &is_valid); // Ussage(sic.) in VRM spec
-		if (is_valid) {
-			vrm_meta->set_violent_usage(violent_usage);
+		if (vrm_extension_meta.has("violentUssageName")) {
+			vrm_meta->set_violent_usage(vrm_extension_meta["violentUssageName"]); // Ussage(sic.) in VRM spec
 		}
 
-		String sexual_usage = vrm_extension_meta.get("sexualUssageName", &is_valid); // Ussage(sic.) in VRM spec
-		if (is_valid) {
-			vrm_meta->set_sexual_usage(sexual_usage);
+		if (vrm_extension_meta.has("sexualUssageName")) {
+			vrm_meta->set_sexual_usage(vrm_extension_meta["sexualUssageName"]); // Ussage(sic.) in VRM spec
 		}
 
-		String commercial_usage = vrm_extension_meta.get("commercialUssageName", &is_valid); // Ussage(sic.) in VRM spec
-		if (is_valid) {
-			vrm_meta->set_commercial_usage(commercial_usage);
+		if (vrm_extension_meta.has("commercialUssageName")) {
+			vrm_meta->set_commercial_usage(vrm_extension_meta["commercialUssageName"]); // Ussage(sic.) in VRM spec
 		}
 
-		String other_permission_url = vrm_extension_meta.get("otherPermissionUrl", &is_valid);
-		if (is_valid) {
-			vrm_meta->set_other_permission_url(other_permission_url);
+		if (vrm_extension_meta.has("otherPermissionUrl"s)) {
+			vrm_meta->set_other_permission_url(vrm_extension_meta["otherPermissionUrl"]);
 		}
 
-		String license_name = vrm_extension_meta.get("licenseName", &is_valid);
-		if (is_valid) {
-			vrm_meta->set_license_name(license_name);
+		if (vrm_extension_meta.has("licenseName")) {
+			vrm_meta->set_license_name(vrm_extension_meta["licenseName"]);
 		}
 
-		String other_license_url = vrm_extension_meta.get("otherLicenseUrl", &is_valid);
-		if (is_valid) {
-			vrm_meta->set_other_license_url(other_license_url);
+		if (vrm_extension_meta.has("otherLicenseUrl")) {
+			vrm_meta->set_other_license_url(vrm_extension_meta["otherLicenseUrl"]);
 		}
 	}
 
@@ -1141,7 +1121,7 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 
 	Dictionary vrm_extension_secondary_animation = vrm_extension["secondaryAnimation"];
 	Array vrm_extension_collider_groups = vrm_extension_secondary_animation["colliderGroups"];
-    Array collider_groups;
+	Array collider_groups;
 	for (int i = 0; i < vrm_extension_collider_groups.size(); ++i) {
 		Dictionary cgroup = vrm_extension_collider_groups[i];
 		Ref<GLTFNode> gltfnode = nodes[int(cgroup["node"])];
@@ -1177,7 +1157,7 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 			float radius = collider_info.get("radius", 0.0);
 			collider_group->get_sphere_colliders().push_back(Plane(local_pos, radius));
 		}
-        collider_groups.push_back(collider_group);
+		collider_groups.push_back(collider_group);
 	}
 
 	Array vrm_extension_bone_groups = vrm_extension["secondaryAnimation"].get("boneGroups");
@@ -1460,25 +1440,26 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 	animplayer->set_owner(root_node);
 	create_animation_player(animplayer, vrm_extension, gstate, human_bone_to_idx, pose_diffs);
 
-	Ref<Resource> vrm_meta = _create_meta(root_node, animplayer, vrm_extension, gstate, skeleton, human_bones_map, human_bone_to_idx, pose_diffs);
+	VRMTopLevel *vrm_top_level = memnew(VRMTopLevel);
+	vrm_top_level->set_name("VRMTopLevel");
+	root_node->add_child(vrm_top_level);
+	vrm_top_level->set_owner(root_node);
+	vrm_top_level->set_vrm_animplayer(NodePath("../anim"));
+	vrm_top_level->set_vrm_skeleton(NodePath("../GeneralSkeleton"));
+
+	Ref<Resource> vrm_meta = _create_meta(root_node, vrm_extension, gstate, human_bones_map, human_bone_to_idx, pose_diffs);
+	vrm_top_level->set_vrm_meta(vrm_meta);
 
 	Array collider_groups = vrm_extension["secondaryAnimation"].get("colliderGroups");
 	int32_t collider_groups_size = collider_groups.size();
 	Array bone_groups = vrm_extension["secondaryAnimation"].get("boneGroups");
 	int32_t bone_group_size = bone_groups.size();
-    VRMTopLevel *vrm_top_level = memnew(VRMTopLevel);
-    vrm_top_level->set_name("VRMTopLevel");
-    vrm_top_level->set_vrm_meta(vrm_meta);
-    vrm_top_level->set_vrm_animplayer(NodePath("../anim"));
-    vrm_top_level->set_vrm_skeleton(NodePath("../GeneralSkeleton"));
-    root_node->add_child(vrm_top_level);
-    vrm_top_level->set_owner(root_node);
-    vrm_top_level->set_unique_name_in_owner(true);
+	vrm_top_level->set_unique_name_in_owner(true);
 	if (vrm_extension.has("secondaryAnimation") &&
 			(collider_groups_size > 0 ||
 					bone_group_size > 0)) {
 		Node3D *secondary_node = cast_to<Node3D>(root_node->get_node(NodePath("secondary")));
-        vrm_top_level->set_vrm_secondary(NodePath("../secondary"));
+		vrm_top_level->set_vrm_secondary(NodePath("../secondary"));
 		parse_secondary_node(secondary_node, vrm_extension, gstate, pose_diffs, is_vrm_0);
 	}
 	return OK;
