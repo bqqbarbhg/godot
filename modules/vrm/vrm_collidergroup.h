@@ -36,7 +36,6 @@
 #include "scene/3d/node_3d.h"
 #include "scene/3d/skeleton_3d.h"
 
-#include "vrm_collidergroup.h"
 #include "vrm_toplevel.h"
 
 class SphereCollider : public Resource {
