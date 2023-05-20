@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VRM_SECONDARY_GIZMO_H
+#define VRM_SECONDARY_GIZMO_H
 
 #include "modules/vrm/vrm_collidergroup.h"
 #include "modules/vrm/vrm_secondary.h"
@@ -53,3 +54,5 @@ public:
 	void draw_line(Vector3 begin_pos, Vector3 end_pos, Color color);
 	void draw_sphere(Basis bas, Vector3 center, float radius, Color color);
 };
+
+#endif // VRM_SECONDARY_GIZMO_H

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VRM_COLLIDERGROUP_H
+#define VRM_COLLIDERGROUP_H
 
 #include "core/math/color.h"
 #include "core/object/ref_counted.h"
@@ -58,7 +59,6 @@ protected:
 		ClassDB::bind_method(D_METHOD("get_gizmo_color"), &VRMColliderGroup::get_gizmo_color);
 		ClassDB::bind_method(D_METHOD("set_gizmo_color", "gizmo_color"), &VRMColliderGroup::set_gizmo_color);
 
-		// Bind properties
 		ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "skeleton_or_node"), "set_skeleton_or_node", "get_skeleton_or_node");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "bone"), "set_bone", "get_bone");
 		ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "sphere_colliders"), "set_sphere_colliders", "get_sphere_colliders");
@@ -124,3 +124,5 @@ public:
 		}
 	}
 };
+
+#endif // VRM_COLLIDER_GROUP_H

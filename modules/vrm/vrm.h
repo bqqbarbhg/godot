@@ -6,8 +6,8 @@
 #include "editor/editor_plugin.h"
 #include "editor/import/resource_importer_scene.h"
 
-#include "modules/gltf/gltf_document.h"
 #include "modules/gltf/extensions/gltf_document_extension.h"
+#include "modules/gltf/gltf_document.h"
 #include "modules/gltf/gltf_state.h"
 
 class VRMImportPlugin : public EditorSceneFormatImporter {

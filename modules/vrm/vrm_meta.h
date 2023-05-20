@@ -1,4 +1,5 @@
-#pragma once 
+#ifndef VRM_META_H
+#define VRM_META_H
 
 #include "core/io/resource.h"
 #include "scene/resources/texture.h"
@@ -25,6 +26,7 @@ private:
 	Vector3 eye_offset;
 	String exporter_version;
 	String spec_version;
+
 protected:
 	static void _bind_methods() {
 		ClassDB::bind_method(D_METHOD("get_title"), &VRMMeta::get_title);
@@ -83,6 +85,7 @@ protected:
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "exporter_version"), "set_exporter_version", "get_exporter_version");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "spec_version"), "set_spec_version", "get_spec_version");
 	}
+
 public:
 	String get_title() const { return title; }
 	String get_version() const { return version; }
@@ -122,3 +125,5 @@ public:
 	void set_exporter_version(const String &p_exporter_version) { exporter_version = p_exporter_version; }
 	void set_spec_version(const String &p_spec_version) { spec_version = p_spec_version; }
 };
+
+#endif // VRM_META_H

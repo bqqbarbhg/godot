@@ -1,3 +1,6 @@
+#ifndef VRM_EXTENSION_H
+#define VRM_EXTENSION_H
+
 #include "core/crypto/crypto.h"
 #include "core/error/error_macros.h"
 #include "core/io/resource_loader.h"
@@ -1551,3 +1554,5 @@ public:
 		return OK;
 	}
 };
+
+#endif // VRM_EXTENSION_H

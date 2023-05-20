@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VRM_CONSTANTS_H
+#define VRM_CONSTANTS_H
 
 #include "core/object/ref_counted.h"
 #include "core/variant/dictionary.h"
@@ -6,17 +7,16 @@
 class VRMConstants : public RefCounted {
 	GDCLASS(VRMConstants, RefCounted);
 	HashMap<String, String> vrm_to_human_bone;
-    Dictionary vrm_to_human_bone_dict;
-
+	Dictionary vrm_to_human_bone_dict;
 
 protected:
 	static void _bind_methods();
 
 public:
 	VRMConstants(bool is_vrm_0 = true);
-    Dictionary get_vrm_to_human_bone() const {
-        return vrm_to_human_bone_dict.duplicate();
-    } 
+	Dictionary get_vrm_to_human_bone() const {
+		return vrm_to_human_bone_dict.duplicate();
+	}
 };
 
 void VRMConstants::_bind_methods() {
@@ -84,7 +84,9 @@ VRMConstants::VRMConstants(bool is_vrm_0) {
 		vrm_to_human_bone["rightThumbIntermediate"] = "RightThumbProximal";
 		vrm_to_human_bone["rightThumbProximal"] = "RightThumbMetacarpal";
 	}
-    for (const KeyValue<String, String> &E : vrm_to_human_bone) {
-        vrm_to_human_bone_dict[E.key] = E.value;
-    }
+	for (const KeyValue<String, String> &E : vrm_to_human_bone) {
+		vrm_to_human_bone_dict[E.key] = E.value;
+	}
 }
+
+#endif // VRM_CONSTANTS_H

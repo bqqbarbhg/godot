@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VRM_SECONDARY_H
+#define VRM_SECONDARY_H
 
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/node_3d.h"
@@ -40,3 +41,5 @@ public:
 	void _notification(int p_what);
 	VRMSecondary() {}
 };
+
+#endif // VRM_SECONDARY_H

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VRM_BONE_LOGIC_H
+#define VRM_BONE_LOGIC_H
 
 #include "core/object/ref_counted.h"
 #include "modules/vrm/vrm_constants.h"
@@ -178,3 +179,5 @@ Vector3 VRMSpringBoneLogic::collision(Skeleton3D *skel, const Array &colliders, 
 	}
 	return out;
 }
+
+#endif // VRM_BONE_LOGIC_H
