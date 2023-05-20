@@ -1140,9 +1140,10 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 	Vector3 offset_flip = is_vrm_0 ? Vector3(-1, 1, 1) : Vector3(1, 1, 1);
 
 	Dictionary vrm_extension_secondary_animation = vrm_extension["secondaryAnimation"];
-	Array collider_groups = vrm_extension_secondary_animation["colliderGroups"];
-	for (int i = 0; i < collider_groups.size(); ++i) {
-		Dictionary cgroup = collider_groups[i];
+	Array vrm_extension_collider_groups = vrm_extension_secondary_animation["colliderGroups"];
+    Array collider_groups;
+	for (int i = 0; i < vrm_extension_collider_groups.size(); ++i) {
+		Dictionary cgroup = vrm_extension_collider_groups[i];
 		Ref<GLTFNode> gltfnode = nodes[int(cgroup["node"])];
 
 		Ref<VRMColliderGroup> collider_group;
@@ -1176,13 +1177,13 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 			float radius = collider_info.get("radius", 0.0);
 			collider_group->get_sphere_colliders().push_back(Plane(local_pos, radius));
 		}
-		collider_groups.push_back(collider_group);
+        collider_groups.push_back(collider_group);
 	}
 
+	Array vrm_extension_bone_groups = vrm_extension["secondaryAnimation"].get("boneGroups");
 	Array spring_bones;
-	Array bone_groups = vrm_extension["secondaryAnimation"].get("boneGroups");
-	for (int i = 0; i < bone_groups.size(); ++i) {
-		Dictionary sbone = bone_groups[i];
+	for (int i = 0; i < vrm_extension_bone_groups.size(); ++i) {
+		Dictionary sbone = vrm_extension_bone_groups[i];
 		bool is_valid = false;
 		Array array = sbone.get("bones", &is_valid);
 		if (!is_valid || (is_valid && array.size() == 0)) {
