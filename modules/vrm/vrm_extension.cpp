@@ -31,6 +31,7 @@
 #include "vrm_extension.h"
 #include "core/error/error_list.h"
 #include "core/error/error_macros.h"
+#include "core/object/object.h"
 #include "modules/gltf/gltf_defines.h"
 #include "modules/gltf/gltf_document.h"
 #include "modules/vrm/vrm_secondary.h"
@@ -366,7 +367,7 @@ TypedArray<Basis> VRMExtension::skeleton_rotate(Node *p_base_scene, Skeleton3D *
 }
 
 void VRMExtension::apply_rotation(Node *p_base_scene, Skeleton3D *src_skeleton) {
-	Array nodes = p_base_scene->find_children("*", "ImporterMeshInstance3D");
+	TypedArray<Node> nodes = p_base_scene->find_children("*", "ImporterMeshInstance3D");
 
 	while (!nodes.is_empty()) {
 		Node *this_node = Object::cast_to<Node>(nodes.back());
