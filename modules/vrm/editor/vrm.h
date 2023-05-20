@@ -38,6 +38,7 @@
 #include "modules/gltf/extensions/gltf_document_extension.h"
 #include "modules/gltf/gltf_document.h"
 #include "modules/gltf/gltf_state.h"
+#include "../vrm_extension.h"
 
 class EditorSceneFormatImporterVRM : public EditorSceneFormatImporter {
 	GDCLASS(EditorSceneFormatImporterVRM, EditorSceneFormatImporter);
