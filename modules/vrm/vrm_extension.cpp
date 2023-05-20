@@ -1452,16 +1452,14 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 		print_line("Post-rotate");
 	}
 
-	bool do_retarget = true;
+	bool do_retarget = false;
 
 	TypedArray<Basis> pose_diffs;
 	if (do_retarget) {
 		pose_diffs = apply_retarget(gstate, root_node, skeleton, human_bones_map);
 	} else {
-		// resize is busted for TypedArray and crashes Godot
-		for (int i = 0; i < skeleton->get_bone_count(); ++i) {
-			pose_diffs.push_back(Basis());
-		}
+		pose_diffs.resize(skeleton->get_bone_count());
+		pose_diffs.fill(Basis());
 	}
 
 	_update_materials(vrm_extension, gstate);
