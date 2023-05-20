@@ -767,15 +767,15 @@ Ref<Resource> VRMExtension::_create_meta(Node *root_node, Dictionary vrm_extensi
 		vrm_meta->set_exporter_version(vrm_extension["exporterVersion"]);
 	}
 
-	if (vrm_extension.has("specVersion"))) {
-			vrm_meta->set_spec_version(vrm_extension["specVersion"]);
-		}
+	if (vrm_extension.has("specVersion")) {
+		vrm_meta->set_spec_version(vrm_extension["specVersion"]);
+	}
 
 	Dictionary vrm_extension_meta = vrm_extension["meta"];
 	if (!vrm_extension_meta.is_empty()) {
-		if (vrm_extension_meta.has("title"))) {
-				vrm_meta->set_title(vrm_extension_meta["title"]);
-			}
+		if (vrm_extension_meta.has("title")) {
+			vrm_meta->set_title(vrm_extension_meta["title"]);
+		}
 
 		if (vrm_extension_meta.has("version")) {
 			vrm_meta->set_version(vrm_extension_meta["version"]);
@@ -785,9 +785,9 @@ Ref<Resource> VRMExtension::_create_meta(Node *root_node, Dictionary vrm_extensi
 			vrm_meta->set_author(vrm_extension_meta["author"]);
 		}
 
-		if (vrm_extension_meta.has("contactInformation"))) {
-				vrm_meta->set_contact_information(vrm_extension_meta["contactInformation"]);
-			}
+		if (vrm_extension_meta.has("contactInformation")) {
+			vrm_meta->set_contact_information(vrm_extension_meta["contactInformation"]);
+		}
 
 		if (vrm_extension_meta.has("reference")) {
 			vrm_meta->set_reference_information(vrm_extension_meta["reference"]);
@@ -814,7 +814,7 @@ Ref<Resource> VRMExtension::_create_meta(Node *root_node, Dictionary vrm_extensi
 			vrm_meta->set_commercial_usage(vrm_extension_meta["commercialUssageName"]); // Ussage(sic.) in VRM spec
 		}
 
-		if (vrm_extension_meta.has("otherPermissionUrl"s)) {
+		if (vrm_extension_meta.has("otherPermissionUrl")) {
 			vrm_meta->set_other_permission_url(vrm_extension_meta["otherPermissionUrl"]);
 		}
 
