@@ -44,7 +44,7 @@
 #include "editor/vrm.h"
 
 static void _editor_init() {
-	Ref<VRMImportPlugin> import_vrm;
+	Ref<EditorSceneFormatImporterVRM> import_vrm;
 	import_vrm.instantiate();
 	ResourceImporterScene::add_importer(import_vrm);
 }
@@ -52,8 +52,7 @@ static void _editor_init() {
 
 void initialize_vrm_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		ClassDB::register_class<VRMImportPlugin>();
-		ClassDB::register_class<VRMEditorPlugin>();
+		ClassDB::register_class<EditorSceneFormatImporterVRM>();
 		ClassDB::register_class<VRMMeta>();
 		ClassDB::register_class<VRMColliderGroup>();
 		ClassDB::register_class<VRMConstants>();
@@ -70,7 +69,7 @@ void initialize_vrm_module(ModuleInitializationLevel p_level) {
 		ClassDB::APIType prev_api = ClassDB::get_current_api();
 		ClassDB::set_current_api(ClassDB::API_EDITOR);
 
-		GDREGISTER_CLASS(VRMImportPlugin);
+		GDREGISTER_CLASS(EditorSceneFormatImporterVRM);
 
 		ClassDB::set_current_api(prev_api);
 		EditorNode::add_init_callback(_editor_init);

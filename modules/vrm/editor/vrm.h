@@ -39,12 +39,12 @@
 #include "modules/gltf/gltf_document.h"
 #include "modules/gltf/gltf_state.h"
 
-class VRMImportPlugin : public EditorSceneFormatImporter {
-	GDCLASS(VRMImportPlugin, EditorSceneFormatImporter);
+class EditorSceneFormatImporterVRM : public EditorSceneFormatImporter {
+	GDCLASS(EditorSceneFormatImporterVRM, EditorSceneFormatImporter);
 
 public:
 	virtual uint32_t get_import_flags() const {
-		return IMPORT_SCENE | IMPORT_ANIMATION;
+		return IMPORT_SCENE;
 	}
 	virtual void get_extensions(List<String> *r_extensions) const {
 		r_extensions->push_back("vrm");
@@ -77,24 +77,7 @@ public:
 	virtual Variant get_option_visibility(const String &p_path, bool p_for_animation, const String &p_option, const HashMap<StringName, Variant> &p_options) {
 		return Variant();
 	}
-	VRMImportPlugin() {}
-};
-
-class VRMEditorPlugin : public EditorPlugin {
-	GDCLASS(VRMEditorPlugin, EditorPlugin);
-
-private:
-	Ref<VRMImportPlugin> import_plugin;
-
-public:
-	VRMEditorPlugin() {
-		import_plugin.instantiate();
-		add_scene_format_importer_plugin(import_plugin);
-	}
-	~VRMEditorPlugin() {
-		remove_scene_format_importer_plugin(import_plugin);
-		import_plugin.unref();
-	}
+	EditorSceneFormatImporterVRM() {}
 };
 
 #endif // VRM_H
