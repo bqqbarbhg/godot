@@ -154,6 +154,7 @@ void VRMExtension::skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Sk
 		if (bn != StringName()) {
 			p_skeleton->set_bone_name(i, bn);
 		}
+		p_bone_map->set_skeleton_bone_name(bn, bn);
 	}
 
 	TypedArray<GLTFNode> gnodes = gstate->get_nodes();
@@ -1385,6 +1386,7 @@ TypedArray<Basis> VRMExtension::apply_retarget(Ref<GLTFState> gstate, Node *root
 	NodePath skeleton_path = root_node->get_path_to(skeleton);
 
 	skeleton_rename(gstate, root_node, skeleton, bone_map);
+
 	int hips_bone_idx = skeleton->find_bone("Hips");
 	if (hips_bone_idx != -1) {
 		skeleton->set_motion_scale(Math::abs(skeleton->get_bone_global_rest(hips_bone_idx).origin.y));
@@ -1395,6 +1397,7 @@ TypedArray<Basis> VRMExtension::apply_retarget(Ref<GLTFState> gstate, Node *root
 
 	TypedArray<Basis> poses = skeleton_rotate(root_node, skeleton, bone_map);
 	apply_rotation(root_node, skeleton);
+
 	return poses;
 }
 
@@ -1452,14 +1455,13 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 		print_line("Post-rotate");
 	}
 
-	bool do_retarget = false;
+	bool do_retarget = true;
 
 	TypedArray<Basis> pose_diffs;
+	pose_diffs.resize(skeleton->get_bone_count());
+	pose_diffs.fill(Basis());
 	if (do_retarget) {
 		pose_diffs = apply_retarget(gstate, root_node, skeleton, human_bones_map);
-	} else {
-		pose_diffs.resize(skeleton->get_bone_count());
-		pose_diffs.fill(Basis());
 	}
 
 	_update_materials(vrm_extension, gstate);
