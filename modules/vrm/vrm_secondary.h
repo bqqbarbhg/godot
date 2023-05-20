@@ -70,6 +70,7 @@ public:
 	bool check_for_editor_update();
 	void _notification(int p_what);
 	VRMSecondary() {}
+    ~VRMSecondary() {}
 };
 
 #endif // VRM_SECONDARY_H
