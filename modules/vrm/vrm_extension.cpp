@@ -32,8 +32,10 @@
 #include "core/error/error_list.h"
 #include "core/error/error_macros.h"
 #include "core/object/object.h"
+#include "core/string/node_path.h"
 #include "modules/gltf/gltf_defines.h"
 #include "modules/gltf/gltf_document.h"
+#include "modules/vrm/vrm_meta.h"
 #include "modules/vrm/vrm_secondary.h"
 #include "modules/vrm/vrm_toplevel.h"
 #include "scene/resources/texture.h"
@@ -210,7 +212,7 @@ void VRMExtension::rotate_scene_180_inner(Node3D *p_node, Dictionary mesh_set, D
 	Skeleton3D *skeleton = Object::cast_to<Skeleton3D>(p_node);
 	if (skeleton) {
 		for (int bone_idx = 0; bone_idx < skeleton->get_bone_count(); ++bone_idx) {
-			Transform3D rest = ROTATE_180_TRANSFORM * skeleton->get_bone_rest(bone_idx) * ROTATE_180_TRANSFORM;
+			Transform3D rest = skeleton->get_bone_rest(bone_idx);
 			skeleton->set_bone_rest(bone_idx, rest);
 			skeleton->set_bone_pose_rotation(bone_idx, Quaternion(ROTATE_180_BASIS) * skeleton->get_bone_pose_rotation(bone_idx) * Quaternion(ROTATE_180_BASIS));
 			skeleton->set_bone_pose_scale(bone_idx, Vector3(1, 1, 1));
@@ -328,17 +330,17 @@ TypedArray<Basis> VRMExtension::skeleton_rotate(Node *p_base_scene, Skeleton3D *
 		}
 
 		if (src_skeleton->get_bone_parent(src_idx) >= 0) {
-            // Inverse transform the target rotation
-            Basis inverse_tgt_rot = tgt_rot.inverse();
+			// Inverse transform the target rotation
+			Basis inverse_tgt_rot = tgt_rot.inverse();
 
-            // Apply the inverse transformation to the parent bone's difference
-            Vector3 parent_diff_transformed = inverse_tgt_rot.xform(diffs[src_skeleton->get_bone_parent(src_idx)]);
+			// Apply the inverse transformation to the parent bone's difference
+			Vector3 parent_diff_transformed = inverse_tgt_rot.xform(diffs[src_skeleton->get_bone_parent(src_idx)]);
 
-            // Get the source bone rest basis
-            Basis src_bone_rest_basis = src_skeleton->get_bone_rest(src_idx).basis;
+			// Get the source bone rest basis
+			Basis src_bone_rest_basis = src_skeleton->get_bone_rest(src_idx).basis;
 
-            // Calculate the final difference for the current bone
-            diffs[src_idx] = src_bone_rest_basis.xform(parent_diff_transformed);
+			// Calculate the final difference for the current bone
+			diffs[src_idx] = src_bone_rest_basis.xform(parent_diff_transformed);
 		} else {
 			diffs[src_idx] = tgt_rot.inverse() * src_skeleton->get_bone_rest(src_idx).basis;
 		}
@@ -349,17 +351,17 @@ TypedArray<Basis> VRMExtension::skeleton_rotate(Node *p_base_scene, Skeleton3D *
 			diff = diffs[src_skeleton->get_bone_parent(src_idx)];
 		}
 
-        // Get the source bone rest origin
-        Vector3 src_bone_rest_origin = src_skeleton->get_bone_rest(src_idx).origin;
-        
-        // Transform the source bone rest origin using the difference
-        Vector3 transformed_src_bone_rest_origin = diff.xform(src_bone_rest_origin);
-        
-        // Create a new Transform3D with the target rotation and transformed origin
-        Transform3D new_transform = Transform3D(tgt_rot, transformed_src_bone_rest_origin);
-        
-        // Set the new bone rest transform for the source skeleton
-        src_skeleton->set_bone_rest(src_idx, new_transform);
+		// Get the source bone rest origin
+		Vector3 src_bone_rest_origin = src_skeleton->get_bone_rest(src_idx).origin;
+
+		// Transform the source bone rest origin using the difference
+		Vector3 transformed_src_bone_rest_origin = diff.xform(src_bone_rest_origin);
+
+		// Create a new Transform3D with the target rotation and transformed origin
+		Transform3D new_transform = Transform3D(tgt_rot, transformed_src_bone_rest_origin);
+
+		// Set the new bone rest transform for the source skeleton
+		src_skeleton->set_bone_rest(src_idx, new_transform);
 	}
 
 	prof_skeleton->queue_free();
@@ -785,9 +787,7 @@ Ref<Resource> VRMExtension::_create_meta(Node *root_node, Dictionary vrm_extensi
 
 	vrm_meta->set_name("CLICK TO SEE METADATA");
 
-	vrm_meta->set_humanoid_skeleton_path(NodePath("../GeneralSkeleton"));
-
-    vrm_meta->set_humanoid_bone_mapping(humanBones);
+	vrm_meta->set_humanoid_bone_mapping(humanBones);
 
 	if (vrm_extension.has("exporterVersion")) {
 		vrm_meta->set_exporter_version(vrm_extension["exporterVersion"]);
@@ -1470,10 +1470,14 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 	vrm_top_level->set_name("VRMTopLevel");
 	root_node->add_child(vrm_top_level);
 	vrm_top_level->set_owner(root_node);
-	vrm_top_level->set_vrm_animplayer(NodePath("../anim"));
-	vrm_top_level->set_vrm_skeleton(NodePath("../GeneralSkeleton"));
+	NodePath animation_path = String(vrm_top_level->get_path_to(root_node)) + "/" + root_node->get_path_to(animplayer);
+	vrm_top_level->set_vrm_animplayer(animation_path);
+	NodePath skeleton_path = String(vrm_top_level->get_path_to(root_node)) + "/" + root_node->get_path_to(skeleton);
+	vrm_top_level->set_vrm_skeleton(skeleton_path);
 
-	Ref<Resource> vrm_meta = _create_meta(root_node, vrm_extension, gstate, human_bones_map, human_bone_to_idx, pose_diffs);
+	Ref<VRMMeta> vrm_meta = _create_meta(root_node, vrm_extension, gstate, human_bones_map, human_bone_to_idx, pose_diffs);
+	NodePath humanoid_skeleton_path = root_node->get_path_to(skeleton);
+	vrm_meta->set_humanoid_skeleton_path(humanoid_skeleton_path);
 	vrm_top_level->set_vrm_meta(vrm_meta);
 
 	Array collider_groups = vrm_extension["secondaryAnimation"].get("colliderGroups");
@@ -1485,7 +1489,8 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 			(collider_groups_size > 0 ||
 					bone_group_size > 0)) {
 		Node3D *secondary_node = cast_to<Node3D>(root_node->get_node(NodePath("secondary")));
-		vrm_top_level->set_vrm_secondary(NodePath("../secondary"));
+		NodePath secondary_path = String(vrm_top_level->get_path_to(root_node)) + "/" + root_node->get_path_to(secondary_node);
+		vrm_top_level->set_vrm_secondary(secondary_path);
 		parse_secondary_node(secondary_node, vrm_extension, gstate, pose_diffs, is_vrm_0);
 	}
 	return OK;
