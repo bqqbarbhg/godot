@@ -39,9 +39,6 @@ class VRMConstants : public RefCounted {
 	HashMap<String, String> vrm_to_human_bone;
 	Dictionary vrm_to_human_bone_dict;
 
-protected:
-	static void _bind_methods();
-
 public:
 	VRMConstants(bool is_vrm_0 = true);
 	Dictionary get_vrm_to_human_bone() const {

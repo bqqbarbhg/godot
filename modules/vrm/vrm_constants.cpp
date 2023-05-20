@@ -30,9 +30,6 @@
 
 #include "vrm_constants.h"
 
-void VRMConstants::_bind_methods() {
-}
-
 VRMConstants::VRMConstants(bool is_vrm_0) {
 	vrm_to_human_bone.insert("hips", "Hips");
 	vrm_to_human_bone.insert("spine", "Spine");

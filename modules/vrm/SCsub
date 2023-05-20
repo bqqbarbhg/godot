@@ -1,3 +1,6 @@
 Import('env')
 
 env.add_source_files(env.modules_sources, "*.cpp")
+
+if env.editor_build:
+    env.add_source_files(env.modules_sources, "editor/*.cpp")

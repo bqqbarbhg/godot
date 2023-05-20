@@ -30,7 +30,6 @@
 
 #include "register_types.h"
 
-#include "vrm.h"
 #include "vrm_collidergroup.h"
 #include "vrm_constants.h"
 #include "vrm_extension.h"
@@ -40,20 +39,44 @@
 #include "vrm_springbone.h"
 #include "vrm_toplevel.h"
 
+#if defined(TOOLS_ENABLED)
+#include "editor/editor_settings.h"
+#include "editor/vrm.h"
+
+static void _editor_init() {
+	Ref<VRMImportPlugin> import_vrm;
+	import_vrm.instantiate();
+	ResourceImporterScene::add_importer(import_vrm);
+}
+#endif
+
 void initialize_vrm_module(ModuleInitializationLevel p_level) {
-	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
-		return;
+	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		ClassDB::register_class<VRMImportPlugin>();
+		ClassDB::register_class<VRMEditorPlugin>();
+		ClassDB::register_class<VRMMeta>();
+		ClassDB::register_class<VRMColliderGroup>();
+		ClassDB::register_class<VRMConstants>();
+		ClassDB::register_class<VRMExtension>();
+		ClassDB::register_class<VRMSecondary>();
+		ClassDB::register_class<VRMSpringBoneLogic>();
+		ClassDB::register_class<VRMSpringBone>();
+		ClassDB::register_class<VRMTopLevel>();
 	}
-	ClassDB::register_class<VRMImportPlugin>();
-	ClassDB::register_class<VRMEditorPlugin>();
-	ClassDB::register_class<VRMMeta>();
-	ClassDB::register_class<VRMColliderGroup>();
-	ClassDB::register_class<VRMConstants>();
-	ClassDB::register_class<VRMExtension>();
-	ClassDB::register_class<VRMSecondary>();
-	ClassDB::register_class<VRMSpringBoneLogic>();
-	ClassDB::register_class<VRMSpringBone>();
-	ClassDB::register_class<VRMTopLevel>();
+
+#ifdef TOOLS_ENABLED
+	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		// Editor-specific API.
+		ClassDB::APIType prev_api = ClassDB::get_current_api();
+		ClassDB::set_current_api(ClassDB::API_EDITOR);
+
+		GDREGISTER_CLASS(VRMImportPlugin);
+
+		ClassDB::set_current_api(prev_api);
+		EditorNode::add_init_callback(_editor_init);
+	}
+
+#endif // TOOLS_ENABLED
 }
 
 void uninitialize_vrm_module(ModuleInitializationLevel p_level) {
