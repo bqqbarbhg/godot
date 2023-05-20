@@ -41,13 +41,16 @@
 #include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/typed_array.h"
+#include "core/variant/variant.h"
 #include "modules/gltf/extensions/gltf_document_extension.h"
+#include "modules/gltf/gltf_defines.h"
 #include "modules/gltf/gltf_document.h"
 #include "modules/gltf/structures/gltf_node.h"
 #include "modules/vrm/vrm_constants.h"
 #include "modules/vrm/vrm_secondary.h"
 #include "modules/vrm/vrm_toplevel.h"
 #include "scene/3d/importer_mesh_instance_3d.h"
+#include "scene/3d/node_3d.h"
 #include "scene/resources/animation.h"
 #include "scene/resources/animation_library.h"
 #include "scene/resources/bone_map.h"
@@ -60,8 +63,8 @@
 
 class VRMExtension : public GLTFDocumentExtension {
 	GDCLASS(VRMExtension, GLTFDocumentExtension);
-public:
 
+public:
 	enum class DebugMode {
 		None = 0,
 		Normal = 1,
@@ -112,16 +115,14 @@ private:
 	Ref<VRMMeta> vrm_meta_class;
 	Ref<VRMColliderGroup> vrm_collidergroup;
 
-	VRMTopLevel *vrm_top_level = nullptr;
-	VRMSecondary* vrm_secondary = nullptr;
+	VRMSecondary *vrm_secondary = nullptr;
 
 	Basis ROTATE_180_BASIS = Basis(Vector3(-1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, -1));
 	Transform3D ROTATE_180_TRANSFORM = Transform3D(ROTATE_180_BASIS, Vector3(0, 0, 0));
 
 public:
-
 	VRMExtension();
-    ~VRMExtension() {}
+	~VRMExtension() {}
 	void adjust_mesh_zforward(Ref<ImporterMesh> mesh);
 	void skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Skeleton3D *p_skeleton, Ref<BoneMap> p_bone_map);
 	void rotate_scene_180_inner(Node3D *p_node, Dictionary mesh_set, Dictionary skin_set);
@@ -143,7 +144,18 @@ public:
 	bool add_vrm_nodes_to_skin(Dictionary obj);
 	TypedArray<Basis> apply_retarget(Ref<GLTFState> gstate, Node *root_node, Skeleton3D *skeleton, Ref<BoneMap> bone_map);
 	Error import_preflight(Ref<GLTFState> p_state, Vector<String> p_extensions) override;
-    Error import_post(Ref<GLTFState> p_state, Node *p_node) override;
+	Error import_post(Ref<GLTFState> p_state, Node *p_node) override;
+	Node3D *generate_scene_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Node *p_scene_parent) override {
+		if (p_gltf_node->get_mesh() != -1) {
+			return nullptr;
+		}
+		if (p_gltf_node->get_name() == "secondary") {
+			VRMSecondary *new_secondary = memnew(VRMSecondary);
+			new_secondary->set_transform(p_gltf_node->get_xform());
+			new_secondary->set_name(p_gltf_node->get_name());
+			return new_secondary;
+		}
+	}
 };
 
 #endif // VRM_EXTENSION_H

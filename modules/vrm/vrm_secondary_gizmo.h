@@ -57,6 +57,7 @@ public:
 	SecondaryGizmo(Node *parent = nullptr) {
 		mesh.instantiate();
 		secondary_node = cast_to<VRMSecondary>(parent);
+		m.instantiate();
 		m->set_depth_draw_mode(BaseMaterial3D::DEPTH_DRAW_DISABLED);
 		m->set_shading_mode(BaseMaterial3D::SHADING_MODE_UNSHADED);
 		m->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);

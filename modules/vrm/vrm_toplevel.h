@@ -53,8 +53,8 @@ private:
 	Ref<Resource> vrm_meta;
 
 	bool update_secondary_fixed = false;
-	bool update_in_editor = false;
-	bool gizmo_spring_bone = false;
+	bool update_in_editor = true;
+	bool gizmo_spring_bone = true;
 	Color gizmo_spring_bone_color = Color::named("lightyellow");
 
 protected:

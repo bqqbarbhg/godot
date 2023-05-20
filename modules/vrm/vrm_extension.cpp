@@ -29,9 +29,13 @@
 /**************************************************************************/
 
 #include "vrm_extension.h"
+#include "core/error/error_list.h"
 #include "core/error/error_macros.h"
+#include "modules/gltf/gltf_defines.h"
+#include "modules/gltf/gltf_document.h"
 #include "modules/vrm/vrm_secondary.h"
 #include "modules/vrm/vrm_toplevel.h"
+#include "scene/resources/texture.h"
 
 void VRMExtension::adjust_mesh_zforward(Ref<ImporterMesh> mesh) {
 	int surf_count = mesh->get_surface_count();
@@ -188,10 +192,10 @@ void VRMExtension::skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Sk
 		}
 	}
 
-	// Rename bones in all Nodes by calling method.
+	// Rename bones in all nodes by calling the _notify_skeleton_bones_renamed method.
 	nodes = p_base_scene->find_children("*");
 	while (!nodes.is_empty()) {
-		ImporterMeshInstance3D *nd = cast_to<ImporterMeshInstance3D>(nodes.pop_back());
+		Node *nd = cast_to<Node>(nodes.pop_back());
 		if (nd && nd->has_method("_notify_skeleton_bones_renamed")) {
 			nd->call("_notify_skeleton_bones_renamed", p_base_scene, p_skeleton, p_bone_map);
 		}
@@ -380,8 +384,6 @@ VRMExtension::VRMExtension() {
 	vrm_constants_class.instantiate();
 	vrm_meta_class.instantiate();
 	vrm_collidergroup.instantiate();
-	vrm_secondary = memnew(VRMSecondary);
-	vrm_top_level = memnew(VRMTopLevel);
 	FirstPersonParser.insert("Auto", FirstPersonFlag::Auto);
 	FirstPersonParser.insert("Both", FirstPersonFlag::Both);
 	FirstPersonParser.insert("FirstPersonOnly", FirstPersonFlag::FirstPersonOnly);
@@ -614,7 +616,7 @@ Ref<Material> VRMExtension::_process_vrm_material(Ref<Material> orig_mat, Array 
 }
 
 void VRMExtension::_update_materials(Dictionary vrm_extension, Ref<GLTFState> gstate) {
-	TypedArray<Image> images = gstate->get_images();
+	TypedArray<Texture2D> images = gstate->get_images();
 	TypedArray<Material> materials = gstate->get_materials();
 	Dictionary spatial_to_shader_mat;
 
@@ -1156,7 +1158,8 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 		} else {
 			Skeleton3D *skeleton = cast_to<Skeleton3D>(_get_skel_godot_node(gstate, nodes, skeletons, gltfnode->get_skeleton()));
 			collider_group->set_skeleton_or_node(secondary_node->get_path_to(skeleton));
-			String bone_name = cast_to<Node>(nodes[int(cgroup["node"])])->get_name();
+			Ref<GLTFNode> bone_gltf_node = cast_to<GLTFNode>(nodes[int(cgroup["node"])]);
+			String bone_name = bone_gltf_node->get_name();
 			collider_group->set_bone(bone_name);
 			collider_group->set_name(collider_group->get_bone());
 			pose_diff = pose_diffs[skeleton->find_bone(collider_group->get_bone())];
@@ -1383,17 +1386,13 @@ TypedArray<Basis> VRMExtension::apply_retarget(Ref<GLTFState> gstate, Node *root
 }
 
 Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
-	Ref<GLTFDocument> gltf;
-	gltf.instantiate();
 	Dictionary gltf_json = gstate->get_json();
 	Dictionary gltf_vrm_extension = gltf_json["extensions"];
 	Dictionary vrm_extension = gltf_vrm_extension["VRM"];
+
 	bool is_vrm_0 = true;
-	Node3D *root_node = cast_to<Node3D>(node);
-	if (!root_node) {
-		ERR_PRINT("The root node is not a Node3D.");
-		return ERR_INVALID_DATA;
-	}
+
+	Node3D *root_node = Object::cast_to<Node3D>(node);
 
 	Dictionary human_bone_to_idx;
 	// Ignoring in ["humanoid"]: armStretch, legStretch, upperArmTwist,
@@ -1404,7 +1403,6 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 	for (int i = 0; i < human_bones.size(); ++i) {
 		Dictionary human_bone = human_bones[i];
 		human_bone_to_idx[human_bone["bone"]] = static_cast<int>(human_bone["node"]);
-		// Unity Mecanim properties:
 		// Ignoring: useDefaultValues
 		// Ignoring: min
 		// Ignoring: max
@@ -1455,38 +1453,31 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 
 	_update_materials(vrm_extension, gstate);
 
-	root_node->replace_by(vrm_top_level, true);
-	root_node = vrm_top_level;
 	AnimationPlayer *animplayer = memnew(AnimationPlayer);
 	animplayer->set_name("anim");
-	vrm_top_level->add_child(animplayer);
-	animplayer->set_owner(vrm_top_level);
+	root_node->add_child(animplayer);
+	animplayer->set_owner(root_node);
 	create_animation_player(animplayer, vrm_extension, gstate, human_bone_to_idx, pose_diffs);
 
-	Ref<Resource> vrm_meta = _create_meta(vrm_top_level, animplayer, vrm_extension, gstate, skeleton, human_bones_map, human_bone_to_idx, pose_diffs);
-	vrm_top_level->set("vrm_meta", vrm_meta);
-	vrm_top_level->set("vrm_secondary", NodePath());
+	Ref<Resource> vrm_meta = _create_meta(root_node, animplayer, vrm_extension, gstate, skeleton, human_bones_map, human_bone_to_idx, pose_diffs);
 
 	Array collider_groups = vrm_extension["secondaryAnimation"].get("colliderGroups");
 	int32_t collider_groups_size = collider_groups.size();
 	Array bone_groups = vrm_extension["secondaryAnimation"].get("boneGroups");
 	int32_t bone_group_size = bone_groups.size();
+    VRMTopLevel *vrm_top_level = memnew(VRMTopLevel);
+    vrm_top_level->set_name("VRMTopLevel");
+    vrm_top_level->set_vrm_meta(vrm_meta);
+    vrm_top_level->set_vrm_animplayer(NodePath("../anim"));
+    vrm_top_level->set_vrm_skeleton(NodePath("../GeneralSkeleton"));
+    root_node->add_child(vrm_top_level);
+    vrm_top_level->set_owner(root_node);
+    vrm_top_level->set_unique_name_in_owner(true);
 	if (vrm_extension.has("secondaryAnimation") &&
 			(collider_groups_size > 0 ||
 					bone_group_size > 0)) {
-		Node3D *secondary_node = cast_to<Node3D>(vrm_top_level->get_node(NodePath("secondary")));
-		if (!secondary_node) {
-			vrm_top_level->add_child(vrm_secondary);
-			vrm_secondary->set_owner(vrm_top_level);
-			vrm_secondary->set_name("secondary");
-		} else {
-			secondary_node->replace_by(vrm_secondary, true);
-			secondary_node = vrm_secondary;
-		}
-
-		NodePath secondary_path = vrm_top_level->get_path_to(secondary_node);
-		vrm_top_level->set_vrm_secondary(secondary_path);
-
+		Node3D *secondary_node = cast_to<Node3D>(root_node->get_node(NodePath("secondary")));
+        vrm_top_level->set_vrm_secondary(NodePath("../secondary"));
 		parse_secondary_node(secondary_node, vrm_extension, gstate, pose_diffs, is_vrm_0);
 	}
 	return OK;
