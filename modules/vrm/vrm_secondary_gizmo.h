@@ -52,7 +52,7 @@ public:
 	Ref<StandardMaterial3D> m;
 	Ref<ImmediateMesh> mesh;
 
-	~SecondaryGizmo();
+	~SecondaryGizmo() {}
 
 	SecondaryGizmo(Node *parent = nullptr) {
 		mesh.instantiate();
