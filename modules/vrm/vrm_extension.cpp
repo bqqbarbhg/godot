@@ -312,8 +312,14 @@ TypedArray<Basis> VRMExtension::skeleton_rotate(Node *p_base_scene, Skeleton3D *
 		}
 
 		Basis tgt_rot;
-		StringName src_bone_name = is_renamed ? StringName(src_skeleton->get_bone_name(src_idx)) : p_bone_map->find_profile_bone_name(src_skeleton->get_bone_name(src_idx));
-
+		StringName src_bone_name_raw = src_skeleton->get_bone_name(src_idx);	
+		StringName src_bone_name;
+		if (is_renamed) {
+			src_bone_name = StringName(src_bone_name_raw);
+		} else {
+			src_bone_name = p_bone_map->find_profile_bone_name(src_bone_name_raw);
+		}
+		
 		if (src_bone_name != StringName()) {
 			Basis src_pg;
 			int src_parent_idx = src_skeleton->get_bone_parent(src_idx);
