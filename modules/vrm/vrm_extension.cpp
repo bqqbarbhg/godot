@@ -67,14 +67,16 @@ void VRMExtension::adjust_mesh_zforward(Ref<ImporterMesh> mesh) {
 		PackedVector3Array vertarr = arr[ArrayMesh::ARRAY_VERTEX];
 
 		for (int i = 0; i < vertarr.size(); ++i) {
-			vertarr.set(i, ROTATE_180_BASIS.xform(vertarr[i]));
+			vertarr.set(i, ROTATE_180_TRANSFORM.xform(vertarr[i]));
 		}
+		arr[ArrayMesh::ARRAY_VERTEX] = vertarr;
 
 		if (arr[ArrayMesh::ARRAY_NORMAL].get_type() == Variant::PACKED_VECTOR3_ARRAY) {
 			PackedVector3Array normarr = arr[ArrayMesh::ARRAY_NORMAL];
 			for (int i = 0; i < vertarr.size(); ++i) {
-				normarr.set(i, ROTATE_180_BASIS.xform(normarr[i]));
+				normarr.set(i, ROTATE_180_TRANSFORM.basis.xform(normarr[i]));
 			}
+			arr[ArrayMesh::ARRAY_NORMAL] = normarr;
 		}
 
 		if (arr[ArrayMesh::ARRAY_TANGENT].get_type() == Variant::PACKED_FLOAT32_ARRAY) {
@@ -83,19 +85,22 @@ void VRMExtension::adjust_mesh_zforward(Ref<ImporterMesh> mesh) {
 				tangarr.set(i * 4, -tangarr[i * 4]);
 				tangarr.set(i * 4 + 2, -tangarr[i * 4 + 2]);
 			}
+			arr[ArrayMesh::ARRAY_TANGENT] = tangarr;
 		}
 
 		for (int bsidx = 0; bsidx < bsarr.size(); ++bsidx) {
 			vertarr = bsarr[bsidx].get(ArrayMesh::ARRAY_VERTEX);
 			for (int i = 0; i < vertarr.size(); ++i) {
-				vertarr.set(i, ROTATE_180_BASIS.xform(vertarr[i]));
+				vertarr.set(i, ROTATE_180_TRANSFORM.xform(vertarr[i]));
 			}
+			bsarr[bsidx].set(ArrayMesh::ARRAY_VERTEX, vertarr);
 
 			if (bsarr[bsidx].get(ArrayMesh::ARRAY_NORMAL).get_type() == Variant::PACKED_VECTOR3_ARRAY) {
 				PackedVector3Array normarr = bsarr[bsidx].get(ArrayMesh::ARRAY_NORMAL);
 				for (int i = 0; i < vertarr.size(); ++i) {
-					normarr.set(i, ROTATE_180_BASIS.xform(normarr[i]));
+					normarr.set(i, ROTATE_180_TRANSFORM.basis.xform(normarr[i]));
 				}
+				bsarr[bsidx].set(ArrayMesh::ARRAY_NORMAL, normarr);
 			}
 
 			if (bsarr[bsidx].get(ArrayMesh::ARRAY_TANGENT).get_type() == Variant::PACKED_FLOAT32_ARRAY) {
@@ -104,6 +109,7 @@ void VRMExtension::adjust_mesh_zforward(Ref<ImporterMesh> mesh) {
 					tangarr.set(i * 4, -tangarr[i * 4]);
 					tangarr.set(i * 4 + 2, -tangarr[i * 4 + 2]);
 				}
+				bsarr[bsidx].set(ArrayMesh::ARRAY_TANGENT, tangarr);
 			}
 			Array array_mesh = bsarr[bsidx];
 			array_mesh.resize(ArrayMesh::ARRAY_MAX);
@@ -145,7 +151,7 @@ void VRMExtension::skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Sk
 	HashMap<int, StringName> original_indices_to_new_bone_names;
 
 	// Rename bones to their humanoid equivalents.
-	for (int i = 0; i < p_bone_map->get_profile()->get_bone_size(); ++i) {
+	for (int i = 0; i < p_skeleton->get_bone_count(); ++i) {
 		StringName bn = p_bone_map->find_profile_bone_name(p_skeleton->get_bone_name(i));
 		original_bone_names_to_indices[p_skeleton->get_bone_name(i)] = i;
 		original_indices_to_bone_names[i] = p_skeleton->get_bone_name(i);
