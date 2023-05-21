@@ -1485,6 +1485,7 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 			(collider_groups_size > 0 ||
 					bone_group_size > 0)) {
 		Node3D *secondary_node = cast_to<Node3D>(root_node->get_node(NodePath("secondary")));
+		secondary_node->reparent(vrm_top_level, true);
 		NodePath secondary_path = String(vrm_top_level->get_path_to(root_node)) + "/" + root_node->get_path_to(secondary_node);
 		vrm_top_level->set_vrm_secondary(secondary_path);
 		parse_secondary_node(secondary_node, vrm_extension, gstate, pose_diffs, is_vrm_0);
