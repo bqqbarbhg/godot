@@ -104,8 +104,8 @@ void VRMSecondary::_notification(int p_what) {
 				skeleton->add_child(secondary_gizmo, false, InternalMode::INTERNAL_MODE_BACK);
 				secondary_gizmo->set_owner(get_owner());
 			}
-			for (int i = 0; i < collider_groups.size(); ++i) {
-				Ref<VRMColliderGroup> collider_group = collider_groups[i];
+			for (int collider_group_i = 0; collider_group_i < collider_groups.size(); ++collider_group_i) {
+				Ref<VRMColliderGroup> collider_group = collider_groups[collider_group_i];
 				Ref<VRMColliderGroup> new_collider_group = collider_group->duplicate(false);
 				new_collider_group->ready(skeleton);
 				collider_groups_internal.push_back(new_collider_group);
@@ -114,9 +114,9 @@ void VRMSecondary::_notification(int p_what) {
 				Ref<VRMSpringBone> spring_bone = spring_bones[i];
 				Ref<VRMSpringBone> new_spring_bone = spring_bone->duplicate(false);
 				Array tmp_colliders;
-				for (int i = 0; i < collider_groups.size(); ++i) {
-					if (new_spring_bone->collider_groups.has(collider_groups[i])) {
-						Ref<VRMColliderGroup> collider_group = cast_to<VRMColliderGroup>(collider_groups[i]);
+				for (int collider_group_j = 0; collider_group_j < collider_groups.size(); ++collider_group_j) {
+					if (new_spring_bone->collider_groups.has(collider_groups[collider_group_j])) {
+						Ref<VRMColliderGroup> collider_group = cast_to<VRMColliderGroup>(collider_groups[collider_group_j]);
 						if (collider_group.is_null()) {
 							continue;
 						}

@@ -97,8 +97,8 @@ void SecondaryGizmo::draw_collider_groups() {
 
 	TypedArray<VRMColliderGroup> collider_groups = Engine::get_singleton()->is_editor_hint() ? secondary_node->get_collider_groups() : secondary_node->get_collider_groups_internal();
 
-	for (int i = 0; i < collider_groups.size(); ++i) {
-		Ref<VRMColliderGroup> collider_group = collider_groups[i];
+	for (int collider_group_i = 0; collider_group_i < collider_groups.size(); ++collider_group_i) {
+		Ref<VRMColliderGroup> collider_group = collider_groups[collider_group_i];
 		Ref<ImmediateMesh>(mesh)->surface_begin(Mesh::PRIMITIVE_LINE_STRIP);
 
 		Transform3D c_tr = Transform3D();
