@@ -154,14 +154,19 @@ public:
 	}
 
 	Error import_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Dictionary &r_json, Node *p_node) override {
-		Node3D *node_3d = Object::cast_to<Node3D>(p_node);
-		if (node_3d) {
-			node_3d->set_transform(ROTATE_180_TRANSFORM * node_3d->get_transform());
+		if (!p_node) {
+			return OK;
 		}
 		// Assume VRM0 if no version is specified.
-		ImporterMeshInstance3D *mesh_instance = Object::cast_to<ImporterMeshInstance3D>(p_node);
-		if (mesh_instance) {
+		if (p_gltf_node->get_mesh() != -1) {
+			ImporterMeshInstance3D *mesh_instance = Object::cast_to<ImporterMeshInstance3D>(p_node);
+			if (!mesh_instance) {
+				return OK;
+			}
 			Ref<ImporterMesh> mesh = mesh_instance->get_mesh();
+			if (!mesh.is_valid()) {
+				return OK;
+			}
 			int surf_count = mesh->get_surface_count();
 			Array surf_data_by_mesh;
 			Vector<String> blendshapes;
@@ -261,22 +266,10 @@ public:
 			Ref<Skin> skin = mesh_instance->get_skin();
 			if (skin.is_valid()) {
 				for (int32_t bind_i = 0; bind_i < skin->get_bind_count(); bind_i++) {
-					skin->set_bind_pose(bind_i, skin->get_bind_pose(bind_i) * ROTATE_180_TRANSFORM);
+					skin->set_bind_pose(bind_i, skin->get_bind_pose(bind_i) * ROTATE_180_TRANSFORM.affine_inverse());
 				}
 			}
 		}
-		Skeleton3D *skeleton = Object::cast_to<Skeleton3D>(p_node);
-		if (skeleton) {
-			for (int bone_idx = 0; bone_idx < skeleton->get_bone_count(); ++bone_idx) {
-				Transform3D rest = ROTATE_180_TRANSFORM * skeleton->get_bone_rest(bone_idx) * ROTATE_180_TRANSFORM;
-				rest.orthogonalize();
-				skeleton->set_bone_rest(bone_idx, rest);
-				skeleton->set_bone_pose_rotation(bone_idx, ROTATE_180_BASIS * skeleton->get_bone_pose_rotation(bone_idx) * ROTATE_180_BASIS);
-				skeleton->set_bone_pose_scale(bone_idx, rest.basis.get_scale());
-				skeleton->set_bone_pose_position(bone_idx, rest.origin);
-			}
-		}
-		return OK;
 	}
 };
 
