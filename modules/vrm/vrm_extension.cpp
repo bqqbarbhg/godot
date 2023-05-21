@@ -1491,3 +1491,15 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 	}
 	return OK;
 }
+
+Node3D *VRMExtension::generate_scene_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Node *p_scene_parent) {
+	if (p_gltf_node->get_mesh() != -1) {
+		return nullptr;
+	}
+	if (p_gltf_node->get_name() == "secondary") {
+		VRMSecondary *new_secondary = memnew(VRMSecondary);
+		new_secondary->set_transform(p_gltf_node->get_xform());
+		new_secondary->set_name(p_gltf_node->get_name());
+		return new_secondary;
+	}
+}

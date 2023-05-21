@@ -145,17 +145,7 @@ public:
 	TypedArray<Basis> apply_retarget(Ref<GLTFState> gstate, Node *root_node, Skeleton3D *skeleton, Ref<BoneMap> bone_map);
 	Error import_preflight(Ref<GLTFState> p_state, Vector<String> p_extensions) override;
 	Error import_post(Ref<GLTFState> p_state, Node *p_node) override;
-	Node3D *generate_scene_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Node *p_scene_parent) override {
-		if (p_gltf_node->get_mesh() != -1) {
-			return nullptr;
-		}
-		if (p_gltf_node->get_name() == "secondary") {
-			VRMSecondary *new_secondary = memnew(VRMSecondary);
-			new_secondary->set_transform(p_gltf_node->get_xform());
-			new_secondary->set_name(p_gltf_node->get_name());
-			return new_secondary;
-		}
-	}
+	Node3D *generate_scene_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Node *p_scene_parent) override;
 };
 
 #endif // VRM_EXTENSION_H
