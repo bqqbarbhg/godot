@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VRMTopLevel" inherits="Node3D" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="gizmo_spring_bone" type="bool" setter="set_gizmo_spring_bone" getter="get_gizmo_spring_bone" default="true">
+		</member>
+		<member name="gizmo_spring_bone_color" type="Color" setter="set_gizmo_spring_bone_color" getter="get_gizmo_spring_bone_color" default="Color(1, 1, 0.878431, 1)">
+		</member>
+		<member name="update_in_editor" type="bool" setter="set_update_in_editor" getter="get_update_in_editor" default="true">
+		</member>
+		<member name="update_secondary_fixed" type="bool" setter="set_update_secondary_fixed" getter="get_update_secondary_fixed" default="false">
+		</member>
+		<member name="vrm_animplayer" type="NodePath" setter="set_vrm_animplayer" getter="get_vrm_animplayer" default="NodePath(&quot;&quot;)">
+		</member>
+		<member name="vrm_meta" type="Resource" setter="set_vrm_meta" getter="get_vrm_meta">
+		</member>
+		<member name="vrm_secondary" type="NodePath" setter="set_vrm_secondary" getter="get_vrm_secondary" default="NodePath(&quot;&quot;)">
+		</member>
+		<member name="vrm_skeleton" type="NodePath" setter="set_vrm_skeleton" getter="get_vrm_skeleton" default="NodePath(&quot;&quot;)">
+		</member>
+	</members>
+</class>
