@@ -1001,7 +1001,10 @@ AnimationPlayer *VRMExtension::create_animation_player(AnimationPlayer *animplay
 		thirdpersanim->track_set_path(thirdperstrack, headPath);
 		thirdpersanim->scale_track_insert_key(thirdperstrack, 0.0, Vector3(1, 1, 1));
 	}
-	Dictionary mesh_annotations = firstperson.get("meshAnnotations");
+	Dictionary mesh_annotations;
+	if (firstperson.has("meshAnnotations")) {
+		mesh_annotations = firstperson["meshAnnotations"];
+	}
 	for (int i = 0; i < mesh_annotations.size(); ++i) {
 		Dictionary mesh_annotation = mesh_annotations[i];
 		bool is_valid = false;
