@@ -1159,7 +1159,11 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 			String bone_name = bone_gltf_node->get_name();
 			collider_group->set_bone(bone_name);
 			collider_group->set_name(collider_group->get_bone());
-			pose_diff = pose_diffs[skeleton->find_bone(collider_group->get_bone())];
+			String collider_bone_name = collider_group->get_bone();
+			BoneId collider_bone_id = skeleton->find_bone(collider_bone_name);
+			if (collider_bone_id != -1) {
+				pose_diff = pose_diffs[collider_bone_id];
+			}
 		}
 		Array colliders = cgroup["colliders"];
 		for (int i = 0; i < colliders.size(); ++i) {
