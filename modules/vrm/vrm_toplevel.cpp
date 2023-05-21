@@ -32,29 +32,6 @@
 #include "modules/vrm/vrm_secondary.h"
 #include "scene/main/node.h"
 
-Quaternion VRMUtil::from_to_rotation(const Vector3 &from, const Vector3 &to) {
-	Vector3 axis = from.cross(to);
-	if (Math::is_equal_approx(real_t(axis.x), real_t(0.0)) && Math::is_equal_approx(real_t(axis.y), real_t(0.0)) && Math::is_equal_approx(real_t(axis.z), real_t(0.0f))) {
-		return Quaternion();
-	}
-	float angle = from.angle_to(to);
-	if (Math::is_equal_approx(real_t(angle), real_t(0.0))) {
-		angle = 0.0f;
-	}
-	return Quaternion(axis.normalized(), angle);
-}
-
-Vector3 VRMUtil::transform_point(const Transform3D &transform, const Vector3 &point) {
-	Vector3 sc = transform.basis.get_scale();
-	return (transform.basis.get_rotation_quaternion().xform(Vector3(point.x * sc.x, point.y * sc.y, point.z * sc.z)) + transform.origin);
-}
-
-Vector3 VRMUtil::inv_transform_point(const Transform3D &transform, const Vector3 &point) {
-	Vector3 diff = point - transform.origin;
-	Vector3 sc = transform.basis.get_scale();
-	return transform.basis.get_rotation_quaternion().inverse().xform(Vector3(diff.x / sc.x, diff.y / sc.y, diff.z / sc.z));
-}
-
 void VRMTopLevel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_vrm_skeleton", "path"), &VRMTopLevel::set_vrm_skeleton);
 	ClassDB::bind_method(D_METHOD("get_vrm_skeleton"), &VRMTopLevel::get_vrm_skeleton);

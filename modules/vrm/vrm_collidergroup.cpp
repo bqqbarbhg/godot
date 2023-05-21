@@ -29,13 +29,14 @@
 /**************************************************************************/
 
 #include "vrm_collidergroup.h"
+#include "core/math/quaternion.h"
 
-void SphereCollider::update(Node3D *parent, Skeleton3D *skel) {
-	if (parent->get_class() == "Skeleton3D" && idx != -1) {
-		Skeleton3D *skeleton = Object::cast_to<Skeleton3D>(parent);
-		position = VRMUtil::transform_point(Transform3D(Basis(), skeleton->get_global_transform().xform(skel->get_bone_global_pose(idx).origin)), offset);
-	} else {
-		position = VRMUtil::transform_point(parent->get_global_transform(), offset);
+void SphereCollider::update(Skeleton3D *skel) {
+	if (skel && idx != -1) {
+		Transform3D skeleton_global_xform_bone_global_pose = skel->get_global_transform() * skel->get_bone_global_pose(idx);
+		position = skeleton_global_xform_bone_global_pose.xform(offset);
+	} else if (skel) {
+		position = skel->get_global_transform().xform(offset);
 	}
 }
 
@@ -65,4 +66,10 @@ void VRMColliderGroup::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "bone"), "set_bone", "get_bone");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "sphere_colliders"), "set_sphere_colliders", "get_sphere_colliders");
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "gizmo_color"), "set_gizmo_color", "get_gizmo_color");
+}
+
+void SphereCollider::ready(int bone_idx, const Vector3 &collider_offset, float collider_radius) {
+	idx = bone_idx;
+	offset = collider_offset;
+	radius = collider_radius;
 }

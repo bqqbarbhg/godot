@@ -96,9 +96,9 @@ void VRMSpringBoneLogic::reset(Skeleton3D *skel) {
 void VRMSpringBoneLogic::ready(Skeleton3D *skel, int idx, const Vector3 &center, const Vector3 &local_child_position, const Transform3D &default_pose) {
 	initial_transform = default_pose;
 	bone_idx = idx;
-	Vector3 world_child_position = VRMUtil::transform_point(get_transform(skel), local_child_position);
+	Vector3 world_child_position = get_transform(skel).xform(local_child_position);
 	if (center != Vector3()) {
-		current_tail = VRMUtil::inv_transform_point(Transform3D(Basis(), center), world_child_position);
+		current_tail = Transform3D(Basis(), center).xform_inv(world_child_position);
 	} else {
 		current_tail = world_child_position;
 	}
@@ -110,8 +110,8 @@ void VRMSpringBoneLogic::ready(Skeleton3D *skel, int idx, const Vector3 &center,
 void VRMSpringBoneLogic::update(Skeleton3D *skel, const Vector3 &center, float stiffness_force, float drag_force, const Vector3 &external, const Array &colliders) {
 	Vector3 tmp_current_tail, tmp_prev_tail;
 	if (center != Vector3()) {
-		tmp_current_tail = VRMUtil::transform_point(Transform3D(Basis(), center), current_tail);
-		tmp_prev_tail = VRMUtil::transform_point(Transform3D(Basis(), center), prev_tail);
+		tmp_current_tail = Transform3D(Basis(), center).xform(current_tail);
+		tmp_prev_tail = Transform3D(Basis(), center).xform(prev_tail);
 	} else {
 		tmp_current_tail = current_tail;
 		tmp_prev_tail = prev_tail;
@@ -129,15 +129,15 @@ void VRMSpringBoneLogic::update(Skeleton3D *skel, const Vector3 &center, float s
 
 	// Recording the current tails for next process.
 	if (center != Vector3()) {
-		prev_tail = VRMUtil::inv_transform_point(Transform3D(Basis(), center), current_tail);
-		current_tail = VRMUtil::inv_transform_point(Transform3D(Basis(), center), next_tail);
+		prev_tail = Transform3D(Basis(), center).xform_inv(current_tail);
+		current_tail = Transform3D(Basis(), center).xform_inv(next_tail);
 	} else {
 		prev_tail = current_tail;
 		current_tail = next_tail;
 	}
 
-	// Apply rotation
-	Quaternion ft = VRMUtil::from_to_rotation(get_rotation_relative_to_origin(skel).xform(bone_axis), next_tail - get_transform(skel).origin);
+	// Apply the rotation.
+	Quaternion ft = Quaternion(get_rotation_relative_to_origin(skel).xform(bone_axis), next_tail - get_transform(skel).origin);
 	if (ft != Quaternion()) {
 		ft = skel->get_global_transform().basis.get_rotation_quaternion().inverse() * ft;
 		Quaternion qt = ft * get_rotation_relative_to_origin(skel);

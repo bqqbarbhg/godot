@@ -35,13 +35,6 @@
 #include "core/math/transform_3d.h"
 #include "scene/3d/node_3d.h"
 
-class VRMUtil {
-public:
-	static Quaternion from_to_rotation(const Vector3 &from, const Vector3 &to);
-	static Vector3 transform_point(const Transform3D &transform, const Vector3 &point);
-	static Vector3 inv_transform_point(const Transform3D &transform, const Vector3 &point);
-};
-
 class VRMTopLevel : public Node3D {
 	GDCLASS(VRMTopLevel, Node3D);
 

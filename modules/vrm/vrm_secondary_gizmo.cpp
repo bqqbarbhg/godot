@@ -66,7 +66,7 @@ void SecondaryGizmo::draw_spring_bones(const Color &color) {
 				s_tr = spring_bone->skeleton->get_bone_global_pose_no_override(v->bone_idx);
 			}
 
-			draw_line(s_tr.origin, VRMUtil::inv_transform_point(s_sk->get_global_transform(), v->get_current_tail()), color);
+			draw_line(s_tr.origin, s_sk->get_global_transform().xform_inv(v->get_current_tail()), color);
 		}
 
 		for (int j = 0; j < spring_bone->verlets.size(); ++j) {
@@ -82,7 +82,7 @@ void SecondaryGizmo::draw_spring_bones(const Color &color) {
 				s_tr = spring_bone->skeleton->get_bone_global_pose_no_override(v->bone_idx);
 			}
 
-			draw_sphere(s_tr.basis, VRMUtil::inv_transform_point(s_sk->get_global_transform(), v->get_current_tail()), spring_bone->get_hit_radius(), color);
+			draw_sphere(s_tr.basis, s_sk->get_global_transform().xform_inv(v->get_current_tail()), spring_bone->get_hit_radius(), color);
 		}
 
 		Ref<ImmediateMesh>(mesh)->surface_end();
@@ -112,17 +112,16 @@ void SecondaryGizmo::draw_collider_groups() {
 				}
 				c_tr = c_sk->get_bone_global_pose(collider_group->get_bone_idx());
 			}
-		} else if (Object::cast_to<Skeleton3D>(collider_group->get_parent())) {
-			Skeleton3D *c_sk = Object::cast_to<Skeleton3D>(collider_group->get_parent());
-			if (c_sk && collider_group->get_skel()) {
-				c_tr = collider_group->get_skel()->get_bone_global_pose_no_override(c_sk->find_bone(collider_group->get_bone()));
+		} else if (Object::cast_to<Skeleton3D>(collider_group->get_skel())) {
+			if (collider_group->get_skel()) {
+				c_tr = collider_group->get_skel()->get_bone_global_pose_no_override(collider_group->get_skel()->find_bone(collider_group->get_bone()));
 			}
 		}
 		Array sphere_colliders = collider_group->get_sphere_colliders();
 		for (int j = 0; j < sphere_colliders.size(); ++j) {
 			Plane collider = sphere_colliders[j];
 			Vector3 c_ps = Vector3(collider.normal.x, collider.normal.y, collider.normal.z);
-			draw_sphere(c_tr.basis, VRMUtil::transform_point(c_tr, c_ps), collider.d, collider_group->get_gizmo_color());
+			draw_sphere(c_tr.basis, c_tr.xform(c_ps), collider.d, collider_group->get_gizmo_color());
 		}
 
 		Ref<ImmediateMesh>(mesh)->surface_end();

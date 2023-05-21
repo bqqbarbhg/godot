@@ -46,9 +46,8 @@ public:
 	Vector3 offset;
 	float radius = 0;
 	Vector3 position;
-	SphereCollider(int bone_idx, const Vector3 &collider_offset = Vector3(0, 0, 0), float collider_radius = 0.1) :
-			idx(bone_idx), offset(collider_offset), radius(collider_radius) {}
-	void update(Node3D *parent, Skeleton3D *skel);
+	void ready(int bone_idx, const Vector3 &collider_offset = Vector3(0, 0, 0), float collider_radius = 0.1);
+	void update(Skeleton3D *skel);
 	float get_radius() const;
 	Vector3 get_position() const;
 };
@@ -79,34 +78,26 @@ public:
 	int bone_idx = -1;
 	int get_bone_idx() const { return bone_idx; }
 	void set_bone_idx(int p_bone_idx) { bone_idx = p_bone_idx; }
-	Node3D *parent = nullptr;
 	Skeleton3D *skel = nullptr;
 	Skeleton3D *get_skel() const { return skel; }
-
-	void set_parent(Node3D *p_parent) {
-		parent = p_parent;
-	}
-
-	Node3D *get_parent() {
-		return parent;
-	}
-
+	
 	void setup() {
-		if (parent) {
+		if (skel) {
 			colliders.clear();
 			for (int i = 0; i < sphere_colliders.size(); ++i) {
 				Plane collider = sphere_colliders[i];
-				Ref<SphereCollider> new_collider = memnew(SphereCollider(bone_idx, collider.normal, collider.d));
+				Ref<SphereCollider> new_collider;
+				new_collider.instantiate();
+				new_collider->ready(bone_idx, collider.normal, collider.d);
 				colliders.append(new_collider);
 			}
 		}
 	}
 
 	void ready(Skeleton3D *ready_skel) {
-		parent = ready_skel;
 		if (ready_skel) {
-			skel = cast_to<Skeleton3D>(ready_skel);
-			bone_idx = cast_to<Skeleton3D>(ready_skel)->find_bone(bone);
+			skel = ready_skel;
+			bone_idx = ready_skel->find_bone(bone);
 		}
 		setup();
 	}
@@ -117,7 +108,7 @@ public:
 			if (collider.is_null()) {
 				continue;
 			}
-			collider->update(parent, skel);
+			collider->update(skel);
 		}
 	}
 };
