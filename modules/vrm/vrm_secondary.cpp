@@ -220,3 +220,11 @@ void VRMSecondary::_notification(int p_what) {
 		}
 	}
 }
+
+Array VRMSecondary::get_collider_groups_internal() const {
+	return collider_groups_internal;
+}
+
+void VRMSecondary::set_collider_groups_internal(Array p_collider_groups_internal) {
+	collider_groups_internal = p_collider_groups_internal;
+}
