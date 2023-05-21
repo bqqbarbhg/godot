@@ -55,6 +55,16 @@
 			<description>
 			</description>
 		</method>
+		<method name="ready">
+			<return type="void" />
+			<param index="0" name="skeleton" type="Skeleton3D" />
+			<param index="1" name="bone_idx" type="int" />
+			<param index="2" name="center" type="Vector3" />
+			<param index="3" name="local_child_position" type="Vector3" />
+			<param index="4" name="default_pose" type="Transform3D" />
+			<description>
+			</description>
+		</method>
 		<method name="reset">
 			<return type="void" />
 			<param index="0" name="skeleton" type="Skeleton3D" />

@@ -7,6 +7,17 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="process">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="ready">
+			<return type="void" />
+			<param index="0" name="ready_skeleton" type="Skeleton3D" />
+			<description>
+			</description>
+		</method>
 		<method name="setup">
 			<return type="void" />
 			<description>
