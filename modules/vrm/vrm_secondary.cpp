@@ -94,13 +94,13 @@ bool VRMSecondary::check_for_editor_update() {
 void VRMSecondary::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_READY: {
-			bool gizmo_spring_bone = false;
+			bool show_gizmo_spring_bone = false;
 			if (Object::cast_to<VRMTopLevel>(get_parent())) {
 				update_secondary_fixed = get_parent()->get("update_secondary_fixed");
-				gizmo_spring_bone = get_parent()->get("gizmo_spring_bone");
+				show_gizmo_spring_bone = get_parent()->get("gizmo_spring_bone");
 			}
 
-			if (!secondary_gizmo && (Engine::get_singleton()->is_editor_hint() || gizmo_spring_bone)) {
+			if (!secondary_gizmo && (Engine::get_singleton()->is_editor_hint() || show_gizmo_spring_bone)) {
 				secondary_gizmo = memnew(SecondaryGizmo(this));
 				add_child(secondary_gizmo, true);
 			}
