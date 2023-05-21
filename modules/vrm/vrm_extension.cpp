@@ -64,16 +64,15 @@ void VRMExtension::adjust_mesh_zforward(Ref<ImporterMesh> mesh) {
 		Dictionary lods; // mesh.surface_get_lods(surf_idx) // get_lods(mesh, surf_idx)
 		Ref<Material> mat = mesh->get_surface_material(surf_idx);
 		PackedVector3Array vertarr = arr[ArrayMesh::ARRAY_VERTEX];
-		Vector3 invert_vector(-1, 1, -1);
 
 		for (int i = 0; i < vertarr.size(); ++i) {
-			vertarr.set(i, invert_vector * vertarr[i]);
+			vertarr.set(i, ROTATE_180_BASIS.xform(vertarr[i]));
 		}
 
 		if (arr[ArrayMesh::ARRAY_NORMAL].get_type() == Variant::PACKED_VECTOR3_ARRAY) {
 			PackedVector3Array normarr = arr[ArrayMesh::ARRAY_NORMAL];
 			for (int i = 0; i < vertarr.size(); ++i) {
-				normarr.set(i, invert_vector * normarr[i]);
+				normarr.set(i, ROTATE_180_BASIS.xform(normarr[i]));
 			}
 		}
 
@@ -88,13 +87,13 @@ void VRMExtension::adjust_mesh_zforward(Ref<ImporterMesh> mesh) {
 		for (int bsidx = 0; bsidx < bsarr.size(); ++bsidx) {
 			vertarr = bsarr[bsidx].get(ArrayMesh::ARRAY_VERTEX);
 			for (int i = 0; i < vertarr.size(); ++i) {
-				vertarr.set(i, invert_vector * vertarr[i]);
+				vertarr.set(i, ROTATE_180_BASIS.xform(vertarr[i]));
 			}
 
 			if (bsarr[bsidx].get(ArrayMesh::ARRAY_NORMAL).get_type() == Variant::PACKED_VECTOR3_ARRAY) {
 				PackedVector3Array normarr = bsarr[bsidx].get(ArrayMesh::ARRAY_NORMAL);
 				for (int i = 0; i < vertarr.size(); ++i) {
-					normarr.set(i, invert_vector * normarr[i]);
+					normarr.set(i, ROTATE_180_BASIS.xform(normarr[i]));
 				}
 			}
 
@@ -1454,7 +1453,7 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 		print_line("Post-rotate");
 	}
 
-	bool do_retarget = true;
+	bool do_retarget = false;
 
 	TypedArray<Basis> pose_diffs;
 	pose_diffs.resize(skeleton->get_bone_count());
