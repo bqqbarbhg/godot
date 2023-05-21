@@ -54,6 +54,7 @@
 #include "scene/resources/animation.h"
 #include "scene/resources/animation_library.h"
 #include "scene/resources/bone_map.h"
+#include "scene/resources/immediate_mesh.h"
 #include "scene/resources/importer_mesh.h"
 #include "scene/resources/material.h"
 
@@ -123,11 +124,7 @@ private:
 public:
 	VRMExtension();
 	~VRMExtension() {}
-	void adjust_mesh_zforward(Ref<ImporterMesh> mesh);
 	void skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Skeleton3D *p_skeleton, Ref<BoneMap> p_bone_map);
-	void rotate_scene_180_inner(Node3D *p_node, Dictionary mesh_set, Dictionary skin_set);
-	void xtmp(Node3D *p_node, HashMap<Ref<Mesh>, bool> &mesh_set, HashMap<Ref<Skin>, bool> &skin_set);
-	void rotate_scene_180(Node3D *p_scene);
 	TypedArray<Basis> skeleton_rotate(Node *p_base_scene, Skeleton3D *src_skeleton, Ref<BoneMap> p_bone_map);
 	void apply_rotation(Node *p_base_scene, Skeleton3D *src_skeleton);
 	Ref<Material> process_khr_material(Ref<StandardMaterial3D> orig_mat, Dictionary gltf_mat_props);
@@ -154,6 +151,132 @@ public:
 			new_secondary->set_name(p_gltf_node->get_name());
 			return new_secondary;
 		}
+	}
+
+	Error import_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Dictionary &r_json, Node *p_node) override {
+		Node3D *node_3d = Object::cast_to<Node3D>(p_node);
+		if (node_3d) {
+			node_3d->set_transform(ROTATE_180_TRANSFORM * node_3d->get_transform());
+		}
+		// Assume VRM0 if no version is specified.
+		ImporterMeshInstance3D *mesh_instance = Object::cast_to<ImporterMeshInstance3D>(p_node);
+		if (mesh_instance) {
+			Ref<ImporterMesh> mesh = mesh_instance->get_mesh();
+			int surf_count = mesh->get_surface_count();
+			Array surf_data_by_mesh;
+			Vector<String> blendshapes;
+
+			for (int bsidx = 0; bsidx < mesh->get_blend_shape_count(); ++bsidx) {
+				blendshapes.append(mesh->get_blend_shape_name(bsidx));
+			}
+
+			for (int surf_idx = 0; surf_idx < surf_count; ++surf_idx) {
+				int prim = mesh->get_surface_primitive_type(surf_idx);
+				int fmt_compress_flags = mesh->get_surface_format(surf_idx);
+				Array arr = mesh->get_surface_arrays(surf_idx);
+				String name = mesh->get_surface_name(surf_idx);
+				int bscount = mesh->get_blend_shape_count();
+				Array bsarr;
+
+				for (int bsidx = 0; bsidx < bscount; ++bsidx) {
+					bsarr.append(mesh->get_surface_blend_shape_arrays(surf_idx, bsidx));
+				}
+
+				Dictionary lods; // mesh.surface_get_lods(surf_idx) // get_lods(mesh, surf_idx)
+				Ref<Material> mat = mesh->get_surface_material(surf_idx);
+				PackedVector3Array vertarr = arr[ArrayMesh::ARRAY_VERTEX];
+
+				for (int i = 0; i < vertarr.size(); ++i) {
+					vertarr.set(i, ROTATE_180_TRANSFORM.xform(vertarr[i]));
+				}
+
+				if (arr[ArrayMesh::ARRAY_NORMAL].get_type() == Variant::PACKED_VECTOR3_ARRAY) {
+					PackedVector3Array normarr = arr[ArrayMesh::ARRAY_NORMAL];
+					for (int i = 0; i < vertarr.size(); ++i) {
+						normarr.set(i, ROTATE_180_TRANSFORM.basis.xform(normarr[i]));
+					}
+				}
+
+				if (arr[ArrayMesh::ARRAY_TANGENT].get_type() == Variant::PACKED_FLOAT32_ARRAY) {
+					PackedFloat32Array tangarr = arr[ArrayMesh::ARRAY_TANGENT];
+					for (int i = 0; i < vertarr.size(); ++i) {
+						tangarr.set(i * 4, -tangarr[i * 4]);
+						tangarr.set(i * 4 + 2, -tangarr[i * 4 + 2]);
+					}
+				}
+
+				for (int bsidx = 0; bsidx < bsarr.size(); ++bsidx) {
+					vertarr = bsarr[bsidx].get(ArrayMesh::ARRAY_VERTEX);
+					for (int i = 0; i < vertarr.size(); ++i) {
+						vertarr.set(i, ROTATE_180_TRANSFORM.xform(vertarr[i]));
+					}
+
+					if (bsarr[bsidx].get(ArrayMesh::ARRAY_NORMAL).get_type() == Variant::PACKED_VECTOR3_ARRAY) {
+						PackedVector3Array normarr = bsarr[bsidx].get(ArrayMesh::ARRAY_NORMAL);
+						for (int i = 0; i < vertarr.size(); ++i) {
+							normarr.set(i, ROTATE_180_TRANSFORM.basis.xform(normarr[i]));
+						}
+					}
+
+					if (bsarr[bsidx].get(ArrayMesh::ARRAY_TANGENT).get_type() == Variant::PACKED_FLOAT32_ARRAY) {
+						PackedFloat32Array tangarr = bsarr[bsidx].get(ArrayMesh::ARRAY_TANGENT);
+						for (int i = 0; i < vertarr.size(); ++i) {
+							tangarr.set(i * 4, -tangarr[i * 4]);
+							tangarr.set(i * 4 + 2, -tangarr[i * 4 + 2]);
+						}
+					}
+					Array array_mesh = bsarr[bsidx];
+					array_mesh.resize(ArrayMesh::ARRAY_MAX);
+					bsarr[bsidx] = array_mesh;
+				}
+				Dictionary surf_data_dict;
+				surf_data_dict["prim"] = prim;
+				surf_data_dict["arr"] = arr;
+				surf_data_dict["bsarr"] = bsarr;
+				surf_data_dict["lods"] = lods;
+				surf_data_dict["fmt_compress_flags"] = fmt_compress_flags;
+				surf_data_dict["name"] = name;
+				surf_data_dict["mat"] = mat;
+				surf_data_by_mesh.push_back(surf_data_dict);
+			}
+
+			mesh->clear();
+
+			for (Variant blend_name : blendshapes) {
+				mesh->add_blend_shape(blend_name);
+			}
+
+			for (int surf_idx = 0; surf_idx < surf_count; ++surf_idx) {
+				int prim = surf_data_by_mesh[surf_idx].get("prim");
+				Array arr = surf_data_by_mesh[surf_idx].get("arr");
+				Array bsarr = surf_data_by_mesh[surf_idx].get("bsarr");
+				Dictionary lods = surf_data_by_mesh[surf_idx].get("lods");
+				int fmt_compress_flags = surf_data_by_mesh[surf_idx].get("fmt_compress_flags");
+				String name = surf_data_by_mesh[surf_idx].get("name");
+				Ref<Material> mat = surf_data_by_mesh[surf_idx].get("mat");
+
+				mesh->add_surface(Mesh::PrimitiveType(prim), arr, bsarr, lods, mat, name, fmt_compress_flags);
+			}
+
+			Ref<Skin> skin = mesh_instance->get_skin();
+			if (skin.is_valid()) {
+				for (int32_t bind_i = 0; bind_i < skin->get_bind_count(); bind_i++) {
+					skin->set_bind_pose(bind_i, skin->get_bind_pose(bind_i) * ROTATE_180_TRANSFORM);
+				}
+			}
+		}
+		Skeleton3D *skeleton = Object::cast_to<Skeleton3D>(p_node);
+		if (skeleton) {
+			for (int bone_idx = 0; bone_idx < skeleton->get_bone_count(); ++bone_idx) {
+				Transform3D rest = ROTATE_180_TRANSFORM * skeleton->get_bone_rest(bone_idx) * ROTATE_180_TRANSFORM;
+				rest.orthogonalize();
+				skeleton->set_bone_rest(bone_idx, rest);
+				skeleton->set_bone_pose_rotation(bone_idx, ROTATE_180_BASIS * skeleton->get_bone_pose_rotation(bone_idx) * ROTATE_180_BASIS);
+				skeleton->set_bone_pose_scale(bone_idx, rest.basis.get_scale());
+				skeleton->set_bone_pose_position(bone_idx, rest.origin);
+			}
+		}
+		return OK;
 	}
 };
 

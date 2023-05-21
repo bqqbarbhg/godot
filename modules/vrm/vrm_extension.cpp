@@ -41,111 +41,13 @@
 #include "modules/vrm/vrm_toplevel.h"
 #include "scene/resources/texture.h"
 
-void VRMExtension::adjust_mesh_zforward(Ref<ImporterMesh> mesh) {
-	int surf_count = mesh->get_surface_count();
-	Array surf_data_by_mesh;
-	Vector<String> blendshapes;
-
-	for (int bsidx = 0; bsidx < mesh->get_blend_shape_count(); ++bsidx) {
-		blendshapes.append(mesh->get_blend_shape_name(bsidx));
-	}
-
-	for (int surf_idx = 0; surf_idx < surf_count; ++surf_idx) {
-		int prim = mesh->get_surface_primitive_type(surf_idx);
-		int fmt_compress_flags = mesh->get_surface_format(surf_idx);
-		Array arr = mesh->get_surface_arrays(surf_idx);
-		String name = mesh->get_surface_name(surf_idx);
-		int bscount = mesh->get_blend_shape_count();
-		Array bsarr;
-
-		for (int bsidx = 0; bsidx < bscount; ++bsidx) {
-			bsarr.append(mesh->get_surface_blend_shape_arrays(surf_idx, bsidx));
-		}
-
-		Dictionary lods; // mesh.surface_get_lods(surf_idx) // get_lods(mesh, surf_idx)
-		Ref<Material> mat = mesh->get_surface_material(surf_idx);
-		PackedVector3Array vertarr = arr[ArrayMesh::ARRAY_VERTEX];
-
-		for (int i = 0; i < vertarr.size(); ++i) {
-			vertarr.set(i, ROTATE_180_BASIS.xform(vertarr[i]));
-		}
-
-		if (arr[ArrayMesh::ARRAY_NORMAL].get_type() == Variant::PACKED_VECTOR3_ARRAY) {
-			PackedVector3Array normarr = arr[ArrayMesh::ARRAY_NORMAL];
-			for (int i = 0; i < vertarr.size(); ++i) {
-				normarr.set(i, ROTATE_180_BASIS.xform(normarr[i]));
-			}
-		}
-
-		if (arr[ArrayMesh::ARRAY_TANGENT].get_type() == Variant::PACKED_FLOAT32_ARRAY) {
-			PackedFloat32Array tangarr = arr[ArrayMesh::ARRAY_TANGENT];
-			for (int i = 0; i < vertarr.size(); ++i) {
-				tangarr.set(i * 4, -tangarr[i * 4]);
-				tangarr.set(i * 4 + 2, -tangarr[i * 4 + 2]);
-			}
-		}
-
-		for (int bsidx = 0; bsidx < bsarr.size(); ++bsidx) {
-			vertarr = bsarr[bsidx].get(ArrayMesh::ARRAY_VERTEX);
-			for (int i = 0; i < vertarr.size(); ++i) {
-				vertarr.set(i, ROTATE_180_BASIS.xform(vertarr[i]));
-			}
-
-			if (bsarr[bsidx].get(ArrayMesh::ARRAY_NORMAL).get_type() == Variant::PACKED_VECTOR3_ARRAY) {
-				PackedVector3Array normarr = bsarr[bsidx].get(ArrayMesh::ARRAY_NORMAL);
-				for (int i = 0; i < vertarr.size(); ++i) {
-					normarr.set(i, ROTATE_180_BASIS.xform(normarr[i]));
-				}
-			}
-
-			if (bsarr[bsidx].get(ArrayMesh::ARRAY_TANGENT).get_type() == Variant::PACKED_FLOAT32_ARRAY) {
-				PackedFloat32Array tangarr = bsarr[bsidx].get(ArrayMesh::ARRAY_TANGENT);
-				for (int i = 0; i < vertarr.size(); ++i) {
-					tangarr.set(i * 4, -tangarr[i * 4]);
-					tangarr.set(i * 4 + 2, -tangarr[i * 4 + 2]);
-				}
-			}
-			Array array_mesh = bsarr[bsidx];
-			array_mesh.resize(ArrayMesh::ARRAY_MAX);
-			bsarr[bsidx] = array_mesh;
-		}
-		Dictionary surf_data_dict;
-		surf_data_dict["prim"] = prim;
-		surf_data_dict["arr"] = arr;
-		surf_data_dict["bsarr"] = bsarr;
-		surf_data_dict["lods"] = lods;
-		surf_data_dict["fmt_compress_flags"] = fmt_compress_flags;
-		surf_data_dict["name"] = name;
-		surf_data_dict["mat"] = mat;
-		surf_data_by_mesh.push_back(surf_data_dict);
-	}
-
-	mesh->clear();
-
-	for (Variant blend_name : blendshapes) {
-		mesh->add_blend_shape(blend_name);
-	}
-
-	for (int surf_idx = 0; surf_idx < surf_count; ++surf_idx) {
-		int prim = surf_data_by_mesh[surf_idx].get("prim");
-		Array arr = surf_data_by_mesh[surf_idx].get("arr");
-		Array bsarr = surf_data_by_mesh[surf_idx].get("bsarr");
-		Dictionary lods = surf_data_by_mesh[surf_idx].get("lods");
-		int fmt_compress_flags = surf_data_by_mesh[surf_idx].get("fmt_compress_flags");
-		String name = surf_data_by_mesh[surf_idx].get("name");
-		Ref<Material> mat = surf_data_by_mesh[surf_idx].get("mat");
-
-		mesh->add_surface(Mesh::PrimitiveType(prim), arr, bsarr, lods, mat, name, fmt_compress_flags);
-	}
-}
-
 void VRMExtension::skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Skeleton3D *p_skeleton, Ref<BoneMap> p_bone_map) {
 	HashMap<StringName, int> original_bone_names_to_indices;
 	HashMap<int, StringName> original_indices_to_bone_names;
 	HashMap<int, StringName> original_indices_to_new_bone_names;
 
 	// Rename bones to their humanoid equivalents.
-	for (int i = 0; i <  p_skeleton->get_bone_count(); ++i) {
+	for (int i = 0; i < p_skeleton->get_bone_count(); ++i) {
 		StringName bn = p_bone_map->find_profile_bone_name(p_skeleton->get_bone_name(i));
 		original_bone_names_to_indices[p_skeleton->get_bone_name(i)] = i;
 		original_indices_to_bone_names[i] = p_skeleton->get_bone_name(i);
@@ -199,70 +101,6 @@ void VRMExtension::skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Sk
 		Node *nd = cast_to<Node>(nodes.pop_back());
 		if (nd) {
 			nd->call("_notify_skeleton_bones_renamed", p_base_scene, p_skeleton, p_bone_map);
-		}
-	}
-}
-
-void VRMExtension::rotate_scene_180_inner(Node3D *p_node, Dictionary mesh_set, Dictionary skin_set) {
-	Skeleton3D *skeleton = Object::cast_to<Skeleton3D>(p_node);
-	if (skeleton) {
-		for (int bone_idx = 0; bone_idx < skeleton->get_bone_count(); ++bone_idx) {
-			Transform3D rest = ROTATE_180_TRANSFORM * skeleton->get_bone_rest(bone_idx) * ROTATE_180_TRANSFORM;
-			rest.orthogonalize();
-			skeleton->set_bone_rest(bone_idx, rest);
-			skeleton->set_bone_pose_rotation(bone_idx, ROTATE_180_BASIS * skeleton->get_bone_pose_rotation(bone_idx) * ROTATE_180_BASIS);
-			skeleton->set_bone_pose_scale(bone_idx, rest.basis.get_scale());
-			skeleton->set_bone_pose_position(bone_idx, rest.origin);
-		}
-	}
-	p_node->set_transform(ROTATE_180_TRANSFORM * p_node->get_transform() * ROTATE_180_TRANSFORM);
-
-
-	ImporterMeshInstance3D *importer_mesh_instance = Object::cast_to<ImporterMeshInstance3D>(p_node);
-	if (importer_mesh_instance) {
-		mesh_set[importer_mesh_instance->get_mesh()] = true;
-		skin_set[importer_mesh_instance->get_skin()] = true;
-	}
-
-	for (int i = 0; i < p_node->get_child_count(); ++i) {
-		Node3D *child = Object::cast_to<Node3D>(p_node->get_child(i));
-		if (child) {
-			rotate_scene_180_inner(child, mesh_set, skin_set);
-		}
-	}
-}
-
-void VRMExtension::xtmp(Node3D *p_node, HashMap<Ref<Mesh>, bool> &mesh_set, HashMap<Ref<Skin>, bool> &skin_set) {
-	ImporterMeshInstance3D *importer_mesh_instance = Object::cast_to<ImporterMeshInstance3D>(p_node);
-	if (importer_mesh_instance) {
-		mesh_set[importer_mesh_instance->get_mesh()] = true;
-		skin_set[importer_mesh_instance->get_skin()] = true;
-	}
-
-	for (int i = 0; i < p_node->get_child_count(); ++i) {
-		Node3D *child = Object::cast_to<Node3D>(p_node->get_child(i));
-		if (child) {
-			xtmp(child, mesh_set, skin_set);
-		}
-	}
-}
-
-void VRMExtension::rotate_scene_180(Node3D *p_scene) {
-	Dictionary mesh_set;
-	Dictionary skin_set;
-
-	rotate_scene_180_inner(p_scene, mesh_set, skin_set);
-	Array mesh_set_keys = mesh_set.keys();
-	for (int32_t mesh_i = 0; mesh_i < mesh_set_keys.size(); mesh_i++) {
-		Ref<ImporterMesh> mesh = mesh_set_keys[mesh_i];
-		ERR_CONTINUE(mesh.is_null());
-		adjust_mesh_zforward(mesh);
-	}
-	for (int32_t skin_set_i = 0; skin_set_i < skin_set.size(); skin_set_i++) {
-		Ref<Skin> skin = skin_set.keys()[skin_set_i];
-		ERR_CONTINUE(skin.is_null());
-		for (int32_t bind_i = 0; bind_i < skin->get_bind_count(); bind_i++) {
-			skin->set_bind_pose(bind_i, skin->get_bind_pose(bind_i) * ROTATE_180_TRANSFORM);
 		}
 	}
 }
@@ -1409,13 +1247,6 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 		const String &human_bone_name = human_bone_keys[i];
 		Ref<GLTFNode> gltf_node = gltfnodes[human_bone_to_idx[human_bone_name]];
 		human_bones_map->set_skeleton_bone_name(vrmconst_inst->get_vrm_to_human_bone()[human_bone_name], gltf_node->get_name());
-	}
-
-	if (is_vrm_0) {
-		// VRM 0.0 has models facing backwards due to a spec error (flipped z instead of x)
-		print_line("Pre-rotate");
-		rotate_scene_180(root_node);
-		print_line("Post-rotate");
 	}
 
 	skeleton_rename(gstate, root_node, skeleton, human_bones_map);
