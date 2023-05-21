@@ -131,7 +131,7 @@ public:
 	TypedArray<Basis> skeleton_rotate(Node *p_base_scene, Skeleton3D *src_skeleton, Ref<BoneMap> p_bone_map);
 	void apply_rotation(Node *p_base_scene, Skeleton3D *src_skeleton);
 	Ref<Material> process_khr_material(Ref<StandardMaterial3D> orig_mat, Dictionary gltf_mat_props);
-	Dictionary vrm_get_texture_info(Array gltf_images, Dictionary vrm_mat_props, String unity_tex_name);
+	Dictionary vrm_get_texture_info(Array gltf_images, Dictionary vrm_mat_props, String tex_name);
 	float vrm_get_float(Dictionary vrm_mat_props, String key, float def);
 	Ref<Material> _process_vrm_material(Ref<Material> orig_mat, Array gltf_images, Dictionary vrm_mat_props);
 	void _update_materials(Dictionary vrm_extension, Ref<GLTFState> gstate);

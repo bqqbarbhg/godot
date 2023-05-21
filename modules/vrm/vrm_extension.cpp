@@ -312,14 +312,14 @@ TypedArray<Basis> VRMExtension::skeleton_rotate(Node *p_base_scene, Skeleton3D *
 		}
 
 		Basis tgt_rot;
-		StringName src_bone_name_raw = src_skeleton->get_bone_name(src_idx);	
+		StringName src_bone_name_raw = src_skeleton->get_bone_name(src_idx);
 		StringName src_bone_name;
 		if (is_renamed) {
 			src_bone_name = StringName(src_bone_name_raw);
 		} else {
 			src_bone_name = p_bone_map->find_profile_bone_name(src_bone_name_raw);
 		}
-		
+
 		if (src_bone_name != StringName()) {
 			Basis src_pg;
 			int src_parent_idx = src_skeleton->get_bone_parent(src_idx);
@@ -433,24 +433,21 @@ Ref<Material> VRMExtension::process_khr_material(Ref<StandardMaterial3D> orig_ma
 	return orig_mat;
 }
 
-Dictionary VRMExtension::vrm_get_texture_info(Array gltf_images, Dictionary vrm_mat_props, String unity_tex_name) {
+Dictionary VRMExtension::vrm_get_texture_info(Array gltf_images, Dictionary vrm_mat_props, String tex_name) {
 	Dictionary texture_info;
 	texture_info["tex"] = Ref<Texture2D>();
 	texture_info["offset"] = Vector3(0.0, 0.0, 0.0);
 	texture_info["scale"] = Vector3(1.0, 1.0, 1.0);
 
-	bool is_valid = false;
-	vrm_mat_props["textureProperties"].get(unity_tex_name, &is_valid);
-	if (is_valid) {
-		int mainTexId = vrm_mat_props["textureProperties"].get(unity_tex_name);
-		if (is_valid) {
-			Ref<Texture2D> mainTexImage = gltf_images[mainTexId];
-			texture_info["tex"] = mainTexImage;
-		}
+	Dictionary texture_properties_dict = vrm_mat_props["textureProperties"];
+	if (texture_properties_dict.has(tex_name)) {
+		int mainTexId = texture_properties_dict[tex_name];
+		Ref<Texture2D> mainTexImage = gltf_images[mainTexId];
+		texture_info["tex"] = mainTexImage;
 	}
-	vrm_mat_props["vectorProperties"].get(unity_tex_name, &is_valid);
-	if (is_valid) {
-		Array offsetScale = vrm_mat_props["vectorProperties"].get(unity_tex_name);
+	Dictionary  vector_properties_dict = vrm_mat_props["vectorProperties"];
+	if (vector_properties_dict.has(tex_name)) {
+		Array offsetScale = vector_properties_dict[tex_name];
 		texture_info["offset"] = Vector3(offsetScale[0], offsetScale[1], 0.0);
 		texture_info["scale"] = Vector3(offsetScale[2], offsetScale[3], 1.0);
 	}
@@ -524,7 +521,8 @@ Ref<Material> VRMExtension::_process_vrm_material(Ref<Material> orig_mat, Array 
 	}
 	int blend_mode = 0;
 	if (mtoon_dict_float_properties.has("_BlendMode")) {
-		blend_mode = mtoon_dict_float_properties.get("_BlendMode", &is_valid);;
+		blend_mode = mtoon_dict_float_properties.get("_BlendMode", &is_valid);
+		;
 	}
 	int cull_mode = 2;
 	if (mtoon_dict_float_properties.has("_CullMode")) {
