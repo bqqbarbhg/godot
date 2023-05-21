@@ -61,12 +61,8 @@ public:
 	void set_collider_groups(Array new_collider_groups);
 	Array get_spring_bones() const;
 	Array get_collider_groups() const;
-	Array get_collider_groups_internal() const {
-		return collider_groups_internal;
-	}
-	void set_collider_groups_internal(Array p_collider_groups_internal) {
-		collider_groups_internal = p_collider_groups_internal;
-	}
+	Array get_collider_groups_internal() const;
+	void set_collider_groups_internal(Array p_collider_groups_internal);
 	bool check_for_editor_update();
 	void _notification(int p_what);
 	VRMSecondary() {}

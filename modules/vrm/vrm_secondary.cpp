@@ -29,6 +29,7 @@
 /**************************************************************************/
 
 #include "vrm_secondary.h"
+#include "core/config/engine.h"
 #include "vrm_constants.h"
 #include "vrm_secondary_gizmo.h"
 #include "vrm_springbone.h"
@@ -66,20 +67,14 @@ Array VRMSecondary::get_collider_groups() const {
 }
 
 bool VRMSecondary::check_for_editor_update() {
-	if (!Engine::get_singleton()->is_editor_hint()) {
-		return false;
-	}
-
 	Node *parent = get_parent();
 	VRMTopLevel *vrm_top_level = Object::cast_to<VRMTopLevel>(parent);
 
 	if (vrm_top_level) {
-		if (vrm_top_level->get_update_in_editor() && !update_in_editor) {
-			update_in_editor = true;
+		update_in_editor = vrm_top_level->get_update_in_editor();
+		if (update_in_editor) {
 			notification(NOTIFICATION_READY);
-		}
-		if (!vrm_top_level->get_update_in_editor() && update_in_editor) {
-			update_in_editor = false;
+		} else {
 			for (int i = 0; i < spring_bones_internal.size(); ++i) {
 				Ref<VRMSpringBone> spring_bone = cast_to<VRMSpringBone>(spring_bones_internal[i]);
 				if (spring_bone.is_null()) {
@@ -136,10 +131,20 @@ void VRMSecondary::_notification(int p_what) {
 					spring_bones_internal.push_back(new_spring_bone);
 				}
 			}
+			if (update_secondary_fixed) {
+				set_physics_process(true);
+				set_process(false);
+			} else {
+				set_physics_process(false);
+				set_process(true);
+			}
 			break;
 		}
 		case NOTIFICATION_PROCESS: {
-			float delta = get_process_delta_time();
+			if (!check_for_editor_update()) {
+				return;
+			}
+			double delta = get_process_delta_time();
 			if (!update_secondary_fixed) {
 				if (!Engine::get_singleton()->is_editor_hint() || check_for_editor_update()) {
 					for (int i = 0; i < spring_bones_internal.size(); ++i) {
@@ -172,7 +177,10 @@ void VRMSecondary::_notification(int p_what) {
 			break;
 		}
 		case NOTIFICATION_PHYSICS_PROCESS: {
-			float delta = get_physics_process_delta_time();
+			if (!check_for_editor_update()) {
+				return;
+			}
+			double delta = get_physics_process_delta_time();
 			if (update_secondary_fixed) {
 				if (!Engine::get_singleton()->is_editor_hint() || check_for_editor_update()) {
 					for (int i = 0; i < spring_bones_internal.size(); ++i) {
