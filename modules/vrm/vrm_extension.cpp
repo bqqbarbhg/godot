@@ -1425,6 +1425,13 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 		ERR_PRINT("Failed to find the skeleton.");
 		return ERR_INVALID_DATA;
 	}
+
+	VRMTopLevel *vrm_top_level = memnew(VRMTopLevel);
+	vrm_top_level->set_name("VRMTopLevel");
+	root_node->add_child(vrm_top_level);
+	vrm_top_level->set_owner(root_node);
+	skeleton->reparent(vrm_top_level, true);
+
 	Array gltfnodes = gstate->get_nodes();
 
 	Ref<BoneMap> human_bones_map;
@@ -1464,10 +1471,6 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 	animplayer->set_owner(root_node);
 	create_animation_player(animplayer, vrm_extension, gstate, human_bone_to_idx, pose_diffs);
 
-	VRMTopLevel *vrm_top_level = memnew(VRMTopLevel);
-	vrm_top_level->set_name("VRMTopLevel");
-	root_node->add_child(vrm_top_level);
-	vrm_top_level->set_owner(root_node);
 	NodePath animation_path = String(vrm_top_level->get_path_to(root_node)) + "/" + root_node->get_path_to(animplayer);
 	vrm_top_level->set_vrm_animplayer(animation_path);
 	NodePath skeleton_path = String(vrm_top_level->get_path_to(root_node)) + "/" + root_node->get_path_to(skeleton);
