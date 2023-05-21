@@ -54,7 +54,7 @@ void VRMExtension::adjust_mesh_zforward(Ref<ImporterMesh> mesh) {
 		int prim = mesh->get_surface_primitive_type(surf_idx);
 		int fmt_compress_flags = mesh->get_surface_format(surf_idx);
 		Array arr = mesh->get_surface_arrays(surf_idx);
-		String name = mesh->get_surface_name(surf_idx);
+		String surface_name = mesh->get_surface_name(surf_idx);
 		int bscount = mesh->get_blend_shape_count();
 		Array bsarr;
 
@@ -121,7 +121,7 @@ void VRMExtension::adjust_mesh_zforward(Ref<ImporterMesh> mesh) {
 		surf_data_dict["bsarr"] = bsarr;
 		surf_data_dict["lods"] = lods;
 		surf_data_dict["fmt_compress_flags"] = fmt_compress_flags;
-		surf_data_dict["name"] = name;
+		surf_data_dict["name"] = surface_name;
 		surf_data_dict["mat"] = mat;
 		surf_data_by_mesh.push_back(surf_data_dict);
 	}
