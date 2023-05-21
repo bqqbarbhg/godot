@@ -1302,3 +1302,132 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 	}
 	return OK;
 }
+Error VRMExtension::import_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Dictionary &r_json, Node *p_node) {
+	if (!p_node) {
+		return OK;
+	}
+	// Assume VRM0 if no version is specified.
+	if (p_gltf_node->get_mesh() != -1) {
+		ImporterMeshInstance3D *mesh_instance = Object::cast_to<ImporterMeshInstance3D>(p_node);
+		if (!mesh_instance) {
+			return OK;
+		}
+		Ref<ImporterMesh> mesh = mesh_instance->get_mesh();
+		if (!mesh.is_valid()) {
+			return OK;
+		}
+		int surf_count = mesh->get_surface_count();
+		Array surf_data_by_mesh;
+		Vector<String> blendshapes;
+
+		for (int bsidx = 0; bsidx < mesh->get_blend_shape_count(); ++bsidx) {
+			blendshapes.append(mesh->get_blend_shape_name(bsidx));
+		}
+
+		for (int surf_idx = 0; surf_idx < surf_count; ++surf_idx) {
+			int prim = mesh->get_surface_primitive_type(surf_idx);
+			int fmt_compress_flags = mesh->get_surface_format(surf_idx);
+			Array arr = mesh->get_surface_arrays(surf_idx);
+			String name = mesh->get_surface_name(surf_idx);
+			int bscount = mesh->get_blend_shape_count();
+			Array bsarr;
+
+			for (int bsidx = 0; bsidx < bscount; ++bsidx) {
+				bsarr.append(mesh->get_surface_blend_shape_arrays(surf_idx, bsidx));
+			}
+
+			Dictionary lods; // mesh.surface_get_lods(surf_idx) // get_lods(mesh, surf_idx)
+			Ref<Material> mat = mesh->get_surface_material(surf_idx);
+			PackedVector3Array vertarr = arr[ArrayMesh::ARRAY_VERTEX];
+
+			for (int i = 0; i < vertarr.size(); ++i) {
+				vertarr.set(i, ROTATE_180_TRANSFORM.xform(vertarr[i]));
+			}
+
+			if (arr[ArrayMesh::ARRAY_NORMAL].get_type() == Variant::PACKED_VECTOR3_ARRAY) {
+				PackedVector3Array normarr = arr[ArrayMesh::ARRAY_NORMAL];
+				for (int i = 0; i < vertarr.size(); ++i) {
+					normarr.set(i, ROTATE_180_TRANSFORM.basis.xform(normarr[i]));
+				}
+			}
+
+			if (arr[ArrayMesh::ARRAY_TANGENT].get_type() == Variant::PACKED_FLOAT32_ARRAY) {
+				PackedFloat32Array tangarr = arr[ArrayMesh::ARRAY_TANGENT];
+				for (int i = 0; i < vertarr.size(); ++i) {
+					tangarr.set(i * 4, -tangarr[i * 4]);
+					tangarr.set(i * 4 + 2, -tangarr[i * 4 + 2]);
+				}
+			}
+
+			for (int bsidx = 0; bsidx < bsarr.size(); ++bsidx) {
+				vertarr = bsarr[bsidx].get(ArrayMesh::ARRAY_VERTEX);
+				for (int i = 0; i < vertarr.size(); ++i) {
+					vertarr.set(i, ROTATE_180_TRANSFORM.xform(vertarr[i]));
+				}
+
+				if (bsarr[bsidx].get(ArrayMesh::ARRAY_NORMAL).get_type() == Variant::PACKED_VECTOR3_ARRAY) {
+					PackedVector3Array normarr = bsarr[bsidx].get(ArrayMesh::ARRAY_NORMAL);
+					for (int i = 0; i < vertarr.size(); ++i) {
+						normarr.set(i, ROTATE_180_TRANSFORM.basis.xform(normarr[i]));
+					}
+				}
+
+				if (bsarr[bsidx].get(ArrayMesh::ARRAY_TANGENT).get_type() == Variant::PACKED_FLOAT32_ARRAY) {
+					PackedFloat32Array tangarr = bsarr[bsidx].get(ArrayMesh::ARRAY_TANGENT);
+					for (int i = 0; i < vertarr.size(); ++i) {
+						tangarr.set(i * 4, -tangarr[i * 4]);
+						tangarr.set(i * 4 + 2, -tangarr[i * 4 + 2]);
+					}
+				}
+				Array array_mesh = bsarr[bsidx];
+				array_mesh.resize(ArrayMesh::ARRAY_MAX);
+				bsarr[bsidx] = array_mesh;
+			}
+			Dictionary surf_data_dict;
+			surf_data_dict["prim"] = prim;
+			surf_data_dict["arr"] = arr;
+			surf_data_dict["bsarr"] = bsarr;
+			surf_data_dict["lods"] = lods;
+			surf_data_dict["fmt_compress_flags"] = fmt_compress_flags;
+			surf_data_dict["name"] = name;
+			surf_data_dict["mat"] = mat;
+			surf_data_by_mesh.push_back(surf_data_dict);
+		}
+
+		mesh->clear();
+
+		for (Variant blend_name : blendshapes) {
+			mesh->add_blend_shape(blend_name);
+		}
+
+		for (int surf_idx = 0; surf_idx < surf_count; ++surf_idx) {
+			int prim = surf_data_by_mesh[surf_idx].get("prim");
+			Array arr = surf_data_by_mesh[surf_idx].get("arr");
+			Array bsarr = surf_data_by_mesh[surf_idx].get("bsarr");
+			Dictionary lods = surf_data_by_mesh[surf_idx].get("lods");
+			int fmt_compress_flags = surf_data_by_mesh[surf_idx].get("fmt_compress_flags");
+			String name = surf_data_by_mesh[surf_idx].get("name");
+			Ref<Material> mat = surf_data_by_mesh[surf_idx].get("mat");
+
+			mesh->add_surface(Mesh::PrimitiveType(prim), arr, bsarr, lods, mat, name, fmt_compress_flags);
+		}
+
+		Ref<Skin> skin = mesh_instance->get_skin();
+		if (skin.is_valid()) {
+			for (int32_t bind_i = 0; bind_i < skin->get_bind_count(); bind_i++) {
+				skin->set_bind_pose(bind_i, skin->get_bind_pose(bind_i) * ROTATE_180_TRANSFORM.affine_inverse());
+			}
+		}
+	}
+}
+Node3D *VRMExtension::generate_scene_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Node *p_scene_parent) {
+	if (p_gltf_node->get_mesh() != -1) {
+		return nullptr;
+	}
+	if (p_gltf_node->get_name() == "secondary") {
+		VRMSecondary *new_secondary = memnew(VRMSecondary);
+		new_secondary->set_transform(p_gltf_node->get_xform());
+		new_secondary->set_name(p_gltf_node->get_name());
+		return new_secondary;
+	}
+}
