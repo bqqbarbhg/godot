@@ -94,7 +94,7 @@ void VRMSecondary::_notification(int p_what) {
 			update_secondary_fixed = get_parent()->get("update_secondary_fixed");
 			show_gizmo_spring_bone = get_parent()->get("gizmo_spring_bone");
 
-			if (!secondary_gizmo && (Engine::get_singleton()->is_editor_hint() || show_gizmo_spring_bone)) {
+			if (!secondary_gizmo && show_gizmo_spring_bone) {
 				secondary_gizmo = memnew(SecondaryGizmo());
 				secondary_gizmo->ready(this);
 				add_child(secondary_gizmo, true);
