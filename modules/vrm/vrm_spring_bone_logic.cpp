@@ -117,17 +117,17 @@ void VRMSpringBoneLogic::update(Skeleton3D *skel, const Vector3 &center, float s
 		tmp_prev_tail = prev_tail;
 	}
 
-	// Integration of velocity verlet
+	// Integrate the velocity verlet.
 	Vector3 next_tail = tmp_current_tail + (tmp_current_tail - tmp_prev_tail) * (1.0 - drag_force) + (get_rotation_relative_to_origin(skel).xform(bone_axis)) * stiffness_force + external;
 
-	// Limiting bone length
+	// Limit the bone length.
 	Vector3 origin = get_transform(skel).origin;
 	next_tail = origin + (next_tail - origin).normalized() * length;
 
-	// Collision movement
+	// Collide movement.
 	next_tail = collision(skel, colliders, next_tail);
 
-	// Recording current tails for next process
+	// Recording the current tails for next process.
 	if (center != Vector3()) {
 		prev_tail = VRMUtil::inv_transform_point(Transform3D(Basis(), center), current_tail);
 		current_tail = VRMUtil::inv_transform_point(Transform3D(Basis(), center), next_tail);
