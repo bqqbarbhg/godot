@@ -66,48 +66,48 @@ void VRMExtension::adjust_mesh_zforward(Ref<ImporterMesh> mesh) {
 		Ref<Material> mat = mesh->get_surface_material(surf_idx);
 		PackedVector3Array vertarr = arr[ArrayMesh::ARRAY_VERTEX];
 
-		for (int i = 0; i < vertarr.size(); ++i) {
-			vertarr.set(i, ROTATE_180_TRANSFORM.xform(vertarr[i]));
+		for (int vertex_i = 0; vertex_i < vertarr.size(); ++vertex_i) {
+			vertarr.set(vertex_i, ROTATE_180_TRANSFORM.xform(vertarr[vertex_i]));
 		}
 		arr[ArrayMesh::ARRAY_VERTEX] = vertarr;
 
 		if (arr[ArrayMesh::ARRAY_NORMAL].get_type() == Variant::PACKED_VECTOR3_ARRAY) {
 			PackedVector3Array normarr = arr[ArrayMesh::ARRAY_NORMAL];
-			for (int i = 0; i < vertarr.size(); ++i) {
-				normarr.set(i, ROTATE_180_TRANSFORM.basis.xform(normarr[i]));
+			for (int normal_i = 0; normal_i < vertarr.size(); ++normal_i) {
+				normarr.set(normal_i, ROTATE_180_TRANSFORM.basis.xform(normarr[normal_i]));
 			}
 			arr[ArrayMesh::ARRAY_NORMAL] = normarr;
 		}
 
 		if (arr[ArrayMesh::ARRAY_TANGENT].get_type() == Variant::PACKED_FLOAT32_ARRAY) {
 			PackedFloat32Array tangarr = arr[ArrayMesh::ARRAY_TANGENT];
-			for (int i = 0; i < vertarr.size(); ++i) {
-				tangarr.set(i * 4, -tangarr[i * 4]);
-				tangarr.set(i * 4 + 2, -tangarr[i * 4 + 2]);
+			for (int tangent_i = 0; tangent_i < vertarr.size(); ++tangent_i) {
+				tangarr.set(tangent_i * 4, -tangarr[tangent_i * 4]);
+				tangarr.set(tangent_i * 4 + 2, -tangarr[tangent_i * 4 + 2]);
 			}
 			arr[ArrayMesh::ARRAY_TANGENT] = tangarr;
 		}
 
 		for (int bsidx = 0; bsidx < bsarr.size(); ++bsidx) {
 			vertarr = bsarr[bsidx].get(ArrayMesh::ARRAY_VERTEX);
-			for (int i = 0; i < vertarr.size(); ++i) {
-				vertarr.set(i, ROTATE_180_TRANSFORM.xform(vertarr[i]));
+			for (int vertex_i = 0; vertex_i < vertarr.size(); ++vertex_i) {
+				vertarr.set(vertex_i, ROTATE_180_TRANSFORM.xform(vertarr[vertex_i]));
 			}
 			bsarr[bsidx].set(ArrayMesh::ARRAY_VERTEX, vertarr);
 
 			if (bsarr[bsidx].get(ArrayMesh::ARRAY_NORMAL).get_type() == Variant::PACKED_VECTOR3_ARRAY) {
 				PackedVector3Array normarr = bsarr[bsidx].get(ArrayMesh::ARRAY_NORMAL);
-				for (int i = 0; i < vertarr.size(); ++i) {
-					normarr.set(i, ROTATE_180_TRANSFORM.basis.xform(normarr[i]));
+				for (int vertex_i = 0; vertex_i < vertarr.size(); ++vertex_i) {
+					normarr.set(vertex_i, ROTATE_180_TRANSFORM.basis.xform(normarr[vertex_i]));
 				}
 				bsarr[bsidx].set(ArrayMesh::ARRAY_NORMAL, normarr);
 			}
 
 			if (bsarr[bsidx].get(ArrayMesh::ARRAY_TANGENT).get_type() == Variant::PACKED_FLOAT32_ARRAY) {
 				PackedFloat32Array tangarr = bsarr[bsidx].get(ArrayMesh::ARRAY_TANGENT);
-				for (int i = 0; i < vertarr.size(); ++i) {
-					tangarr.set(i * 4, -tangarr[i * 4]);
-					tangarr.set(i * 4 + 2, -tangarr[i * 4 + 2]);
+				for (int tangent_i = 0; tangent_i < vertarr.size(); ++tangent_i) {
+					tangarr.set(tangent_i * 4, -tangarr[tangent_i * 4]);
+					tangarr.set(tangent_i * 4 + 2, -tangarr[tangent_i * 4 + 2]);
 				}
 				bsarr[bsidx].set(ArrayMesh::ARRAY_TANGENT, tangarr);
 			}
@@ -151,13 +151,13 @@ void VRMExtension::skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Sk
 	HashMap<int, StringName> original_indices_to_new_bone_names;
 
 	// Rename bones to their humanoid equivalents.
-	for (int i = 0; i < p_skeleton->get_bone_count(); ++i) {
-		StringName bn = p_bone_map->find_profile_bone_name(p_skeleton->get_bone_name(i));
-		original_bone_names_to_indices[p_skeleton->get_bone_name(i)] = i;
-		original_indices_to_bone_names[i] = p_skeleton->get_bone_name(i);
-		original_indices_to_new_bone_names[i] = bn;
+	for (int bone_i = 0; bone_i < p_skeleton->get_bone_count(); ++bone_i) {
+		StringName bn = p_bone_map->find_profile_bone_name(p_skeleton->get_bone_name(bone_i));
+		original_bone_names_to_indices[p_skeleton->get_bone_name(bone_i)] = bone_i;
+		original_indices_to_bone_names[bone_i] = p_skeleton->get_bone_name(bone_i);
+		original_indices_to_new_bone_names[bone_i] = bn;
 		if (bn != StringName()) {
-			p_skeleton->set_bone_name(i, bn);
+			p_skeleton->set_bone_name(bone_i, bn);
 		}
 	}
 
@@ -173,8 +173,8 @@ void VRMExtension::skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Sk
 		}
 	}
 
-	for (int i = 0; i < gnodes.size(); ++i) {
-		Ref<GLTFNode> gnode = gnodes[i];
+	for (int gltf_node_i = 0; gltf_node_i < gnodes.size(); ++gltf_node_i) {
+		Ref<GLTFNode> gnode = gnodes[gltf_node_i];
 		StringName bn = p_bone_map->find_profile_bone_name(gnode->get_name());
 		if (bn != StringName()) {
 			gnode->set_name(bn);
@@ -188,11 +188,11 @@ void VRMExtension::skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Sk
 		if (skin.is_valid()) {
 			Node *node = mi->get_node(mi->get_skeleton_path());
 			if (node && Object::cast_to<Skeleton3D>(node) && node == p_skeleton) {
-				for (int i = 0; i < skin->get_bind_count(); ++i) {
-					String bind_bone_name = skin->get_bind_name(i);
+				for (int bind_i = 0; bind_i < skin->get_bind_count(); ++bind_i) {
+					String bind_bone_name = skin->get_bind_name(bind_i);
 					StringName bone_name_from_skel = p_bone_map->find_profile_bone_name(bind_bone_name);
 					if (bone_name_from_skel != StringName()) {
-						skin->set_bind_name(i, bone_name_from_skel);
+						skin->set_bind_name(bind_i, bone_name_from_skel);
 					}
 				}
 			}
@@ -232,8 +232,8 @@ void VRMExtension::rotate_scene_180_inner(Node3D *p_node, Dictionary mesh_set, D
 		skin_set[importer_mesh_instance->get_skin()] = true;
 	}
 
-	for (int i = 0; i < p_node->get_child_count(); ++i) {
-		Node3D *child = Object::cast_to<Node3D>(p_node->get_child(i));
+	for (int child_i = 0; child_i < p_node->get_child_count(); ++child_i) {
+		Node3D *child = Object::cast_to<Node3D>(p_node->get_child(child_i));
 		if (child) {
 			rotate_scene_180_inner(child, mesh_set, skin_set);
 		}
@@ -247,8 +247,8 @@ void VRMExtension::xtmp(Node3D *p_node, HashMap<Ref<Mesh>, bool> &mesh_set, Hash
 		skin_set[importer_mesh_instance->get_skin()] = true;
 	}
 
-	for (int i = 0; i < p_node->get_child_count(); ++i) {
-		Node3D *child = Object::cast_to<Node3D>(p_node->get_child(i));
+	for (int child_i = 0; child_i < p_node->get_child_count(); ++child_i) {
+		Node3D *child = Object::cast_to<Node3D>(p_node->get_child(child_i));
 		if (child) {
 			xtmp(child, mesh_set, skin_set);
 		}
@@ -279,24 +279,24 @@ TypedArray<Basis> VRMExtension::skeleton_rotate(Node *p_base_scene, Skeleton3D *
 	Ref<SkeletonProfile> profile = p_bone_map->get_profile();
 	Skeleton3D *prof_skeleton = memnew(Skeleton3D);
 
-	for (int i = 0; i < profile->get_bone_size(); ++i) {
-		prof_skeleton->add_bone(profile->get_bone_name(i));
-		prof_skeleton->set_bone_rest(i, profile->get_reference_pose(i));
+	for (int bone_i = 0; bone_i < profile->get_bone_size(); ++bone_i) {
+		prof_skeleton->add_bone(profile->get_bone_name(bone_i));
+		prof_skeleton->set_bone_rest(bone_i, profile->get_reference_pose(bone_i));
 	}
 
-	for (int i = 0; i < profile->get_bone_size(); ++i) {
-		int parent = profile->find_bone(profile->get_bone_parent(i));
+	for (int bone_i = 0; bone_i < profile->get_bone_size(); ++bone_i) {
+		int parent = profile->find_bone(profile->get_bone_parent(bone_i));
 		if (parent >= 0) {
-			prof_skeleton->set_bone_parent(i, parent);
+			prof_skeleton->set_bone_parent(bone_i, parent);
 		}
 	}
 
 	TypedArray<Transform3D> old_skeleton_rest;
 	TypedArray<Transform3D> old_skeleton_global_rest;
 
-	for (int i = 0; i < src_skeleton->get_bone_count(); ++i) {
-		old_skeleton_rest.push_back(src_skeleton->get_bone_rest(i));
-		old_skeleton_global_rest.push_back(src_skeleton->get_bone_global_rest(i));
+	for (int bone_i = 0; bone_i < src_skeleton->get_bone_count(); ++bone_i) {
+		old_skeleton_rest.push_back(src_skeleton->get_bone_rest(bone_i));
+		old_skeleton_global_rest.push_back(src_skeleton->get_bone_global_rest(bone_i));
 	}
 
 	TypedArray<Basis> diffs;
@@ -374,24 +374,24 @@ void VRMExtension::apply_rotation(Node *p_base_scene, Skeleton3D *src_skeleton) 
 			Node *node = mi->get_node_or_null(mi->get_skeleton_path());
 
 			if (skin.is_valid() && node && Object::cast_to<Skeleton3D>(node) == src_skeleton) {
-				for (int i = 0; i < skin->get_bind_count(); ++i) {
-					StringName bn = skin->get_bind_name(i);
+				for (int bind_i = 0; bind_i < skin->get_bind_count(); ++bind_i) {
+					StringName bn = skin->get_bind_name(bind_i);
 					int bone_idx = src_skeleton->find_bone(bn);
 
 					if (bone_idx >= 0) {
 						Transform3D new_rest = src_skeleton->get_bone_global_rest(bone_idx);
-						skin->set_bind_pose(i, new_rest.inverse());
+						skin->set_bind_pose(bind_i, new_rest.inverse());
 					}
 				}
 			}
 		}
 	}
 
-	for (int i = 0; i < src_skeleton->get_bone_count(); ++i) {
-		Transform3D fixed_rest = src_skeleton->get_bone_rest(i);
-		src_skeleton->set_bone_pose_position(i, fixed_rest.origin);
-		src_skeleton->set_bone_pose_rotation(i, fixed_rest.basis.get_rotation_quaternion());
-		src_skeleton->set_bone_pose_scale(i, fixed_rest.basis.get_scale());
+	for (int bone_i = 0; bone_i < src_skeleton->get_bone_count(); ++bone_i) {
+		Transform3D fixed_rest = src_skeleton->get_bone_rest(bone_i);
+		src_skeleton->set_bone_pose_position(bone_i, fixed_rest.origin);
+		src_skeleton->set_bone_pose_rotation(bone_i, fixed_rest.basis.get_rotation_quaternion());
+		src_skeleton->set_bone_pose_scale(bone_i, fixed_rest.basis.get_scale());
 	}
 }
 
@@ -583,8 +583,8 @@ Ref<Material> VRMExtension::_process_vrm_material(Ref<Material> orig_mat, Array 
 	}
 	Dictionary float_properties = vrm_mat_props["floatProperties"];
 	Array float_properties_keys = float_properties.keys();
-	for (int32_t i = 0; i < float_properties_keys.size(); i++) {
-		String param_name = float_properties_keys[i];
+	for (int32_t float_property_i = 0; float_property_i < float_properties_keys.size(); float_property_i++) {
+		String param_name = float_properties_keys[float_property_i];
 		new_mat->set_shader_parameter(param_name, float_properties[param_name]);
 		if (outline_mat != nullptr) {
 			outline_mat->set_shader_parameter(param_name, float_properties[param_name]);
@@ -599,8 +599,8 @@ Ref<Material> VRMExtension::_process_vrm_material(Ref<Material> orig_mat, Array 
 
 	Dictionary vector_properties = vrm_mat_props["vectorProperties"];
 	Array vector_properties_keys = vector_properties.keys();
-	for (int32_t i = 0; i < vector_properties_types.size(); i++) {
-		String param_name = vector_properties_types[i];
+	for (int32_t vector_property_i = 0; vector_property_i < vector_properties_types.size(); vector_property_i++) {
+		String param_name = vector_properties_types[vector_property_i];
 		if (vector_properties.has(param_name)) {
 			Array param_val = vrm_mat_props["vectorProperties"].get(param_name);
 			Vector4 color_param = Vector4(param_val[0], param_val[1], param_val[2], param_val[3]);
@@ -634,9 +634,9 @@ void VRMExtension::_update_materials(Dictionary vrm_extension, Ref<GLTFState> gs
 	render_queue_to_priority.push_back(0);
 	uniq_render_queues[0] = true;
 
-	for (int i = 0; i < materials.size(); ++i) {
-		Ref<Material> oldmat = materials[i];
-		Dictionary vrm_mat = vrm_extension["materialProperties"].get(i);
+	for (int material_i = 0; material_i < materials.size(); ++material_i) {
+		Ref<Material> oldmat = materials[material_i];
+		Dictionary vrm_mat = vrm_extension["materialProperties"].get(material_i);
 		int delta_render_queue = 3000;
 		if (vrm_mat.has("renderQueue")) {
 			delta_render_queue = vrm_mat["renderQueue"];
@@ -657,16 +657,16 @@ void VRMExtension::_update_materials(Dictionary vrm_extension, Ref<GLTFState> gs
 	render_queue_to_priority.sort();
 
 	// Material conversions
-	for (int i = 0; i < materials.size(); ++i) {
-		Ref<Material> oldmat = materials[i];
+	for (int material_i = 0; material_i < materials.size(); ++material_i) {
+		Ref<Material> oldmat = materials[material_i];
 
 		if (oldmat->is_class("ShaderMaterial")) {
-			print_line("Material " + itos(i) + ": " + oldmat->get_name() + " already is shader.");
+			print_line("Material " + itos(material_i) + ": " + oldmat->get_name() + " already is shader.");
 			continue;
 		}
 
-		Ref<Material> newmat = process_khr_material(oldmat, gstate->get_json()["materials"].get(i));
-		Dictionary vrm_mat_props = vrm_extension["materialProperties"].get(i);
+		Ref<Material> newmat = process_khr_material(oldmat, gstate->get_json()["materials"].get(material_i));
+		Dictionary vrm_mat_props = vrm_extension["materialProperties"].get(material_i);
 		newmat = _process_vrm_material(newmat, images, vrm_mat_props);
 		spatial_to_shader_mat[oldmat] = newmat;
 		spatial_to_shader_mat[newmat] = newmat;
@@ -706,7 +706,7 @@ void VRMExtension::_update_materials(Dictionary vrm_extension, Ref<GLTFState> gs
 			}
 		}
 
-		materials[i] = newmat;
+		materials[material_i] = newmat;
 		String oldpath = oldmat->get_path();
 
 		if (oldpath.is_empty()) {
@@ -720,8 +720,8 @@ void VRMExtension::_update_materials(Dictionary vrm_extension, Ref<GLTFState> gs
 
 	TypedArray<GLTFMesh> meshes = gstate->get_meshes();
 
-	for (int i = 0; i < meshes.size(); ++i) {
-		Ref<GLTFMesh> gltfmesh = meshes[i];
+	for (int mesh_i = 0; mesh_i < meshes.size(); ++mesh_i) {
+		Ref<GLTFMesh> gltfmesh = meshes[mesh_i];
 		Ref<ImporterMesh> mesh = gltfmesh->get_mesh();
 		mesh->set_blend_shape_mode(Mesh::BLEND_SHAPE_MODE_NORMALIZED);
 
@@ -731,17 +731,17 @@ void VRMExtension::_update_materials(Dictionary vrm_extension, Ref<GLTFState> gs
 			if (spatial_to_shader_mat.has(surfmat)) {
 				mesh->set_surface_material(surf_idx, spatial_to_shader_mat[surfmat]);
 			} else {
-				print_error("Mesh " + itos(i) + " material " + itos(surf_idx) + " name " + surfmat->get_name() + " has no replacement material.");
+				print_error("Mesh " + itos(mesh_i) + " material " + itos(surf_idx) + " name " + surfmat->get_name() + " has no replacement material.");
 			}
 		}
 	}
 }
 
 Node *VRMExtension::_get_skel_godot_node(Ref<GLTFState> gstate, Array nodes, Array skeletons, int skel_id) {
-	for (int i = 0; i < nodes.size(); ++i) {
-		Ref<GLTFNode> gltf_node = nodes[i];
+	for (int node_i = 0; node_i < nodes.size(); ++node_i) {
+		Ref<GLTFNode> gltf_node = nodes[node_i];
 		if (gltf_node->get_skeleton() == skel_id) {
-			return gstate->get_scene_node(i);
+			return gstate->get_scene_node(node_i);
 		}
 	}
 
@@ -841,8 +841,8 @@ Ref<Resource> VRMExtension::_create_meta(Node *root_node, Dictionary vrm_extensi
 AnimationPlayer *VRMExtension::create_animation_player(AnimationPlayer *animplayer, Dictionary vrm_extension, Ref<GLTFState> gstate, Dictionary human_bone_to_idx, TypedArray<Basis> pose_diffs) {
 	// Remove all glTF animation players for safety.
 	// VRM does not support animation import in this way.
-	for (int i = 0; i < gstate->get_animation_players_count(0); ++i) {
-		AnimationPlayer *node = gstate->get_animation_player(i);
+	for (int player_i = 0; player_i < gstate->get_animation_players_count(0); ++player_i) {
+		AnimationPlayer *node = gstate->get_animation_player(player_i);
 		node->get_parent()->remove_child(node);
 	}
 
@@ -857,38 +857,38 @@ AnimationPlayer *VRMExtension::create_animation_player(AnimationPlayer *animplay
 	Dictionary mesh_idx_to_meshinstance;
 	Dictionary material_name_to_mesh_and_surface_idx;
 
-	for (int i = 0; i < meshes.size(); ++i) {
-		Ref<GLTFMesh> gltfmesh = meshes[i];
+	for (int mesh_i = 0; mesh_i < meshes.size(); ++mesh_i) {
+		Ref<GLTFMesh> gltfmesh = meshes[mesh_i];
 		for (int j = 0; j < gltfmesh->get_mesh()->get_surface_count(); ++j) {
 			Array i_j;
-			i_j.push_back(i);
+			i_j.push_back(mesh_i);
 			i_j.push_back(j);
 			material_name_to_mesh_and_surface_idx[gltfmesh->get_mesh()->get_surface_material(j)->get_name()] = i_j;
 		}
 	}
 
-	for (int i = 0; i < nodes.size(); ++i) {
-		Ref<GLTFNode> gltfnode = nodes[i];
+	for (int node_i = 0; node_i < nodes.size(); ++node_i) {
+		Ref<GLTFNode> gltfnode = nodes[node_i];
 		if (gltfnode.is_null()) {
 			continue;
 		}
 		int mesh_idx = gltfnode->get_mesh();
 
 		if (mesh_idx != -1) {
-			ImporterMeshInstance3D *scenenode = cast_to<ImporterMeshInstance3D>(gstate->get_scene_node(i));
+			ImporterMeshInstance3D *scenenode = cast_to<ImporterMeshInstance3D>(gstate->get_scene_node(node_i));
 			mesh_idx_to_meshinstance[mesh_idx] = scenenode;
 		}
 	}
 	Array blend_shape_groups_array = blend_shape_groups;
-	for (int i = 0; i < blend_shape_groups_array.size(); ++i) {
-		Dictionary shape = blend_shape_groups_array[i];
+	for (int blend_shape_group_i = 0; blend_shape_group_i < blend_shape_groups_array.size(); ++blend_shape_group_i) {
+		Dictionary shape = blend_shape_groups_array[blend_shape_group_i];
 
 		Ref<Animation> anim;
 		anim.instantiate();
 
 		Array material_values = shape["materialValues"];
-		for (int i = 0; i < material_values.size(); ++i) {
-			Dictionary matbind = material_values[i];
+		for (int material_i = 0; material_i < material_values.size(); ++material_i) {
+			Dictionary matbind = material_values[material_i];
 			Array mesh_and_surface_idx = material_name_to_mesh_and_surface_idx[matbind["materialName"]];
 			ImporterMeshInstance3D *node = cast_to<ImporterMeshInstance3D>(mesh_idx_to_meshinstance[mesh_and_surface_idx[0]]);
 			int surface_idx = mesh_and_surface_idx[1];
@@ -927,8 +927,8 @@ AnimationPlayer *VRMExtension::create_animation_player(AnimationPlayer *animplay
 		}
 
 		Array binds = shape["binds"];
-		for (int i = 0; i < binds.size(); i++) {
-			Dictionary bind = binds[i];
+		for (int bind_i = 0; bind_i < binds.size(); bind_i++) {
+			Dictionary bind = binds[bind_i];
 
 			ImporterMeshInstance3D *node = cast_to<ImporterMeshInstance3D>(mesh_idx_to_meshinstance[int(bind["mesh"])]);
 			Ref<ImporterMesh> nodeMesh = node->get_mesh();
@@ -984,8 +984,8 @@ AnimationPlayer *VRMExtension::create_animation_player(AnimationPlayer *animplay
 	if (firstperson.has("meshAnnotations")) {
 		mesh_annotations = firstperson["meshAnnotations"];
 	}
-	for (int i = 0; i < mesh_annotations.size(); ++i) {
-		Dictionary mesh_annotation = mesh_annotations[i];
+	for (int annotation_i = 0; annotation_i < mesh_annotations.size(); ++annotation_i) {
+		Dictionary mesh_annotation = mesh_annotations[annotation_i];
 		int flag = int(FirstPersonParser[mesh_annotation["firstPersonFlag"]]);
 		float first_person_visibility;
 		float third_person_visibility;
@@ -1137,8 +1137,8 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 	Dictionary vrm_extension_secondary_animation = vrm_extension["secondaryAnimation"];
 	Array vrm_extension_collider_groups = vrm_extension_secondary_animation["colliderGroups"];
 	Array collider_groups;
-	for (int i = 0; i < vrm_extension_collider_groups.size(); ++i) {
-		Dictionary cgroup = vrm_extension_collider_groups[i];
+	for (int group_i = 0; group_i < vrm_extension_collider_groups.size(); ++group_i) {
+		Dictionary cgroup = vrm_extension_collider_groups[group_i];
 		Ref<GLTFNode> gltfnode = nodes[int(cgroup["node"])];
 
 		Ref<VRMColliderGroup> collider_group;
@@ -1165,8 +1165,8 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 			}
 		}
 		Array colliders = cgroup["colliders"];
-		for (int i = 0; i < colliders.size(); ++i) {
-			Dictionary collider_info = colliders[i];
+		for (int collider_i = 0; collider_i < colliders.size(); ++collider_i) {
+			Dictionary collider_info = colliders[collider_i];
 			Dictionary default_offset_obj;
 			default_offset_obj["x"] = 0.0;
 			default_offset_obj["y"] = 0.0;
@@ -1181,8 +1181,8 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 
 	Array vrm_extension_bone_groups = vrm_extension["secondaryAnimation"].get("boneGroups");
 	Array spring_bones;
-	for (int i = 0; i < vrm_extension_bone_groups.size(); ++i) {
-		Dictionary sbone = vrm_extension_bone_groups[i];
+	for (int group_i = 0; group_i < vrm_extension_bone_groups.size(); ++group_i) {
+		Dictionary sbone = vrm_extension_bone_groups[group_i];
 		if (!sbone.has("bones")) {
 			continue;
 		}
@@ -1225,15 +1225,15 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 		spring_bone->get_collider_groups().clear(); // HACK HACK HACK
 
 		Array colliderGroups = sbone.get("colliderGroups", Array());
-		for (int i = 0; i < colliderGroups.size(); ++i) {
-			int cgroup_idx = colliderGroups[i];
+		for (int group_i = 0; group_i < colliderGroups.size(); ++group_i) {
+			int cgroup_idx = colliderGroups[group_i];
 			spring_bone->get_collider_groups().push_back(collider_groups[int(cgroup_idx)]);
 		}
 
 		spring_bone->get_root_bones().clear(); // HACK HACK HACK
 		Array bones = sbone["bones"];
-		for (int i = 0; i < bones.size(); ++i) {
-			int bone_node = bones[i];
+		for (int bone_i = 0; bone_i < bones.size(); ++bone_i) {
+			int bone_node = bones[bone_i];
 			Ref<GLTFNode> gltf_node = nodes[int(bone_node)];
 			String bone_name = gltf_node->get_name();
 			if (skeleton->find_bone(bone_name) == -1) {
@@ -1284,8 +1284,8 @@ void VRMExtension::add_joints_recursive(Dictionary &new_joints_set, Array gltf_n
 	}
 	new_joints_set[bone] = true;
 	Array children = gltf_node.get("children", Array());
-	for (int i = 0; i < children.size(); ++i) {
-		const Variant &child_node = children[i];
+	for (int child_i = 0; child_i < children.size(); ++child_i) {
+		const Variant &child_node = children[child_i];
 		if (!new_joints_set.has(child_node)) {
 			add_joints_recursive(new_joints_set, gltf_nodes, static_cast<int>(child_node));
 		}
@@ -1295,8 +1295,8 @@ void VRMExtension::add_joints_recursive(Dictionary &new_joints_set, Array gltf_n
 void VRMExtension::add_joint_set_as_skin(Dictionary obj, Dictionary new_joints_set) {
 	Array new_joints;
 	Array joints_set_array = new_joints_set.keys();
-	for (int i = 0; i < joints_set_array.size(); ++i) {
-		const int32_t node = joints_set_array[i];
+	for (int array_i = 0; array_i < joints_set_array.size(); ++array_i) {
+		const int32_t node = joints_set_array[array_i];
 		new_joints.push_back(node);
 	}
 	new_joints.sort();
@@ -1324,8 +1324,8 @@ bool VRMExtension::add_vrm_nodes_to_skin(Dictionary obj) {
 
 	Dictionary secondaryAnimation = vrm_extension.get("secondaryAnimation", Dictionary());
 	Array boneGroups = secondaryAnimation.get("boneGroups", Array());
-	for (int i = 0; i < boneGroups.size(); ++i) {
-		Dictionary bone_group = boneGroups[i];
+	for (int group_i = 0; group_i < boneGroups.size(); ++group_i) {
+		Dictionary bone_group = boneGroups[group_i];
 		Array bones = bone_group["bones"];
 		for (int j = 0; j < bones.size(); ++j) {
 			int bone = bones[j];
@@ -1334,8 +1334,8 @@ bool VRMExtension::add_vrm_nodes_to_skin(Dictionary obj) {
 	}
 
 	Array colliderGroups = secondaryAnimation.get("colliderGroups", Array());
-	for (int i = 0; i < colliderGroups.size(); ++i) {
-		Dictionary collider_group = colliderGroups[i];
+	for (int group_i = 0; group_i < colliderGroups.size(); ++group_i) {
+		Dictionary collider_group = colliderGroups[group_i];
 		int node = collider_group["node"];
 		if (node >= 0) {
 			new_joints_set[node] = true;
@@ -1349,8 +1349,8 @@ bool VRMExtension::add_vrm_nodes_to_skin(Dictionary obj) {
 	}
 	Dictionary vrm_extension_humanoid = vrm_extension["humanoid"];
 	Array humanBones = vrm_extension_humanoid["humanBones"];
-	for (int i = 0; i < humanBones.size(); ++i) {
-		Dictionary human_bone = humanBones[i];
+	for (int bone_i = 0; bone_i < humanBones.size(); ++bone_i) {
+		Dictionary human_bone = humanBones[bone_i];
 		int node = human_bone["node"];
 		add_joints_recursive(new_joints_set, obj["nodes"], node, false);
 	}
@@ -1403,8 +1403,8 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 	// and hasTranslationDoF
 	Dictionary humanoid = vrm_extension["humanoid"];
 	Array human_bones = humanoid["humanBones"];
-	for (int i = 0; i < human_bones.size(); ++i) {
-		Dictionary human_bone = human_bones[i];
+	for (int bone_i = 0; bone_i < human_bones.size(); ++bone_i) {
+		Dictionary human_bone = human_bones[bone_i];
 		human_bone_to_idx[human_bone["bone"]] = static_cast<int>(human_bone["node"]);
 		// Ignoring: useDefaultValues
 		// Ignoring: min
@@ -1436,8 +1436,8 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 	Ref<VRMConstants> vrmconst_inst = memnew(VRMConstants(is_vrm_0)); // vrm 0.0
 	Array human_bone_keys = human_bone_to_idx.keys();
 
-	for (int i = 0; i < human_bone_keys.size(); ++i) {
-		const String &human_bone_name = human_bone_keys[i];
+	for (int bone_key_i = 0; bone_key_i < human_bone_keys.size(); ++bone_key_i) {
+		const String &human_bone_name = human_bone_keys[bone_key_i];
 		Ref<GLTFNode> gltf_node = gltfnodes[human_bone_to_idx[human_bone_name]];
 		human_bones_map->set_skeleton_bone_name(vrmconst_inst->get_vrm_to_human_bone()[human_bone_name], gltf_node->get_name());
 	}
