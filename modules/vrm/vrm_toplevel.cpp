@@ -147,6 +147,12 @@ bool VRMTopLevel::get_update_in_editor() const {
 
 void VRMTopLevel::set_gizmo_spring_bone(bool value) {
 	gizmo_spring_bone = value;
+	if (!gizmo_spring_bone) {
+		VRMSecondary *secondary = cast_to<VRMSecondary>(get_node(vrm_secondary));
+		if (secondary) {
+			secondary->queue_free();
+		}
+	}
 }
 
 bool VRMTopLevel::get_gizmo_spring_bone() const {
