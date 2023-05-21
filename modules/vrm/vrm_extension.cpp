@@ -1502,4 +1502,5 @@ Node3D *VRMExtension::generate_scene_node(Ref<GLTFState> p_state, Ref<GLTFNode> 
 		new_secondary->set_name(p_gltf_node->get_name());
 		return new_secondary;
 	}
+	return nullptr;
 }

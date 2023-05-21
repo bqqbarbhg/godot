@@ -87,7 +87,6 @@ void VRMTopLevel::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "gizmo_spring_bone_color"), "set_gizmo_spring_bone_color", "get_gizmo_spring_bone_color");
 }
 
-// Implement the getters and setters for the exported variables
 void VRMTopLevel::set_vrm_skeleton(const NodePath &path) {
 	vrm_skeleton = path;
 }
