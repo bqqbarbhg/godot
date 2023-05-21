@@ -33,6 +33,7 @@
 #include "core/error/error_macros.h"
 #include "core/object/object.h"
 #include "core/string/node_path.h"
+#include "core/variant/dictionary.h"
 #include "modules/gltf/gltf_defines.h"
 #include "modules/gltf/gltf_document.h"
 #include "modules/vrm/vrm_meta.h"
@@ -445,7 +446,7 @@ Dictionary VRMExtension::vrm_get_texture_info(Array gltf_images, Dictionary vrm_
 		Ref<Texture2D> mainTexImage = gltf_images[mainTexId];
 		texture_info["tex"] = mainTexImage;
 	}
-	Dictionary  vector_properties_dict = vrm_mat_props["vectorProperties"];
+	Dictionary vector_properties_dict = vrm_mat_props["vectorProperties"];
 	if (vector_properties_dict.has(tex_name)) {
 		Array offsetScale = vector_properties_dict[tex_name];
 		texture_info["offset"] = Vector3(offsetScale[0], offsetScale[1], 0.0);
@@ -456,12 +457,11 @@ Dictionary VRMExtension::vrm_get_texture_info(Array gltf_images, Dictionary vrm_
 }
 
 float VRMExtension::vrm_get_float(Dictionary vrm_mat_props, String key, float def) {
-	bool is_valid = false;
-	float result = vrm_mat_props["floatProperties"].get(key, &is_valid);
-	if (!is_valid) {
-		return def;
+	Dictionary float_properties_dict = vrm_mat_props["floatProperties"];
+	if (float_properties_dict.has(key)) {
+		return float_properties_dict[key];
 	}
-	return result;
+	return def;
 }
 
 Ref<Material> VRMExtension::_process_vrm_material(Ref<Material> orig_mat, Array gltf_images, Dictionary vrm_mat_props) {

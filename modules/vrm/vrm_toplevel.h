@@ -61,8 +61,8 @@ protected:
 	static void _bind_methods();
 
 public:
-    VRMTopLevel(){}
-    ~VRMTopLevel(){}
+	VRMTopLevel() {}
+	~VRMTopLevel() {}
 	// Getters and setters for the exported variables
 	void set_vrm_skeleton(const NodePath &path);
 	NodePath get_vrm_skeleton() const;

@@ -58,6 +58,7 @@ class VRMColliderGroup : public Resource {
 
 protected:
 	static void _bind_methods();
+
 public:
 	NodePath skeleton_or_node;
 	String bone;
