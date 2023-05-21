@@ -52,15 +52,14 @@ static void _editor_init() {
 
 void initialize_vrm_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		ClassDB::register_class<EditorSceneFormatImporterVRM>();
-		ClassDB::register_class<VRMMeta>();
-		ClassDB::register_class<VRMColliderGroup>();
-		ClassDB::register_class<VRMConstants>();
-		ClassDB::register_class<VRMExtension>();
-		ClassDB::register_class<VRMSecondary>();
-		ClassDB::register_class<VRMSpringBoneLogic>();
-		ClassDB::register_class<VRMSpringBone>();
-		ClassDB::register_class<VRMTopLevel>();
+		GDREGISTER_CLASS(VRMSpringBone);
+		GDREGISTER_CLASS(VRMTopLevel);
+		GDREGISTER_CLASS(VRMSpringBoneLogic);
+		GDREGISTER_CLASS(VRMSecondary);
+		GDREGISTER_CLASS(VRMExtension);
+		GDREGISTER_CLASS(VRMConstants);
+		GDREGISTER_CLASS(VRMColliderGroup);
+		GDREGISTER_CLASS(VRMMeta);
 	}
 
 #ifdef TOOLS_ENABLED
