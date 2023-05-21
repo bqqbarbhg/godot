@@ -496,7 +496,6 @@ Ref<Material> VRMExtension::_process_vrm_material(Ref<Material> orig_mat, Array 
 		return orig_mat;
 	}
 	Dictionary mtoon_dict_float_properties = vrm_mat_props["floatProperties"];
-	bool is_valid = false;
 	int outline_width_mode = 0;
 	if (mtoon_dict_float_properties.has("_OutlineWidthMode")) {
 		outline_width_mode = mtoon_dict_float_properties["_OutlineWidthMode"];
@@ -638,7 +637,6 @@ void VRMExtension::_update_materials(Dictionary vrm_extension, Ref<GLTFState> gs
 	for (int i = 0; i < materials.size(); ++i) {
 		Ref<Material> oldmat = materials[i];
 		Dictionary vrm_mat = vrm_extension["materialProperties"].get(i);
-		bool is_valid = false;
 		int delta_render_queue = 3000;
 		if (vrm_mat.has("renderQueue")) {
 			delta_render_queue = vrm_mat["renderQueue"];
@@ -674,7 +672,6 @@ void VRMExtension::_update_materials(Dictionary vrm_extension, Ref<GLTFState> gs
 		spatial_to_shader_mat[newmat] = newmat;
 
 		int target_render_priority = 0;
-		bool is_valid = false;
 		int delta_render_queue = 3000;
 		if (vrm_mat_props.has("renderQueue")) {
 			delta_render_queue = vrm_mat_props["renderQueue"];
@@ -989,7 +986,6 @@ AnimationPlayer *VRMExtension::create_animation_player(AnimationPlayer *animplay
 	}
 	for (int i = 0; i < mesh_annotations.size(); ++i) {
 		Dictionary mesh_annotation = mesh_annotations[i];
-		bool is_valid = false;
 		int flag = int(FirstPersonParser[mesh_annotation["firstPersonFlag"]]);
 		float first_person_visibility;
 		float third_person_visibility;
@@ -1317,10 +1313,9 @@ void VRMExtension::add_joint_set_as_skin(Dictionary obj, Dictionary new_joints_s
 }
 
 bool VRMExtension::add_vrm_nodes_to_skin(Dictionary obj) {
-	bool is_valid = false;
-	Dictionary vrm_extension = obj.get("extensions", Dictionary()).get("VRM", &is_valid);
-	if (!is_valid) {
-		vrm_extension = Dictionary();
+	Dictionary vrm_extension;
+	if (obj.has("extensions") && Dictionary(obj["extensions"]).has("VRM")) {
+		vrm_extension = Dictionary(obj["extensions"])["VRM"];
 	}
 	if (!vrm_extension.has("humanoid")) {
 		return false;
