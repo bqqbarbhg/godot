@@ -146,7 +146,7 @@ void VRMExtension::skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Sk
 	int skellen = p_skeleton->get_bone_count();
 
 	// Rename bones to their humanoid equivalents.
-	for (int i = 0; i < skellen; ++i) {
+	for (int i = 0; i < p_bone_map->get_profile()->get_bone_size(); ++i) {
 		StringName bn = p_bone_map->find_profile_bone_name(p_skeleton->get_bone_name(i));
 		original_bone_names_to_indices[p_skeleton->get_bone_name(i)] = i;
 		original_indices_to_bone_names[i] = p_skeleton->get_bone_name(i);
@@ -183,8 +183,7 @@ void VRMExtension::skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Sk
 		if (skin.is_valid()) {
 			Node *node = mi->get_node(mi->get_skeleton_path());
 			if (node && Object::cast_to<Skeleton3D>(node) && node == p_skeleton) {
-				skellen = skin->get_bind_count();
-				for (int i = 0; i < skellen; ++i) {
+				for (int i = 0; i < skin->get_bind_count(); ++i) {
 					String bind_bone_name = skin->get_bind_name(i);
 					StringName bone_name_from_skel = p_bone_map->find_profile_bone_name(bind_bone_name);
 					if (bone_name_from_skel != StringName()) {
@@ -272,7 +271,6 @@ void VRMExtension::rotate_scene_180(Node3D *p_scene) {
 }
 
 TypedArray<Basis> VRMExtension::skeleton_rotate(Node *p_base_scene, Skeleton3D *src_skeleton, Ref<BoneMap> p_bone_map) {
-	bool is_renamed = true;
 	Ref<SkeletonProfile> profile = p_bone_map->get_profile();
 	Skeleton3D *prof_skeleton = memnew(Skeleton3D);
 
@@ -313,13 +311,7 @@ TypedArray<Basis> VRMExtension::skeleton_rotate(Node *p_base_scene, Skeleton3D *
 		}
 
 		Basis tgt_rot;
-		StringName src_bone_name_raw = src_skeleton->get_bone_name(src_idx);
-		StringName src_bone_name;
-		if (is_renamed) {
-			src_bone_name = StringName(src_bone_name_raw);
-		} else {
-			src_bone_name = p_bone_map->find_profile_bone_name(src_bone_name_raw);
-		}
+		StringName src_bone_name = src_skeleton->get_bone_name(src_idx);
 
 		if (src_bone_name != StringName()) {
 			Basis src_pg;
