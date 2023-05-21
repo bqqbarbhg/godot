@@ -208,9 +208,10 @@ void VRMExtension::rotate_scene_180_inner(Node3D *p_node, Dictionary mesh_set, D
 	if (skeleton) {
 		for (int bone_idx = 0; bone_idx < skeleton->get_bone_count(); ++bone_idx) {
 			Transform3D rest = ROTATE_180_TRANSFORM * skeleton->get_bone_rest(bone_idx) * ROTATE_180_TRANSFORM;
+			rest.orthogonalize();
 			skeleton->set_bone_rest(bone_idx, rest);
-			skeleton->set_bone_pose_rotation(bone_idx, Quaternion(ROTATE_180_BASIS) * skeleton->get_bone_pose_rotation(bone_idx) * Quaternion(ROTATE_180_BASIS));
-			skeleton->set_bone_pose_scale(bone_idx, Vector3(1, 1, 1));
+			skeleton->set_bone_pose_rotation(bone_idx, ROTATE_180_BASIS * skeleton->get_bone_pose_rotation(bone_idx) * ROTATE_180_BASIS);
+			skeleton->set_bone_pose_scale(bone_idx, rest.basis.get_scale());
 			skeleton->set_bone_pose_position(bone_idx, rest.origin);
 		}
 	}
@@ -1366,14 +1367,6 @@ Error VRMExtension::import_preflight(Ref<GLTFState> p_state, Vector<String> p_ex
 TypedArray<Basis> VRMExtension::apply_retarget(Ref<GLTFState> gstate, Node *root_node, Skeleton3D *skeleton, Ref<BoneMap> bone_map) {
 	NodePath skeleton_path = root_node->get_path_to(skeleton);
 
-	int hips_bone_idx = skeleton->find_bone("Hips");
-	if (hips_bone_idx != -1) {
-		skeleton->set_motion_scale(Math::abs(skeleton->get_bone_global_rest(hips_bone_idx).origin.y));
-		if (skeleton->get_motion_scale() < 0.0001) {
-			skeleton->set_motion_scale(1.0);
-		}
-	}
-
 	TypedArray<Basis> poses = skeleton_rotate(root_node, skeleton, bone_map);
 	apply_rotation(root_node, skeleton);
 
@@ -1436,6 +1429,14 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 
 	skeleton_rename(gstate, root_node, skeleton, human_bones_map);
 
+	int hips_bone_idx = skeleton->find_bone("Hips");
+	if (hips_bone_idx != -1) {
+		skeleton->set_motion_scale(Math::abs(skeleton->get_bone_global_rest(hips_bone_idx).origin.y));
+		if (skeleton->get_motion_scale() < 0.0001) {
+			skeleton->set_motion_scale(1.0);
+		}
+	}
+	
 	bool do_retarget = false;
 
 	TypedArray<Basis> pose_diffs;
