@@ -154,7 +154,6 @@ void VRMExtension::skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Sk
 		if (bn != StringName()) {
 			p_skeleton->set_bone_name(i, bn);
 		}
-		p_bone_map->set_skeleton_bone_name(bn, bn);
 	}
 
 	TypedArray<GLTFNode> gnodes = gstate->get_nodes();
@@ -299,6 +298,7 @@ TypedArray<Basis> VRMExtension::skeleton_rotate(Node *p_base_scene, Skeleton3D *
 
 	TypedArray<Basis> diffs;
 	diffs.resize(src_skeleton->get_bone_count());
+	diffs.fill(Basis());
 
 	Vector<int32_t> bones_to_process = src_skeleton->get_parentless_bones();
 	int bpidx = 0;
