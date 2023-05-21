@@ -130,7 +130,7 @@ void VRMSecondary::_notification(int p_what) {
 				}
 				Skeleton3D *skel = Object::cast_to<Skeleton3D>(get_node_or_null(new_spring_bone->skeleton));
 				if (skel) {
-					new_spring_bone->_ready(skel, tmp_colliders);
+					new_spring_bone->ready(skel, tmp_colliders);
 					spring_bones_internal.push_back(new_spring_bone);
 				}
 			}
@@ -162,7 +162,7 @@ void VRMSecondary::_notification(int p_what) {
 					}
 					for (int i = 0; i < spring_bones_internal.size(); ++i) {
 						Ref<VRMSpringBone> spring_bone = spring_bones_internal[i];
-						spring_bone->_process(delta);
+						spring_bone->process(delta);
 					}
 					if (secondary_gizmo) {
 						if (Engine::get_singleton()->is_editor_hint()) {
@@ -204,7 +204,7 @@ void VRMSecondary::_notification(int p_what) {
 						if (spring_bone.is_null()) {
 							continue;
 						}
-						spring_bone->_process(delta);
+						spring_bone->process(delta);
 					}
 					if (secondary_gizmo) {
 						if (Engine::get_singleton()->is_editor_hint()) {
