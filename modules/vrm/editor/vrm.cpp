@@ -29,3 +29,42 @@
 /**************************************************************************/
 
 #include "vrm.h"
+
+uint32_t EditorSceneFormatImporterVRM::get_import_flags() const {
+	return IMPORT_SCENE;
+}
+
+void EditorSceneFormatImporterVRM::get_extensions(List<String> *r_extensions) const {
+	r_extensions->push_back("vrm");
+}
+
+Node *EditorSceneFormatImporterVRM::import_scene(const String &p_path, uint32_t p_flags, const HashMap<StringName, Variant> &p_options, List<String> *r_missing_deps, Error *r_err) {
+	Ref<GLTFDocument> gltf = memnew(GLTFDocument);
+	p_flags |= IMPORT_USE_NAMED_SKIN_BINDS;
+	Ref<VRMExtension> vrm_extension;
+	vrm_extension.instantiate();
+	gltf->register_gltf_document_extension(vrm_extension, true);
+	Ref<GLTFState> state = memnew(GLTFState);
+	state->set_handle_binary_image(GLTFState::HANDLE_BINARY_EMBED_AS_BASISU);
+	Error err = gltf->append_from_file(p_path, state, p_flags);
+	if (err != OK) {
+		gltf->unregister_gltf_document_extension(vrm_extension);
+		if (r_err) {
+			*r_err = err;
+		}
+		return nullptr;
+	}
+	Node *generated_scene = gltf->generate_scene(state);
+	gltf->unregister_gltf_document_extension(vrm_extension);
+	if (r_err) {
+		*r_err = OK;
+	}
+	return generated_scene;
+}
+
+void EditorSceneFormatImporterVRM::get_import_options(const String &p_path, List<ResourceImporter::ImportOption> *r_options) {
+}
+
+Variant EditorSceneFormatImporterVRM::get_option_visibility(const String &p_path, bool p_for_animation, const String &p_option, const HashMap<StringName, Variant> &p_options) {
+	return Variant();
+}
