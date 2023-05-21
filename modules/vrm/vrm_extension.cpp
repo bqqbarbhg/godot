@@ -517,22 +517,23 @@ Ref<Material> VRMExtension::_process_vrm_material(Ref<Material> orig_mat, Array 
 		print_error("Unknown VRM shader " + vrm_shader_name + " on material " + orig_mat->get_name());
 		return orig_mat;
 	}
+	Dictionary mtoon_dict_float_properties = vrm_mat_props["floatProperties"];
 	bool is_valid = false;
-	int outline_width_mode = vrm_mat_props["floatProperties"].get("_OutlineWidthMode", &is_valid);
-	if (!is_valid) {
-		outline_width_mode = 0;
+	int outline_width_mode = 0;
+	if (mtoon_dict_float_properties.has("_OutlineWidthMode")) {
+		outline_width_mode = mtoon_dict_float_properties["_OutlineWidthMode"];
 	}
-	int blend_mode = blend_mode = vrm_mat_props["floatProperties"].get("_BlendMode", &is_valid);
-	if (!is_valid) {
-		blend_mode = 0;
+	int blend_mode = 0;
+	if (mtoon_dict_float_properties.has("_BlendMode")) {
+		blend_mode = mtoon_dict_float_properties.get("_BlendMode", &is_valid);;
 	}
-	int cull_mode = vrm_mat_props["floatProperties"].get("_CullMode", &is_valid);
-	if (!is_valid) {
-		cull_mode = 2;
+	int cull_mode = 2;
+	if (mtoon_dict_float_properties.has("_CullMode")) {
+		cull_mode = mtoon_dict_float_properties["_CullMode"];
 	}
-	int outl_cull_mode = int(vrm_mat_props["floatProperties"].get("_OutlineCullMode", &is_valid));
-	if (!is_valid) {
-		outl_cull_mode = 1;
+	int outl_cull_mode = 1;
+	if (mtoon_dict_float_properties.has("_OutlineCullMode")) {
+		outl_cull_mode = mtoon_dict_float_properties["_OutlineCullMode"];
 	}
 
 	if (cull_mode == int(CullMode::Front) || (outl_cull_mode != int(CullMode::Front) && outline_width_mode != int(OutlineWidthMode::None))) {
@@ -596,12 +597,10 @@ Ref<Material> VRMExtension::_process_vrm_material(Ref<Material> orig_mat, Array 
 
 	for (String param_name : { "_MainTex", "_ShadeTexture", "_BumpMap", "_RimTexture", "_SphereAdd", "_EmissionMap", "_OutlineWidthTexture", "_UvAnimMaskTexture" }) {
 		Dictionary tex_info = vrm_get_texture_info(gltf_images, vrm_mat_props, param_name);
-		bool is_valid = false;
-		Variant text_info_tex = tex_info.get("tex", &is_valid);
-		if (is_valid) {
-			new_mat->set_shader_parameter(param_name, text_info_tex);
+		if (tex_info.has("tex")) {
+			new_mat->set_shader_parameter(param_name, tex_info["tex"]);
 			if (outline_mat != nullptr) {
-				outline_mat->set_shader_parameter(param_name, text_info_tex);
+				outline_mat->set_shader_parameter(param_name, tex_info["tex"]);
 			}
 		}
 	}
