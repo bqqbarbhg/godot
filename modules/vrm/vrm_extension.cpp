@@ -1453,7 +1453,7 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 		print_line("Post-rotate");
 	}
 
-	bool do_retarget = false;
+	bool do_retarget = true;
 
 	TypedArray<Basis> pose_diffs;
 	pose_diffs.resize(skeleton->get_bone_count());
