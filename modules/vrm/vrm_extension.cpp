@@ -1302,6 +1302,7 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 	}
 	return OK;
 }
+
 Error VRMExtension::import_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Dictionary &r_json, Node *p_node) {
 	if (!p_node) {
 		return OK;
@@ -1343,12 +1344,14 @@ Error VRMExtension::import_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_nod
 			for (int i = 0; i < vertarr.size(); ++i) {
 				vertarr.set(i, ROTATE_180_TRANSFORM.xform(vertarr[i]));
 			}
+			arr[ArrayMesh::ARRAY_VERTEX] = vertarr;
 
 			if (arr[ArrayMesh::ARRAY_NORMAL].get_type() == Variant::PACKED_VECTOR3_ARRAY) {
 				PackedVector3Array normarr = arr[ArrayMesh::ARRAY_NORMAL];
 				for (int i = 0; i < vertarr.size(); ++i) {
 					normarr.set(i, ROTATE_180_TRANSFORM.basis.xform(normarr[i]));
 				}
+				arr[ArrayMesh::ARRAY_NORMAL] = normarr;
 			}
 
 			if (arr[ArrayMesh::ARRAY_TANGENT].get_type() == Variant::PACKED_FLOAT32_ARRAY) {
@@ -1357,6 +1360,7 @@ Error VRMExtension::import_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_nod
 					tangarr.set(i * 4, -tangarr[i * 4]);
 					tangarr.set(i * 4 + 2, -tangarr[i * 4 + 2]);
 				}
+				arr[ArrayMesh::ARRAY_TANGENT] = tangarr;
 			}
 
 			for (int bsidx = 0; bsidx < bsarr.size(); ++bsidx) {
@@ -1364,12 +1368,14 @@ Error VRMExtension::import_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_nod
 				for (int i = 0; i < vertarr.size(); ++i) {
 					vertarr.set(i, ROTATE_180_TRANSFORM.xform(vertarr[i]));
 				}
+				bsarr[bsidx].set(ArrayMesh::ARRAY_VERTEX, vertarr);
 
 				if (bsarr[bsidx].get(ArrayMesh::ARRAY_NORMAL).get_type() == Variant::PACKED_VECTOR3_ARRAY) {
 					PackedVector3Array normarr = bsarr[bsidx].get(ArrayMesh::ARRAY_NORMAL);
 					for (int i = 0; i < vertarr.size(); ++i) {
 						normarr.set(i, ROTATE_180_TRANSFORM.basis.xform(normarr[i]));
 					}
+					bsarr[bsidx].set(ArrayMesh::ARRAY_NORMAL, normarr);
 				}
 
 				if (bsarr[bsidx].get(ArrayMesh::ARRAY_TANGENT).get_type() == Variant::PACKED_FLOAT32_ARRAY) {
@@ -1378,6 +1384,7 @@ Error VRMExtension::import_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_nod
 						tangarr.set(i * 4, -tangarr[i * 4]);
 						tangarr.set(i * 4 + 2, -tangarr[i * 4 + 2]);
 					}
+					bsarr[bsidx].set(ArrayMesh::ARRAY_TANGENT, tangarr);
 				}
 				Array array_mesh = bsarr[bsidx];
 				array_mesh.resize(ArrayMesh::ARRAY_MAX);
@@ -1420,6 +1427,7 @@ Error VRMExtension::import_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_nod
 		}
 	}
 }
+
 Node3D *VRMExtension::generate_scene_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Node *p_scene_parent) {
 	if (p_gltf_node->get_mesh() != -1) {
 		return nullptr;
