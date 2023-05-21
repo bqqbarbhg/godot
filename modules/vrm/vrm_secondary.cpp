@@ -31,6 +31,7 @@
 #include "vrm_secondary.h"
 #include "core/config/engine.h"
 #include "modules/vrm/vrm_toplevel.h"
+#include "scene/main/node.h"
 #include "vrm_constants.h"
 #include "vrm_secondary_gizmo.h"
 #include "vrm_springbone.h"
@@ -104,7 +105,7 @@ void VRMSecondary::_notification(int p_what) {
 			if (!secondary_gizmo && show_gizmo_spring_bone) {
 				secondary_gizmo = memnew(SecondaryGizmo());
 				secondary_gizmo->ready(this);
-				skeleton->add_child(secondary_gizmo, false, InternalMode::INTERNAL_MODE_BACK);
+				skeleton->add_child(secondary_gizmo, true, InternalMode::INTERNAL_MODE_BACK);
 				secondary_gizmo->set_owner(get_owner());
 			}
 			for (int collider_group_i = 0; collider_group_i < collider_groups.size(); ++collider_group_i) {
@@ -136,15 +137,15 @@ void VRMSecondary::_notification(int p_what) {
 				spring_bones_internal.push_back(new_spring_bone);
 			}
 			if (update_secondary_fixed) {
-				set_physics_process(true);
-				set_process(false);
+				set_process_internal(false);
+				set_physics_process_internal(true);
 			} else {
-				set_physics_process(false);
-				set_process(true);
+				set_process_internal(true);
+				set_physics_process_internal(false);
 			}
 			break;
 		}
-		case NOTIFICATION_PROCESS: {
+		case NOTIFICATION_INTERNAL_PROCESS: {
 			if (!check_for_editor_update()) {
 				return;
 			}
@@ -176,7 +177,7 @@ void VRMSecondary::_notification(int p_what) {
 			}
 			break;
 		}
-		case NOTIFICATION_PHYSICS_PROCESS: {
+		case NOTIFICATION_INTERNAL_PHYSICS_PROCESS: {
 			if (!check_for_editor_update()) {
 				return;
 			}
