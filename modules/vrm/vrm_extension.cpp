@@ -976,7 +976,7 @@ AnimationPlayer *VRMExtension::create_animation_player(AnimationPlayer *animplay
 		animation_library->add_animation(animation_name, anim);
 	}
 
-	Variant firstperson = vrm_extension["firstPerson"];
+	Dictionary firstperson = vrm_extension["firstPerson"];
 
 	Ref<Animation> firstpersanim = memnew(Animation);
 	animation_library->add_animation("FirstPerson", firstpersanim);
@@ -985,10 +985,9 @@ AnimationPlayer *VRMExtension::create_animation_player(AnimationPlayer *animplay
 	animation_library->add_animation("ThirdPerson", thirdpersanim);
 
 	Array skeletons = gstate->get_skeletons();
-	bool is_valid = false;
-	int head_bone_idx = firstperson.get("firstPersonBone", &is_valid);
-	if (!is_valid) {
-		head_bone_idx = -1;
+	int head_bone_idx = -1;
+	if (firstperson.has("firstPersonBone")) {
+		head_bone_idx = firstperson["firstPersonBone"];
 	}
 	if (head_bone_idx >= 0) {
 		Ref<GLTFNode> headNode = nodes[head_bone_idx];
@@ -1029,17 +1028,23 @@ AnimationPlayer *VRMExtension::create_animation_player(AnimationPlayer *animplay
 		thirdpersanim->track_set_path(thirdperstrack, String(animplayer->get_parent()->get_path_to(node)) + ":visible");
 		thirdpersanim->track_insert_key(thirdperstrack, 0.0, third_person_visibility);
 	}
-	String look_at_type_name = firstperson.get("lookAtTypeName", &is_valid);
-	if (!is_valid) {
-		look_at_type_name = "";
+	String look_at_type_name;
+	if (firstperson.has("lookAtTypeName")) {
+		look_at_type_name = firstperson["lookAtTypeName"];
 	}
 	if (look_at_type_name == "Bone") {
-		Dictionary horizout = firstperson.get("lookAtHorizontalOuter");
-		Dictionary horizin = firstperson.get("lookAtHorizontalInner");
-		Dictionary vertup = firstperson.get("lookAtVerticalUp");
-		Dictionary vertdown = firstperson.get("lookAtVerticalDown");
-		int lefteye = human_bone_to_idx.get("leftEye", -1);
-		int righteye = human_bone_to_idx.get("rightEye", -1);
+		Dictionary horizout = firstperson["lookAtHorizontalOuter"];
+		Dictionary horizin = firstperson["lookAtHorizontalInner"];
+		Dictionary vertup = firstperson["lookAtVerticalUp"];
+		Dictionary vertdown = firstperson["lookAtVerticalDown"];
+		int lefteye = -1;
+		if (human_bone_to_idx.has("leftEye")) {
+			lefteye = human_bone_to_idx["leftEye"];
+		}
+		int righteye = -1;
+		if (human_bone_to_idx.has("rightEye")) {
+			righteye = human_bone_to_idx["rightEye"];
+		}
 		String leftEyePath;
 		String rightEyePath;
 
