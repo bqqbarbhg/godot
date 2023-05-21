@@ -97,7 +97,7 @@ void VRMSecondary::_notification(int p_what) {
 			if (!secondary_gizmo && show_gizmo_spring_bone) {
 				secondary_gizmo = memnew(SecondaryGizmo());
 				secondary_gizmo->ready(this);
-				add_child(secondary_gizmo, true);
+				add_child(secondary_gizmo, false, InternalMode::INTERNAL_MODE_BACK);
 				secondary_gizmo->set_owner(get_owner());
 			}
 			Skeleton3D *skeleton = Object::cast_to<Skeleton3D>(top_level->get_node_or_null(top_level->get_vrm_skeleton()));
