@@ -503,8 +503,7 @@ Ref<Material> VRMExtension::_process_vrm_material(Ref<Material> orig_mat, Array 
 	}
 	int blend_mode = 0;
 	if (mtoon_dict_float_properties.has("_BlendMode")) {
-		blend_mode = mtoon_dict_float_properties.get("_BlendMode", &is_valid);
-		;
+		blend_mode = mtoon_dict_float_properties["_BlendMode"];
 	}
 	int cull_mode = 2;
 	if (mtoon_dict_float_properties.has("_CullMode")) {
@@ -640,9 +639,9 @@ void VRMExtension::_update_materials(Dictionary vrm_extension, Ref<GLTFState> gs
 		Ref<Material> oldmat = materials[i];
 		Dictionary vrm_mat = vrm_extension["materialProperties"].get(i);
 		bool is_valid = false;
-		int delta_render_queue = vrm_mat.get("renderQueue", &is_valid);
-		if (!is_valid) {
-			delta_render_queue = 3000;
+		int delta_render_queue = 3000;
+		if (vrm_mat.has("renderQueue")) {
+			delta_render_queue = vrm_mat["renderQueue"];
 		}
 		delta_render_queue = delta_render_queue - 3000;
 
@@ -676,9 +675,9 @@ void VRMExtension::_update_materials(Dictionary vrm_extension, Ref<GLTFState> gs
 
 		int target_render_priority = 0;
 		bool is_valid = false;
-		int delta_render_queue = vrm_mat_props.get("renderQueue", &is_valid);
-		if (!is_valid) {
-			delta_render_queue = 3000;
+		int delta_render_queue = 3000;
+		if (vrm_mat_props.has("renderQueue")) {
+			delta_render_queue = vrm_mat_props["renderQueue"];
 		}
 		delta_render_queue = delta_render_queue - 3000;
 
@@ -700,9 +699,10 @@ void VRMExtension::_update_materials(Dictionary vrm_extension, Ref<GLTFState> gs
 				newmat->set_render_priority(target_render_priority);
 			}
 		} else {
-			int blend_mode = int(vrm_mat_props["floatProperties"].get("_BlendMode", &is_valid));
-			if (!is_valid) {
-				blend_mode = 0;
+			Dictionary vrm_mat = vrm_extension["materialProperties"];
+			int blend_mode = 0;
+			if (vrm_mat.has("_BlendMode")) {
+				blend_mode = vrm_mat["_BlendMode"];
 			}
 			if (blend_mode == int(RenderMode::Transparent) || blend_mode == int(RenderMode::TransparentWithZWrite)) {
 				newmat->set_render_priority(target_render_priority);
@@ -1187,9 +1187,11 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 	Array spring_bones;
 	for (int i = 0; i < vrm_extension_bone_groups.size(); ++i) {
 		Dictionary sbone = vrm_extension_bone_groups[i];
-		bool is_valid = false;
-		Array array = sbone.get("bones", &is_valid);
-		if (!is_valid || (is_valid && array.size() == 0)) {
+		if (!sbone.has("bones")) {
+			continue;
+		}
+		Array array = sbone["bones"];
+		if (array.size() == 0) {
 			continue;
 		}
 		int first_bone_node = sbone["bones"].get(0);
