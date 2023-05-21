@@ -54,7 +54,6 @@
 #include "scene/resources/animation.h"
 #include "scene/resources/animation_library.h"
 #include "scene/resources/bone_map.h"
-#include "scene/resources/immediate_mesh.h"
 #include "scene/resources/importer_mesh.h"
 #include "scene/resources/material.h"
 
@@ -124,7 +123,11 @@ private:
 public:
 	VRMExtension();
 	~VRMExtension() {}
+	void adjust_mesh_zforward(Ref<ImporterMesh> mesh);
 	void skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Skeleton3D *p_skeleton, Ref<BoneMap> p_bone_map);
+	void rotate_scene_180_inner(Node3D *p_node, Dictionary mesh_set, Dictionary skin_set);
+	void xtmp(Node3D *p_node, HashMap<Ref<Mesh>, bool> &mesh_set, HashMap<Ref<Skin>, bool> &skin_set);
+	void rotate_scene_180(Node3D *p_scene);
 	TypedArray<Basis> skeleton_rotate(Node *p_base_scene, Skeleton3D *src_skeleton, Ref<BoneMap> p_bone_map);
 	void apply_rotation(Node *p_base_scene, Skeleton3D *src_skeleton);
 	Ref<Material> process_khr_material(Ref<StandardMaterial3D> orig_mat, Dictionary gltf_mat_props);
@@ -139,11 +142,20 @@ public:
 	void add_joints_recursive(Dictionary &new_joints_set, Array gltf_nodes, int bone, bool include_child_meshes = false);
 	void add_joint_set_as_skin(Dictionary obj, Dictionary new_joints_set);
 	bool add_vrm_nodes_to_skin(Dictionary obj);
+	TypedArray<Basis> apply_retarget(Ref<GLTFState> gstate, Node *root_node, Skeleton3D *skeleton, Ref<BoneMap> bone_map);
 	Error import_preflight(Ref<GLTFState> p_state, Vector<String> p_extensions) override;
 	Error import_post(Ref<GLTFState> p_state, Node *p_node) override;
-	Node3D *generate_scene_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Node *p_scene_parent) override;
-
-	Error import_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Dictionary &r_json, Node *p_node) override;
+	Node3D *generate_scene_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Node *p_scene_parent) override {
+		if (p_gltf_node->get_mesh() != -1) {
+			return nullptr;
+		}
+		if (p_gltf_node->get_name() == "secondary") {
+			VRMSecondary *new_secondary = memnew(VRMSecondary);
+			new_secondary->set_transform(p_gltf_node->get_xform());
+			new_secondary->set_name(p_gltf_node->get_name());
+			return new_secondary;
+		}
+	}
 };
 
 #endif // VRM_EXTENSION_H
