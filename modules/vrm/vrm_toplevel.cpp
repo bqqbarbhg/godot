@@ -29,6 +29,8 @@
 /**************************************************************************/
 
 #include "vrm_toplevel.h"
+#include "modules/vrm/vrm_secondary.h"
+#include "scene/main/node.h"
 
 Quaternion VRMUtil::from_to_rotation(const Vector3 &from, const Vector3 &to) {
 	Vector3 axis = from.cross(to);
@@ -121,6 +123,10 @@ Ref<Resource> VRMTopLevel::get_vrm_meta() const {
 
 void VRMTopLevel::set_update_secondary_fixed(bool value) {
 	update_secondary_fixed = value;
+	VRMSecondary *secondary = cast_to<VRMSecondary>(get_node(vrm_secondary));
+	if (secondary) {
+		secondary->_notification(NOTIFICATION_READY);
+	}
 }
 
 bool VRMTopLevel::get_update_secondary_fixed() const {
@@ -129,6 +135,10 @@ bool VRMTopLevel::get_update_secondary_fixed() const {
 
 void VRMTopLevel::set_update_in_editor(bool value) {
 	update_in_editor = value;
+	VRMSecondary *secondary = cast_to<VRMSecondary>(get_node(vrm_secondary));
+	if (secondary) {
+		secondary->_notification(NOTIFICATION_READY);
+	}
 }
 
 bool VRMTopLevel::get_update_in_editor() const {

@@ -30,6 +30,7 @@
 
 #include "vrm_secondary.h"
 #include "core/config/engine.h"
+#include "modules/vrm/vrm_toplevel.h"
 #include "vrm_constants.h"
 #include "vrm_secondary_gizmo.h"
 #include "vrm_springbone.h"
@@ -74,17 +75,6 @@ bool VRMSecondary::check_for_editor_update() {
 		update_in_editor = vrm_top_level->get_update_in_editor();
 		if (update_in_editor) {
 			notification(NOTIFICATION_READY);
-		} else {
-			for (int i = 0; i < spring_bones_internal.size(); ++i) {
-				Ref<VRMSpringBone> spring_bone = cast_to<VRMSpringBone>(spring_bones_internal[i]);
-				if (spring_bone.is_null()) {
-					continue;
-				}
-				if (!spring_bone->skeleton) {
-					continue;
-				}
-				spring_bone->skeleton->clear_bones_global_pose_override();
-			}
 		}
 	}
 
@@ -95,25 +85,30 @@ void VRMSecondary::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_READY: {
 			bool show_gizmo_spring_bone = false;
-			if (Object::cast_to<VRMTopLevel>(get_parent())) {
-				update_secondary_fixed = get_parent()->get("update_secondary_fixed");
-				show_gizmo_spring_bone = get_parent()->get("gizmo_spring_bone");
-			}
-
-			if (!secondary_gizmo && (Engine::get_singleton()->is_editor_hint() || show_gizmo_spring_bone)) {
-				secondary_gizmo = memnew(SecondaryGizmo(this));
-				add_child(secondary_gizmo, true);
-			}
 			collider_groups_internal.clear();
 			spring_bones_internal.clear();
+			VRMTopLevel *top_level = Object::cast_to<VRMTopLevel>(get_parent());
+			if (!top_level) {
+				return;
+			}
+			update_secondary_fixed = get_parent()->get("update_secondary_fixed");
+			show_gizmo_spring_bone = get_parent()->get("gizmo_spring_bone");
+
+			if (!secondary_gizmo && (Engine::get_singleton()->is_editor_hint() || show_gizmo_spring_bone)) {
+				secondary_gizmo = memnew(SecondaryGizmo());
+				secondary_gizmo->ready(this);
+				add_child(secondary_gizmo, true);
+				secondary_gizmo->set_owner(get_owner());
+			}
+			Skeleton3D *skeleton = Object::cast_to<Skeleton3D>(top_level->get_node_or_null(top_level->get_vrm_skeleton()));
+			if (!skeleton) {
+				return;
+			}
 			for (int i = 0; i < collider_groups.size(); ++i) {
 				Ref<VRMColliderGroup> collider_group = collider_groups[i];
 				Ref<VRMColliderGroup> new_collider_group = collider_group->duplicate(false);
-				Node3D *parent = Object::cast_to<Node3D>(get_node_or_null(new_collider_group->skeleton_or_node));
-				if (parent) {
-					new_collider_group->_ready(parent, parent);
-					collider_groups_internal.push_back(new_collider_group);
-				}
+				new_collider_group->ready(skeleton);
+				collider_groups_internal.push_back(new_collider_group);
 			}
 			for (int i = 0; i < spring_bones.size(); ++i) {
 				Ref<VRMSpringBone> spring_bone = spring_bones[i];
@@ -128,11 +123,8 @@ void VRMSecondary::_notification(int p_what) {
 						tmp_colliders.append_array(collider_group->colliders);
 					}
 				}
-				Skeleton3D *skel = Object::cast_to<Skeleton3D>(get_node_or_null(new_spring_bone->skeleton_path));
-				if (skel) {
-					new_spring_bone->ready(skel, tmp_colliders);
-					spring_bones_internal.push_back(new_spring_bone);
-				}
+				new_spring_bone->ready(skeleton, tmp_colliders);
+				spring_bones_internal.push_back(new_spring_bone);
 			}
 			if (update_secondary_fixed) {
 				set_physics_process(true);
@@ -150,15 +142,9 @@ void VRMSecondary::_notification(int p_what) {
 			double delta = get_process_delta_time();
 			if (!update_secondary_fixed) {
 				if (!Engine::get_singleton()->is_editor_hint() || check_for_editor_update()) {
-					for (int i = 0; i < spring_bones_internal.size(); ++i) {
-						Ref<VRMSpringBone> spring_bone = spring_bones_internal[i];
-						if (spring_bone->skeleton) {
-							spring_bone->skeleton->force_update_all_bone_transforms();
-						}
-					}
 					for (int i = 0; i < collider_groups_internal.size(); ++i) {
 						Ref<VRMColliderGroup> collider_group = collider_groups_internal[i];
-						collider_group->_process();
+						collider_group->process();
 					}
 					for (int i = 0; i < spring_bones_internal.size(); ++i) {
 						Ref<VRMSpringBone> spring_bone = spring_bones_internal[i];
@@ -186,18 +172,12 @@ void VRMSecondary::_notification(int p_what) {
 			double delta = get_physics_process_delta_time();
 			if (update_secondary_fixed) {
 				if (!Engine::get_singleton()->is_editor_hint() || check_for_editor_update()) {
-					for (int i = 0; i < spring_bones_internal.size(); ++i) {
-						Ref<VRMSpringBone> spring_bone = spring_bones_internal[i];
-						if (spring_bone->skeleton) {
-							spring_bone->skeleton->force_update_all_bone_transforms();
-						}
-					}
 					for (int i = 0; i < collider_groups_internal.size(); ++i) {
 						Ref<VRMColliderGroup> collider_group = collider_groups_internal[i];
 						if (collider_group.is_null()) {
 							continue;
 						}
-						collider_group->_process();
+						collider_group->process();
 					}
 					for (int i = 0; i < spring_bones_internal.size(); ++i) {
 						Ref<VRMSpringBone> spring_bone = spring_bones_internal[i];

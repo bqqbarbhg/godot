@@ -29,8 +29,10 @@
 /**************************************************************************/
 
 #include "vrm_secondary_gizmo.h"
+#include "scene/resources/immediate_mesh.h"
 
 void SecondaryGizmo::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("ready", "secondary"), &SecondaryGizmo::ready);
 	ClassDB::bind_method(D_METHOD("draw_in_editor"), &SecondaryGizmo::draw_in_editor);
 	ClassDB::bind_method(D_METHOD("draw_in_game"), &SecondaryGizmo::draw_in_game);
 	ClassDB::bind_method(D_METHOD("draw_spring_bones", "color"), &SecondaryGizmo::draw_spring_bones);
@@ -50,7 +52,7 @@ void SecondaryGizmo::draw_spring_bones(const Color &color) {
 		if (spring_bone->verlets.size() == 0 && spring_bone->verlets.size() == 0) {
 			continue;
 		}
-		mesh->surface_begin(Mesh::PRIMITIVE_LINES);
+		Ref<ImmediateMesh>(mesh)->surface_begin(Mesh::PRIMITIVE_LINES);
 
 		for (int j = 0; j < spring_bone->verlets.size(); ++j) {
 			Ref<VRMSpringBoneLogic> v = spring_bone->verlets[j];
@@ -58,7 +60,6 @@ void SecondaryGizmo::draw_spring_bones(const Color &color) {
 			Skeleton3D *s_sk = spring_bone->skeleton;
 
 			if (Engine::get_singleton()->is_editor_hint()) {
-				s_sk = Object::cast_to<Skeleton3D>(secondary_node->get_node_or_null(spring_bone->get_skeleton()));
 				if (v->bone_idx != -1) {
 					s_tr = s_sk->get_bone_global_pose(v->bone_idx);
 				}
@@ -75,7 +76,6 @@ void SecondaryGizmo::draw_spring_bones(const Color &color) {
 			Skeleton3D *s_sk = spring_bone->skeleton;
 
 			if (Engine::get_singleton()->is_editor_hint()) {
-				s_sk = Object::cast_to<Skeleton3D>(secondary_node->get_node_or_null(spring_bone->skeleton_path));
 				if (v->bone_idx != -1) {
 					s_tr = s_sk->get_bone_global_pose(v->bone_idx);
 				}
@@ -86,7 +86,7 @@ void SecondaryGizmo::draw_spring_bones(const Color &color) {
 			draw_sphere(s_tr.basis, VRMUtil::inv_transform_point(s_sk->get_global_transform(), v->get_current_tail()), spring_bone->get_hit_radius(), color);
 		}
 
-		mesh->surface_end();
+		Ref<ImmediateMesh>(mesh)->surface_end();
 	}
 }
 
@@ -100,7 +100,7 @@ void SecondaryGizmo::draw_collider_groups() {
 
 	for (int i = 0; i < collider_groups.size(); ++i) {
 		Ref<VRMColliderGroup> collider_group = collider_groups[i];
-		mesh->surface_begin(Mesh::PRIMITIVE_LINE_STRIP);
+		Ref<ImmediateMesh>(mesh)->surface_begin(Mesh::PRIMITIVE_LINE_STRIP);
 
 		Transform3D c_tr = Transform3D();
 
@@ -126,33 +126,73 @@ void SecondaryGizmo::draw_collider_groups() {
 			draw_sphere(c_tr.basis, VRMUtil::transform_point(c_tr, c_ps), collider.d, collider_group->get_gizmo_color());
 		}
 
-		mesh->surface_end();
+		Ref<ImmediateMesh>(mesh)->surface_end();
 	}
 }
 
 void SecondaryGizmo::draw_line(Vector3 begin_pos, Vector3 end_pos, Color color) {
-	mesh->surface_set_color(color);
-	mesh->surface_add_vertex(begin_pos);
-	mesh->surface_set_color(color);
-	mesh->surface_add_vertex(end_pos);
+	Ref<ImmediateMesh> immediate_mesh = Ref<ImmediateMesh>(mesh);
+	if (immediate_mesh.is_null()) {
+		return;
+	}
+	immediate_mesh->surface_set_color(color);
+	immediate_mesh->surface_add_vertex(begin_pos);
+	immediate_mesh->surface_set_color(color);
+	immediate_mesh->surface_add_vertex(end_pos);
 }
 
 void SecondaryGizmo::draw_sphere(Basis bas, Vector3 center, float radius, const Color color) {
+	Ref<ImmediateMesh> immediate_mesh = Ref<ImmediateMesh>(mesh);
+	if (immediate_mesh.is_null()) {
+		return;
+	}
 	int step = 15;
 	float sppi = 2 * Math_PI / step;
-
 	for (int i = 0; i <= step; ++i) {
-		mesh->surface_set_color(color);
-		mesh->surface_add_vertex(center + ((bas.xform(Vector3(0, radius, 0))).rotated(bas.xform(Vector3(1, 0, 0)), sppi * (i % step))));
+		immediate_mesh->surface_set_color(color);
+		immediate_mesh->surface_add_vertex(center + ((bas.xform(Vector3(0, radius, 0))).rotated(bas.xform(Vector3(1, 0, 0)), sppi * (i % step))));
 	}
 
 	for (int i = 0; i <= step; ++i) {
-		mesh->surface_set_color(color);
-		mesh->surface_add_vertex(center + ((bas.xform(Vector3(radius, 0, 0))).rotated(bas.xform(Vector3(0, 0, 1)), sppi * (i % step))));
+		immediate_mesh->surface_set_color(color);
+		immediate_mesh->surface_add_vertex(center + ((bas.xform(Vector3(radius, 0, 0))).rotated(bas.xform(Vector3(0, 0, 1)), sppi * (i % step))));
 	}
 
 	for (int i = 0; i <= step; ++i) {
-		mesh->surface_set_color(color);
-		mesh->surface_add_vertex(center + ((bas.xform(Vector3(0, 0, radius))).rotated(bas.xform(Vector3(0, 1, 0)), sppi * (i % step))));
+		immediate_mesh->surface_set_color(color);
+		immediate_mesh->surface_add_vertex(center + ((bas.xform(Vector3(0, 0, radius))).rotated(bas.xform(Vector3(0, 1, 0)), sppi * (i % step))));
 	}
+}
+void SecondaryGizmo::draw_in_editor() {
+	Ref<ImmediateMesh> immediate_mesh = Ref<ImmediateMesh>(mesh);
+	if (immediate_mesh.is_null()) {
+		return;
+	}
+	immediate_mesh->clear_surfaces();
+	if (secondary_node && Object::cast_to<VRMTopLevel>(secondary_node->get_parent())) {
+		draw_spring_bones(Object::cast_to<VRMTopLevel>(secondary_node->get_parent())->get_gizmo_spring_bone_color());
+		draw_collider_groups();
+	}
+}
+void SecondaryGizmo::draw_in_game() {
+	Ref<ImmediateMesh> immediate_mesh = Ref<ImmediateMesh>(mesh);
+	if (immediate_mesh.is_null()) {
+		return;
+	}
+	immediate_mesh->clear_surfaces();
+	if (secondary_node && Object::cast_to<VRMTopLevel>(secondary_node->get_parent())) {
+		draw_spring_bones(Object::cast_to<VRMTopLevel>(secondary_node->get_parent())->get_gizmo_spring_bone_color());
+		draw_collider_groups();
+	}
+}
+void SecondaryGizmo::ready(Node *p_secondary_node) {
+	Ref<ImmediateMesh> immediate_mesh;
+	immediate_mesh.instantiate();
+	set_mesh(immediate_mesh);
+	secondary_node = cast_to<VRMSecondary>(p_secondary_node);
+	m.instantiate();
+	m->set_depth_draw_mode(BaseMaterial3D::DEPTH_DRAW_DISABLED);
+	m->set_shading_mode(BaseMaterial3D::SHADING_MODE_UNSHADED);
+	m->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
+	m->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
 }

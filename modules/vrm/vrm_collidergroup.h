@@ -102,16 +102,16 @@ public:
 		}
 	}
 
-	void _ready(Node3D *ready_parent, Object *ready_skel) {
-		parent = ready_parent;
-		if (cast_to<Skeleton3D>(ready_parent)) {
+	void ready(Skeleton3D *ready_skel) {
+		parent = ready_skel;
+		if (ready_skel) {
 			skel = cast_to<Skeleton3D>(ready_skel);
-			bone_idx = cast_to<Skeleton3D>(ready_parent)->find_bone(bone);
+			bone_idx = cast_to<Skeleton3D>(ready_skel)->find_bone(bone);
 		}
 		setup();
 	}
 
-	void _process() {
+	void process() {
 		for (int i = 0; i < colliders.size(); ++i) {
 			Ref<SphereCollider> collider = Object::cast_to<SphereCollider>(colliders[i]);
 			collider->update(parent, skel);

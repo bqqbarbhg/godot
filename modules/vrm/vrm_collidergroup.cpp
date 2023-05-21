@@ -49,8 +49,8 @@ Vector3 SphereCollider::get_position() const {
 
 void VRMColliderGroup::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("setup"), &VRMColliderGroup::setup);
-	ClassDB::bind_method(D_METHOD("_ready", "ready_parent", "ready_skeleton"), &VRMColliderGroup::_ready);
-	ClassDB::bind_method(D_METHOD("_process"), &VRMColliderGroup::_process);
+	ClassDB::bind_method(D_METHOD("ready", "ready_skeleton"), &VRMColliderGroup::ready);
+	ClassDB::bind_method(D_METHOD("process"), &VRMColliderGroup::process);
 
 	ClassDB::bind_method(D_METHOD("get_skeleton_or_node"), &VRMColliderGroup::get_skeleton_or_node);
 	ClassDB::bind_method(D_METHOD("set_skeleton_or_node", "skeleton_or_node"), &VRMColliderGroup::set_skeleton_or_node);
