@@ -142,7 +142,12 @@ void VRMSpringBoneLogic::update(Skeleton3D *skel, const Vector3 &center, float s
 	Quaternion qt = ft * get_rotation_relative_to_origin(skel);
 	Transform3D global_pose_tr = get_global_pose(skel);
 	global_pose_tr.basis = Basis(qt.normalized());
-	skel->set_bone_global_pose_override(bone_idx, global_pose_tr, 1.0, true);
+	BoneId bone_parent = skel->get_bone_parent(bone_idx);
+	Transform3D parent_global_pose = skel->get_bone_global_pose_no_override(bone_parent);
+	Transform3D local_pose = parent_global_pose.affine_inverse() * global_pose_tr;
+	skel->set_bone_pose_position(bone_idx, local_pose.origin);
+	skel->set_bone_pose_rotation(bone_idx, local_pose.basis.get_rotation_quaternion());
+	skel->set_bone_pose_scale(bone_idx, local_pose.basis.get_scale());
 }
 
 Vector3 VRMSpringBoneLogic::collision(Skeleton3D *skel, const Array &colliders, const Vector3 &_next_tail) {
