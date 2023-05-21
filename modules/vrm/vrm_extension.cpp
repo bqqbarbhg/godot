@@ -329,17 +329,7 @@ TypedArray<Basis> VRMExtension::skeleton_rotate(Node *p_base_scene, Skeleton3D *
 		}
 
 		if (src_skeleton->get_bone_parent(src_idx) >= 0) {
-			// Inverse transform the target rotation
-			Basis inverse_tgt_rot = tgt_rot.inverse();
-
-			// Apply the inverse transformation to the parent bone's difference
-			Vector3 parent_diff_transformed = inverse_tgt_rot.xform(diffs[src_skeleton->get_bone_parent(src_idx)]);
-
-			// Get the source bone rest basis
-			Basis src_bone_rest_basis = src_skeleton->get_bone_rest(src_idx).basis;
-
-			// Calculate the final difference for the current bone
-			diffs[src_idx] = src_bone_rest_basis.xform(parent_diff_transformed);
+			diffs[src_idx] = (tgt_rot.inverse() * Basis(diffs[src_skeleton->get_bone_parent(src_idx)]) * src_skeleton->get_bone_rest(src_idx).basis);
 		} else {
 			diffs[src_idx] = tgt_rot.inverse() * src_skeleton->get_bone_rest(src_idx).basis;
 		}
