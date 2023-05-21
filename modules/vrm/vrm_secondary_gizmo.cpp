@@ -55,7 +55,7 @@ void SecondaryGizmo::draw_spring_bones(const Color &color) {
 		for (int j = 0; j < spring_bone->verlets.size(); ++j) {
 			Ref<VRMSpringBoneLogic> v = spring_bone->verlets[j];
 			Transform3D s_tr = Transform3D();
-			Skeleton3D *s_sk = spring_bone->skel;
+			Skeleton3D *s_sk = spring_bone->skeleton;
 
 			if (Engine::get_singleton()->is_editor_hint()) {
 				s_sk = Object::cast_to<Skeleton3D>(secondary_node->get_node_or_null(spring_bone->get_skeleton()));
@@ -63,7 +63,7 @@ void SecondaryGizmo::draw_spring_bones(const Color &color) {
 					s_tr = s_sk->get_bone_global_pose(v->bone_idx);
 				}
 			} else {
-				s_tr = spring_bone->skel->get_bone_global_pose_no_override(v->bone_idx);
+				s_tr = spring_bone->skeleton->get_bone_global_pose_no_override(v->bone_idx);
 			}
 
 			draw_line(s_tr.origin, VRMUtil::inv_transform_point(s_sk->get_global_transform(), v->get_current_tail()), color);
@@ -72,15 +72,15 @@ void SecondaryGizmo::draw_spring_bones(const Color &color) {
 		for (int j = 0; j < spring_bone->verlets.size(); ++j) {
 			Ref<VRMSpringBoneLogic> v = spring_bone->verlets[j];
 			Transform3D s_tr = Transform3D();
-			Skeleton3D *s_sk = spring_bone->skel;
+			Skeleton3D *s_sk = spring_bone->skeleton;
 
 			if (Engine::get_singleton()->is_editor_hint()) {
-				s_sk = Object::cast_to<Skeleton3D>(secondary_node->get_node_or_null(spring_bone->skeleton));
+				s_sk = Object::cast_to<Skeleton3D>(secondary_node->get_node_or_null(spring_bone->skeleton_path));
 				if (v->bone_idx != -1) {
 					s_tr = s_sk->get_bone_global_pose(v->bone_idx);
 				}
 			} else {
-				s_tr = spring_bone->skel->get_bone_global_pose_no_override(v->bone_idx);
+				s_tr = spring_bone->skeleton->get_bone_global_pose_no_override(v->bone_idx);
 			}
 
 			draw_sphere(s_tr.basis, VRMUtil::inv_transform_point(s_sk->get_global_transform(), v->get_current_tail()), spring_bone->get_hit_radius(), color);

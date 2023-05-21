@@ -53,9 +53,6 @@ public:
 	// The resistance (deceleration) of automatic animation.
 	float drag_force = 0.4f;
 
-	// Bone name references are only valid within a given Skeleton.
-	NodePath skeleton;
-
 	// The reference point of a swaying object can be set at any location except the origin.
 	String center_bone = "";
 	NodePath center_node;
@@ -72,7 +69,7 @@ public:
 	Array verlets;
 	Array colliders;
 	Vector3 center;
-	Skeleton3D *skel = nullptr;
+	Skeleton3D *skeleton = nullptr;
 
 public:
 	String get_comment() const;
@@ -85,8 +82,6 @@ public:
 	void set_gravity_dir(const Vector3 &p_gravity_dir);
 	float get_drag_force() const;
 	void set_drag_force(float p_drag_force);
-	NodePath get_skeleton() const;
-	void set_skeleton(const NodePath &p_skeleton);
 	String get_center_bone() const;
 	void set_center_bone(const String &p_center_bone);
 	NodePath get_center_node() const;

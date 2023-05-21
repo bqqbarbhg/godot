@@ -80,10 +80,10 @@ bool VRMSecondary::check_for_editor_update() {
 				if (spring_bone.is_null()) {
 					continue;
 				}
-				if (!spring_bone->skel) {
+				if (!spring_bone->skeleton) {
 					continue;
 				}
-				spring_bone->skel->clear_bones_global_pose_override();
+				spring_bone->skeleton->clear_bones_global_pose_override();
 			}
 		}
 	}
@@ -128,7 +128,7 @@ void VRMSecondary::_notification(int p_what) {
 						tmp_colliders.append_array(collider_group->colliders);
 					}
 				}
-				Skeleton3D *skel = Object::cast_to<Skeleton3D>(get_node_or_null(new_spring_bone->skeleton));
+				Skeleton3D *skel = Object::cast_to<Skeleton3D>(get_node_or_null(new_spring_bone->skeleton_path));
 				if (skel) {
 					new_spring_bone->ready(skel, tmp_colliders);
 					spring_bones_internal.push_back(new_spring_bone);
@@ -152,8 +152,8 @@ void VRMSecondary::_notification(int p_what) {
 				if (!Engine::get_singleton()->is_editor_hint() || check_for_editor_update()) {
 					for (int i = 0; i < spring_bones_internal.size(); ++i) {
 						Ref<VRMSpringBone> spring_bone = spring_bones_internal[i];
-						if (spring_bone->skel) {
-							spring_bone->skel->force_update_all_bone_transforms();
+						if (spring_bone->skeleton) {
+							spring_bone->skeleton->force_update_all_bone_transforms();
 						}
 					}
 					for (int i = 0; i < collider_groups_internal.size(); ++i) {
@@ -188,8 +188,8 @@ void VRMSecondary::_notification(int p_what) {
 				if (!Engine::get_singleton()->is_editor_hint() || check_for_editor_update()) {
 					for (int i = 0; i < spring_bones_internal.size(); ++i) {
 						Ref<VRMSpringBone> spring_bone = spring_bones_internal[i];
-						if (spring_bone->skel) {
-							spring_bone->skel->force_update_all_bone_transforms();
+						if (spring_bone->skeleton) {
+							spring_bone->skeleton->force_update_all_bone_transforms();
 						}
 					}
 					for (int i = 0; i < collider_groups_internal.size(); ++i) {

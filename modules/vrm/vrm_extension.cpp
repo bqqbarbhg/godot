@@ -1181,8 +1181,8 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 
 	Array vrm_extension_bone_groups = vrm_extension["secondaryAnimation"].get("boneGroups");
 	Array spring_bones;
-	for (int group_i = 0; group_i < vrm_extension_bone_groups.size(); ++group_i) {
-		Dictionary sbone = vrm_extension_bone_groups[group_i];
+	for (int bone_group_i = 0; bone_group_i < vrm_extension_bone_groups.size(); ++bone_group_i) {
+		Dictionary sbone = vrm_extension_bone_groups[bone_group_i];
 		if (!sbone.has("bones")) {
 			continue;
 		}
@@ -1196,7 +1196,6 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 
 		Ref<VRMSpringBone> spring_bone;
 		spring_bone.instantiate();
-		spring_bone->set_skeleton(secondary_node->get_path_to(skeleton));
 		spring_bone->set_comment(sbone.get("comment", ""));
 		spring_bone->set_stiffness_force(float(sbone.get("stiffiness", 1.0)));
 		spring_bone->set_gravity_power(float(sbone.get("gravityPower", 0.0)));
@@ -1225,8 +1224,8 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 		spring_bone->get_collider_groups().clear(); // HACK HACK HACK
 
 		Array colliderGroups = sbone.get("colliderGroups", Array());
-		for (int group_i = 0; group_i < colliderGroups.size(); ++group_i) {
-			int cgroup_idx = colliderGroups[group_i];
+		for (int collider_group_i = 0; collider_group_i < colliderGroups.size(); ++collider_group_i) {
+			int cgroup_idx = colliderGroups[collider_group_i];
 			spring_bone->get_collider_groups().push_back(collider_groups[int(cgroup_idx)]);
 		}
 

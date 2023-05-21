@@ -70,10 +70,6 @@ void VRMSpringBone::set_drag_force(float p_drag_force) {
 	drag_force = p_drag_force;
 }
 
-NodePath VRMSpringBone::get_skeleton() const {
-	return skeleton;
-}
-
 void VRMSpringBone::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_comment"), &VRMSpringBone::get_comment);
 	ClassDB::bind_method(D_METHOD("set_comment", "value"), &VRMSpringBone::set_comment);
@@ -95,10 +91,6 @@ void VRMSpringBone::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_drag_force"), &VRMSpringBone::get_drag_force);
 	ClassDB::bind_method(D_METHOD("set_drag_force", "value"), &VRMSpringBone::set_drag_force);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "drag_force", PROPERTY_HINT_RANGE, "0,4,0.01", PROPERTY_USAGE_DEFAULT), "set_drag_force", "get_drag_force");
-
-	ClassDB::bind_method(D_METHOD("get_skeleton"), &VRMSpringBone::get_skeleton);
-	ClassDB::bind_method(D_METHOD("set_skeleton", "value"), &VRMSpringBone::set_skeleton);
-	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "skeleton", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT), "set_skeleton", "get_skeleton");
 
 	ClassDB::bind_method(D_METHOD("get_center_bone"), &VRMSpringBone::get_center_bone);
 	ClassDB::bind_method(D_METHOD("set_center_bone", "value"), &VRMSpringBone::set_center_bone);
@@ -122,13 +114,13 @@ void VRMSpringBone::_bind_methods() {
 }
 
 void VRMSpringBone::setup(bool force) {
-	if (!root_bones.is_empty() && skel != nullptr) {
+	if (!root_bones.is_empty() && skeleton != nullptr) {
 		if (force || verlets.is_empty()) {
 			if (!verlets.is_empty()) {
 				for (int i = 0; i < verlets.size(); ++i) {
 					VRMSpringBoneLogic *verlet = Object::cast_to<VRMSpringBoneLogic>(verlets[i]);
 					if (verlet) {
-						verlet->reset(skel);
+						verlet->reset(skeleton);
 					}
 				}
 			}
@@ -136,7 +128,7 @@ void VRMSpringBone::setup(bool force) {
 			for (int i = 0; i < root_bones.size(); ++i) {
 				String bone_name = root_bones[i];
 				if (!bone_name.is_empty()) {
-					setup_recursive(skel->find_bone(bone_name), Transform3D());
+					setup_recursive(skeleton->find_bone(bone_name), Transform3D());
 				}
 			}
 		}
@@ -157,23 +149,23 @@ void VRMSpringBone::process(float delta) {
 	for (int32_t verlet_i = 0; verlet_i < verlets.size(); verlet_i++) {
 		Ref<VRMSpringBoneLogic> verlet = verlets[verlet_i];
 		verlet->radius = hit_radius;
-		verlet->update(skel, center, stiffness, drag_force, external, colliders);
+		verlet->update(skeleton, center, stiffness, drag_force, external, colliders);
 	}
 }
 
 void VRMSpringBone::setup_recursive(int id, Transform3D center_tr) {
-	Vector<int> bone_children = skel->get_bone_children(id);
+	Vector<int> bone_children = skeleton->get_bone_children(id);
 	if (bone_children.is_empty()) {
-		Vector3 delta = skel->get_bone_rest(id).origin;
+		Vector3 delta = skeleton->get_bone_rest(id).origin;
 		Vector3 child_position = delta.normalized() * 0.07f;
-		Ref<VRMSpringBoneLogic> spring_bone_logic = memnew(VRMSpringBoneLogic(skel, id, center_tr.origin, child_position, skel->get_bone_global_pose_no_override(id)));
+		Ref<VRMSpringBoneLogic> spring_bone_logic = memnew(VRMSpringBoneLogic(skeleton, id, center_tr.origin, child_position, skeleton->get_bone_global_pose_no_override(id)));
 		verlets.append(spring_bone_logic);
 	} else {
 		int first_child = bone_children[0];
-		Vector3 local_position = skel->get_bone_rest(first_child).origin;
-		Vector3 sca = skel->get_bone_rest(first_child).basis.get_scale();
+		Vector3 local_position = skeleton->get_bone_rest(first_child).origin;
+		Vector3 sca = skeleton->get_bone_rest(first_child).basis.get_scale();
 		Vector3 pos(local_position.x * sca.x, local_position.y * sca.y, local_position.z * sca.z);
-		Ref<VRMSpringBoneLogic> spring_bone_logic = memnew(VRMSpringBoneLogic(skel, id, center_tr.origin, pos, skel->get_bone_global_pose_no_override(id)));
+		Ref<VRMSpringBoneLogic> spring_bone_logic = memnew(VRMSpringBoneLogic(skeleton, id, center_tr.origin, pos, skeleton->get_bone_global_pose_no_override(id)));
 		verlets.append(spring_bone_logic);
 	}
 	for (int i = 0; i < bone_children.size(); ++i) {
@@ -182,15 +174,9 @@ void VRMSpringBone::setup_recursive(int id, Transform3D center_tr) {
 }
 
 void VRMSpringBone::ready(Skeleton3D *ready_skel, Array colliders_ref) {
-	if (ready_skel == nullptr) {
-		return;
-	}
+    skeleton = ready_skel;
 	setup();
 	colliders = colliders_ref.duplicate(false);
-}
-
-void VRMSpringBone::set_skeleton(const NodePath &p_skeleton) {
-	skeleton = p_skeleton;
 }
 
 String VRMSpringBone::get_center_bone() const {
