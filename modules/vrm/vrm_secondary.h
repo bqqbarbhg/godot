@@ -57,8 +57,8 @@ public:
 	Array collider_groups_internal;
 	SecondaryGizmo *secondary_gizmo = nullptr;
 
-	void set_spring_bones(const Array &new_spring_bones);
-	void set_collider_groups(const Array &new_collider_groups);
+	void set_spring_bones(Array new_spring_bones);
+	void set_collider_groups(Array new_collider_groups);
 	Array get_spring_bones() const;
 	Array get_collider_groups() const;
 	Array get_collider_groups_internal() const {

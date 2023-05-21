@@ -49,11 +49,11 @@ void VRMSecondary::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "collider_groups"), "set_collider_groups", "get_collider_groups");
 }
 
-void VRMSecondary::set_spring_bones(const Array &new_spring_bones) {
+void VRMSecondary::set_spring_bones(Array new_spring_bones) {
 	spring_bones = new_spring_bones;
 }
 
-void VRMSecondary::set_collider_groups(const Array &new_collider_groups) {
+void VRMSecondary::set_collider_groups(Array new_collider_groups) {
 	collider_groups = new_collider_groups;
 }
 
