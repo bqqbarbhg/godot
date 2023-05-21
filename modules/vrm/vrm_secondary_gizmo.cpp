@@ -47,6 +47,9 @@ void SecondaryGizmo::draw_spring_bones(const Color &color) {
 
 	for (int i = 0; i < secondary_node->spring_bones_internal.size(); ++i) {
 		Ref<VRMSpringBone> spring_bone = secondary_node->spring_bones_internal[i];
+		if (spring_bone->verlets.size() == 0 && spring_bone->verlets.size() == 0) {
+			continue;
+		}
 		mesh->surface_begin(Mesh::PRIMITIVE_LINES);
 
 		for (int j = 0; j < spring_bone->verlets.size(); ++j) {
@@ -65,8 +68,6 @@ void SecondaryGizmo::draw_spring_bones(const Color &color) {
 
 			draw_line(s_tr.origin, VRMUtil::inv_transform_point(s_sk->get_global_transform(), v->get_current_tail()), color);
 		}
-
-		mesh->surface_end();
 
 		for (int j = 0; j < spring_bone->verlets.size(); ++j) {
 			Ref<VRMSpringBoneLogic> v = spring_bone->verlets[j];

@@ -80,6 +80,9 @@ bool VRMSecondary::check_for_editor_update() {
 				if (spring_bone.is_null()) {
 					continue;
 				}
+				if (!spring_bone->skel) {
+					continue;
+				}
 				spring_bone->skel->clear_bones_global_pose_override();
 			}
 		}
