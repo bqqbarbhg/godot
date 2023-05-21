@@ -29,8 +29,10 @@
 /**************************************************************************/
 
 #include "vrm_spring_bone_logic.h"
+#include "core/object/class_db.h"
 
 void VRMSpringBoneLogic::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("ready", "skeleton", "bone_idx", "center", "local_child_position", "default_pose"), &VRMSpringBoneLogic::ready);
 	ClassDB::bind_method(D_METHOD("global_pose_to_local_pose", "skeleton", "bone_idx", "global_pose"), &VRMSpringBoneLogic::global_pose_to_local_pose);
 	ClassDB::bind_method(D_METHOD("local_pose_to_global_pose", "skeleton", "bone_idx", "local_pose"), &VRMSpringBoneLogic::local_pose_to_global_pose);
 
@@ -91,7 +93,7 @@ void VRMSpringBoneLogic::reset(Skeleton3D *skel) {
 	skel->set_bone_global_pose_override(bone_idx, initial_transform, 1.0, true);
 }
 
-VRMSpringBoneLogic::VRMSpringBoneLogic(Skeleton3D *skel, int idx, const Vector3 &center, const Vector3 &local_child_position, const Transform3D &default_pose) {
+void VRMSpringBoneLogic::ready(Skeleton3D *skel, int idx, const Vector3 &center, const Vector3 &local_child_position, const Transform3D &default_pose) {
 	initial_transform = default_pose;
 	bone_idx = idx;
 	Vector3 world_child_position = VRMUtil::transform_point(get_transform(skel), local_child_position);

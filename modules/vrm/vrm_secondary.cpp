@@ -151,15 +151,11 @@ void VRMSecondary::_notification(int p_what) {
 						spring_bone->process(delta);
 					}
 					if (secondary_gizmo) {
-						if (Engine::get_singleton()->is_editor_hint()) {
-							secondary_gizmo->draw_in_editor();
-						} else {
-							secondary_gizmo->draw_in_game();
-						}
+						secondary_gizmo->draw();
 					}
 				} else if (Engine::get_singleton()->is_editor_hint()) {
 					if (secondary_gizmo) {
-						secondary_gizmo->draw_in_editor();
+						secondary_gizmo->draw();
 					}
 				}
 			}
@@ -187,15 +183,11 @@ void VRMSecondary::_notification(int p_what) {
 						spring_bone->process(delta);
 					}
 					if (secondary_gizmo) {
-						if (Engine::get_singleton()->is_editor_hint()) {
-							secondary_gizmo->draw_in_editor();
-						} else {
-							secondary_gizmo->draw_in_game();
-						}
+						secondary_gizmo->draw();
 					}
 				} else if (Engine::get_singleton()->is_editor_hint()) {
 					if (secondary_gizmo) {
-						secondary_gizmo->draw_in_editor();
+						secondary_gizmo->draw();
 					}
 				}
 			}

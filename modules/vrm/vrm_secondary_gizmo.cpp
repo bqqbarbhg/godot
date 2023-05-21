@@ -33,8 +33,7 @@
 
 void SecondaryGizmo::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("ready", "secondary"), &SecondaryGizmo::ready);
-	ClassDB::bind_method(D_METHOD("draw_in_editor"), &SecondaryGizmo::draw_in_editor);
-	ClassDB::bind_method(D_METHOD("draw_in_game"), &SecondaryGizmo::draw_in_game);
+	ClassDB::bind_method(D_METHOD("draw"), &SecondaryGizmo::draw);
 	ClassDB::bind_method(D_METHOD("draw_spring_bones", "color"), &SecondaryGizmo::draw_spring_bones);
 	ClassDB::bind_method(D_METHOD("draw_collider_groups"), &SecondaryGizmo::draw_collider_groups);
 	ClassDB::bind_method(D_METHOD("draw_line", "begin_pos", "end_pos", "color"), &SecondaryGizmo::draw_line);
@@ -163,7 +162,8 @@ void SecondaryGizmo::draw_sphere(Basis bas, Vector3 center, float radius, const 
 		immediate_mesh->surface_add_vertex(center + ((bas.xform(Vector3(0, 0, radius))).rotated(bas.xform(Vector3(0, 1, 0)), sppi * (i % step))));
 	}
 }
-void SecondaryGizmo::draw_in_editor() {
+
+void SecondaryGizmo::draw() {
 	Ref<ImmediateMesh> immediate_mesh = Ref<ImmediateMesh>(mesh);
 	if (immediate_mesh.is_null()) {
 		return;
@@ -174,17 +174,7 @@ void SecondaryGizmo::draw_in_editor() {
 		draw_collider_groups();
 	}
 }
-void SecondaryGizmo::draw_in_game() {
-	Ref<ImmediateMesh> immediate_mesh = Ref<ImmediateMesh>(mesh);
-	if (immediate_mesh.is_null()) {
-		return;
-	}
-	immediate_mesh->clear_surfaces();
-	if (secondary_node && Object::cast_to<VRMTopLevel>(secondary_node->get_parent())) {
-		draw_spring_bones(Object::cast_to<VRMTopLevel>(secondary_node->get_parent())->get_gizmo_spring_bone_color());
-		draw_collider_groups();
-	}
-}
+
 void SecondaryGizmo::ready(Node *p_secondary_node) {
 	Ref<ImmediateMesh> immediate_mesh;
 	immediate_mesh.instantiate();

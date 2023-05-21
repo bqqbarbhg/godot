@@ -148,6 +148,9 @@ void VRMSpringBone::process(float delta) {
 
 	for (int32_t verlet_i = 0; verlet_i < verlets.size(); verlet_i++) {
 		Ref<VRMSpringBoneLogic> verlet = verlets[verlet_i];
+		if (verlet.is_null()) {
+			continue;
+		}
 		verlet->radius = hit_radius;
 		verlet->update(skeleton, center, stiffness, drag_force, external, colliders);
 	}
@@ -158,14 +161,18 @@ void VRMSpringBone::setup_recursive(int id, Transform3D center_tr) {
 	if (bone_children.is_empty()) {
 		Vector3 delta = skeleton->get_bone_rest(id).origin;
 		Vector3 child_position = delta.normalized() * 0.07f;
-		Ref<VRMSpringBoneLogic> spring_bone_logic = memnew(VRMSpringBoneLogic(skeleton, id, center_tr.origin, child_position, skeleton->get_bone_global_pose_no_override(id)));
+		Ref<VRMSpringBoneLogic> spring_bone_logic;
+		spring_bone_logic.instantiate();
+		spring_bone_logic->ready(skeleton, id, center_tr.origin, child_position, skeleton->get_bone_global_pose_no_override(id));
 		verlets.append(spring_bone_logic);
 	} else {
 		int first_child = bone_children[0];
 		Vector3 local_position = skeleton->get_bone_rest(first_child).origin;
 		Vector3 sca = skeleton->get_bone_rest(first_child).basis.get_scale();
 		Vector3 pos(local_position.x * sca.x, local_position.y * sca.y, local_position.z * sca.z);
-		Ref<VRMSpringBoneLogic> spring_bone_logic = memnew(VRMSpringBoneLogic(skeleton, id, center_tr.origin, pos, skeleton->get_bone_global_pose_no_override(id)));
+		Ref<VRMSpringBoneLogic> spring_bone_logic;
+		spring_bone_logic.instantiate();
+		spring_bone_logic->ready(skeleton, id, center_tr.origin, pos, skeleton->get_bone_global_pose_no_override(id));
 		verlets.append(spring_bone_logic);
 	}
 	for (int i = 0; i < bone_children.size(); ++i) {
@@ -174,7 +181,7 @@ void VRMSpringBone::setup_recursive(int id, Transform3D center_tr) {
 }
 
 void VRMSpringBone::ready(Skeleton3D *ready_skel, Array colliders_ref) {
-    skeleton = ready_skel;
+	skeleton = ready_skel;
 	setup();
 	colliders = colliders_ref.duplicate(false);
 }

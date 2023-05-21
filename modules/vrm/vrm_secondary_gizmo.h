@@ -53,8 +53,7 @@ public:
 
 	~SecondaryGizmo() {}
 	void ready(Node *p_secondary_node);
-	void draw_in_editor();
-	void draw_in_game();
+	void draw();
 	void draw_spring_bones(const Color &color);
 	void draw_collider_groups();
 	void draw_line(Vector3 begin_pos, Vector3 end_pos, Color color);

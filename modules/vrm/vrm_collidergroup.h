@@ -114,6 +114,9 @@ public:
 	void process() {
 		for (int i = 0; i < colliders.size(); ++i) {
 			Ref<SphereCollider> collider = Object::cast_to<SphereCollider>(colliders[i]);
+			if (collider.is_null()) {
+				continue;
+			}
 			collider->update(parent, skel);
 		}
 	}

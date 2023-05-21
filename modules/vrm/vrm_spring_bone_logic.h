@@ -68,7 +68,7 @@ public:
 	Quaternion get_local_pose_rotation(Skeleton3D *skel);
 	void reset(Skeleton3D *skel);
 
-	VRMSpringBoneLogic(Skeleton3D *skel, int idx, const Vector3 &center, const Vector3 &local_child_position, const Transform3D &default_pose);
+	void ready(Skeleton3D *skel, int idx, const Vector3 &center, const Vector3 &local_child_position, const Transform3D &default_pose);
 	void update(Skeleton3D *skel, const Vector3 &center, float stiffness_force, float drag_force, const Vector3 &external, const Array &colliders);
 	Vector3 collision(Skeleton3D *skel, const Array &colliders, const Vector3 &_next_tail);
 	VRMSpringBoneLogic() {}
