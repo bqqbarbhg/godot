@@ -31,17 +31,17 @@
 #include "vrm_spring_bone_logic.h"
 
 void VRMSpringBoneLogic::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("global_pose_to_local_pose", "p_skeleton", "p_bone_idx", "p_global_pose"), &VRMSpringBoneLogic::global_pose_to_local_pose);
-	ClassDB::bind_method(D_METHOD("local_pose_to_global_pose", "p_skeleton", "p_bone_idx", "p_local_pose"), &VRMSpringBoneLogic::local_pose_to_global_pose);
+	ClassDB::bind_method(D_METHOD("global_pose_to_local_pose", "skeleton", "bone_idx", "global_pose"), &VRMSpringBoneLogic::global_pose_to_local_pose);
+	ClassDB::bind_method(D_METHOD("local_pose_to_global_pose", "skeleton", "bone_idx", "local_pose"), &VRMSpringBoneLogic::local_pose_to_global_pose);
 
-	ClassDB::bind_method(D_METHOD("get_transform", "skel"), &VRMSpringBoneLogic::get_transform);
-	ClassDB::bind_method(D_METHOD("get_rotation_relative_to_origin", "skel"), &VRMSpringBoneLogic::get_rotation_relative_to_origin);
-	ClassDB::bind_method(D_METHOD("get_global_pose", "skel"), &VRMSpringBoneLogic::get_global_pose);
-	ClassDB::bind_method(D_METHOD("get_local_pose_rotation", "skel"), &VRMSpringBoneLogic::get_local_pose_rotation);
-	ClassDB::bind_method(D_METHOD("reset", "skel"), &VRMSpringBoneLogic::reset);
+	ClassDB::bind_method(D_METHOD("get_transform", "skeleton"), &VRMSpringBoneLogic::get_transform);
+	ClassDB::bind_method(D_METHOD("get_rotation_relative_to_origin", "skeleton"), &VRMSpringBoneLogic::get_rotation_relative_to_origin);
+	ClassDB::bind_method(D_METHOD("get_global_pose", "skeleton"), &VRMSpringBoneLogic::get_global_pose);
+	ClassDB::bind_method(D_METHOD("get_local_pose_rotation", "skeleton"), &VRMSpringBoneLogic::get_local_pose_rotation);
+	ClassDB::bind_method(D_METHOD("reset", "skeleton"), &VRMSpringBoneLogic::reset);
 
-	ClassDB::bind_method(D_METHOD("update", "skel", "center", "stiffness_force", "drag_force", "external", "colliders"), &VRMSpringBoneLogic::update);
-	ClassDB::bind_method(D_METHOD("collision", "skel", "colliders", "_next_tail"), &VRMSpringBoneLogic::collision);
+	ClassDB::bind_method(D_METHOD("update", "skeleton", "center", "stiffness_force", "drag_force", "external", "colliders"), &VRMSpringBoneLogic::update);
+	ClassDB::bind_method(D_METHOD("collision", "skeleton", "colliders", "next_tail"), &VRMSpringBoneLogic::collision);
 }
 
 Transform3D VRMSpringBoneLogic::global_pose_to_local_pose(Skeleton3D *p_skeleton, int p_bone_idx, Transform3D p_global_pose) {
