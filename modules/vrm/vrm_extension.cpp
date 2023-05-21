@@ -143,7 +143,6 @@ void VRMExtension::skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Sk
 	HashMap<StringName, int> original_bone_names_to_indices;
 	HashMap<int, StringName> original_indices_to_bone_names;
 	HashMap<int, StringName> original_indices_to_new_bone_names;
-	int skellen = p_skeleton->get_bone_count();
 
 	// Rename bones to their humanoid equivalents.
 	for (int i = 0; i < p_bone_map->get_profile()->get_bone_size(); ++i) {
@@ -369,9 +368,7 @@ void VRMExtension::apply_rotation(Node *p_base_scene, Skeleton3D *src_skeleton) 
 			Node *node = mi->get_node_or_null(mi->get_skeleton_path());
 
 			if (skin.is_valid() && node && Object::cast_to<Skeleton3D>(node) == src_skeleton) {
-				int skellen = skin->get_bind_count();
-
-				for (int i = 0; i < skellen; ++i) {
+				for (int i = 0; i < skin->get_bind_count(); ++i) {
 					StringName bn = skin->get_bind_name(i);
 					int bone_idx = src_skeleton->find_bone(bn);
 
