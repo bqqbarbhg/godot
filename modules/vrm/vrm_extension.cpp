@@ -201,9 +201,6 @@ void VRMExtension::skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Sk
 			nd->call("_notify_skeleton_bones_renamed", p_base_scene, p_skeleton, p_bone_map);
 		}
 	}
-
-	p_skeleton->set_name("GeneralSkeleton");
-	p_skeleton->set_unique_name_in_owner(true);
 }
 
 void VRMExtension::rotate_scene_180_inner(Node3D *p_node, Dictionary mesh_set, Dictionary skin_set) {
@@ -217,8 +214,8 @@ void VRMExtension::rotate_scene_180_inner(Node3D *p_node, Dictionary mesh_set, D
 			skeleton->set_bone_pose_position(bone_idx, rest.origin);
 		}
 	}
-
 	p_node->set_transform(ROTATE_180_TRANSFORM * p_node->get_transform() * ROTATE_180_TRANSFORM);
+
 
 	ImporterMeshInstance3D *importer_mesh_instance = Object::cast_to<ImporterMeshInstance3D>(p_node);
 	if (importer_mesh_instance) {
@@ -1369,8 +1366,6 @@ Error VRMExtension::import_preflight(Ref<GLTFState> p_state, Vector<String> p_ex
 TypedArray<Basis> VRMExtension::apply_retarget(Ref<GLTFState> gstate, Node *root_node, Skeleton3D *skeleton, Ref<BoneMap> bone_map) {
 	NodePath skeleton_path = root_node->get_path_to(skeleton);
 
-	skeleton_rename(gstate, root_node, skeleton, bone_map);
-
 	int hips_bone_idx = skeleton->find_bone("Hips");
 	if (hips_bone_idx != -1) {
 		skeleton->set_motion_scale(Math::abs(skeleton->get_bone_global_rest(hips_bone_idx).origin.y));
@@ -1439,7 +1434,9 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 		print_line("Post-rotate");
 	}
 
-	bool do_retarget = true;
+	skeleton_rename(gstate, root_node, skeleton, human_bones_map);
+
+	bool do_retarget = false;
 
 	TypedArray<Basis> pose_diffs;
 	pose_diffs.resize(skeleton->get_bone_count());
@@ -1447,6 +1444,9 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 	if (do_retarget) {
 		pose_diffs = apply_retarget(gstate, root_node, skeleton, human_bones_map);
 	}
+
+	skeleton->set_name("GeneralSkeleton");
+	skeleton->set_unique_name_in_owner(true);
 
 	_update_materials(vrm_extension, gstate);
 
