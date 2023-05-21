@@ -211,7 +211,7 @@ void VRMExtension::rotate_scene_180_inner(Node3D *p_node, Dictionary mesh_set, D
 	Skeleton3D *skeleton = Object::cast_to<Skeleton3D>(p_node);
 	if (skeleton) {
 		for (int bone_idx = 0; bone_idx < skeleton->get_bone_count(); ++bone_idx) {
-			Transform3D rest = skeleton->get_bone_rest(bone_idx);
+			Transform3D rest = ROTATE_180_TRANSFORM * skeleton->get_bone_rest(bone_idx) * ROTATE_180_TRANSFORM;
 			skeleton->set_bone_rest(bone_idx, rest);
 			skeleton->set_bone_pose_rotation(bone_idx, Quaternion(ROTATE_180_BASIS) * skeleton->get_bone_pose_rotation(bone_idx) * Quaternion(ROTATE_180_BASIS));
 			skeleton->set_bone_pose_scale(bone_idx, Vector3(1, 1, 1));
