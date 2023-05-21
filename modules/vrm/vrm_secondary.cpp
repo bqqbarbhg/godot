@@ -142,11 +142,10 @@ void VRMSecondary::_notification(int p_what) {
 			float delta = get_process_delta_time();
 			if (!update_secondary_fixed) {
 				if (!Engine::get_singleton()->is_editor_hint() || check_for_editor_update()) {
-					// force update skeleton
 					for (int i = 0; i < spring_bones_internal.size(); ++i) {
 						Ref<VRMSpringBone> spring_bone = spring_bones_internal[i];
 						if (spring_bone->skel) {
-							spring_bone->skel->get_bone_global_pose_no_override(0);
+							spring_bone->skel->force_update_all_bone_transforms();
 						}
 					}
 					for (int i = 0; i < collider_groups_internal.size(); ++i) {
@@ -176,11 +175,10 @@ void VRMSecondary::_notification(int p_what) {
 			float delta = get_physics_process_delta_time();
 			if (update_secondary_fixed) {
 				if (!Engine::get_singleton()->is_editor_hint() || check_for_editor_update()) {
-					// force update skeleton
 					for (int i = 0; i < spring_bones_internal.size(); ++i) {
 						Ref<VRMSpringBone> spring_bone = spring_bones_internal[i];
 						if (spring_bone->skel) {
-							spring_bone->skel->get_bone_global_pose_no_override(0);
+							spring_bone->skel->force_update_all_bone_transforms();
 						}
 					}
 					for (int i = 0; i < collider_groups_internal.size(); ++i) {
