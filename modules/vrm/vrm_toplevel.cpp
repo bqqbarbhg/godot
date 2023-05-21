@@ -32,11 +32,11 @@
 
 Quaternion VRMUtil::from_to_rotation(const Vector3 &from, const Vector3 &to) {
 	Vector3 axis = from.cross(to);
-	if (Math::is_equal_approx(axis.x, 0.0) && Math::is_equal_approx(axis.y, 0.0) && Math::is_equal_approx(axis.z, 0.0)) {
+	if (Math::is_equal_approx(real_t(axis.x), real_t(0.0)) && Math::is_equal_approx(real_t(axis.y), real_t(0.0)) && Math::is_equal_approx(real_t(axis.z), real_t(0.0f))) {
 		return Quaternion();
 	}
 	float angle = from.angle_to(to);
-	if (Math::is_equal_approx(angle, 0.0f)) {
+	if (Math::is_equal_approx(real_t(angle), real_t(0.0))) {
 		angle = 0.0f;
 	}
 	return Quaternion(axis.normalized(), angle);
