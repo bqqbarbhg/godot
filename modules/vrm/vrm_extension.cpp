@@ -402,11 +402,8 @@ VRMExtension::VRMExtension() {
 Ref<Material> VRMExtension::process_khr_material(Ref<StandardMaterial3D> orig_mat, Dictionary gltf_mat_props) {
 	// VRM spec requires support for the KHR_materials_unlit extension.
 	if (gltf_mat_props.has("extensions")) {
-		// TODO : Implement this extension upstream.
-		bool is_valid = false;
-		gltf_mat_props["extensions"].get("KHR_materials_unlit", &is_valid);
-		if (is_valid) {
-			// TODO : validate that this is sufficient.
+		Dictionary extensions = gltf_mat_props["extensions"];
+		if (extensions.has("KHR_materials_unlit")) {
 			orig_mat->set_shading_mode(BaseMaterial3D::SHADING_MODE_UNSHADED);
 		}
 	}
