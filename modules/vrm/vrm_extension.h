@@ -142,7 +142,6 @@ public:
 	void add_joints_recursive(Dictionary &new_joints_set, Array gltf_nodes, int bone, bool include_child_meshes = false);
 	void add_joint_set_as_skin(Dictionary obj, Dictionary new_joints_set);
 	bool add_vrm_nodes_to_skin(Dictionary obj);
-	TypedArray<Basis> apply_retarget(Ref<GLTFState> gstate, Node *root_node, Skeleton3D *skeleton, Ref<BoneMap> bone_map);
 	Error import_preflight(Ref<GLTFState> p_state, Vector<String> p_extensions) override;
 	Error import_post(Ref<GLTFState> p_state, Node *p_node) override;
 	Node3D *generate_scene_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Node *p_scene_parent) override {

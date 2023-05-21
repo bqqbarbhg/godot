@@ -145,7 +145,7 @@ void VRMExtension::skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Sk
 	HashMap<int, StringName> original_indices_to_new_bone_names;
 
 	// Rename bones to their humanoid equivalents.
-	for (int i = 0; i < p_bone_map->get_profile()->get_bone_size(); ++i) {
+	for (int i = 0; i <  p_skeleton->get_bone_count(); ++i) {
 		StringName bn = p_bone_map->find_profile_bone_name(p_skeleton->get_bone_name(i));
 		original_bone_names_to_indices[p_skeleton->get_bone_name(i)] = i;
 		original_indices_to_bone_names[i] = p_skeleton->get_bone_name(i);
@@ -197,7 +197,7 @@ void VRMExtension::skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Sk
 	nodes = p_base_scene->find_children("*");
 	while (!nodes.is_empty()) {
 		Node *nd = cast_to<Node>(nodes.pop_back());
-		if (nd && nd->has_method("_notify_skeleton_bones_renamed")) {
+		if (nd) {
 			nd->call("_notify_skeleton_bones_renamed", p_base_scene, p_skeleton, p_bone_map);
 		}
 	}
@@ -1364,15 +1364,6 @@ Error VRMExtension::import_preflight(Ref<GLTFState> p_state, Vector<String> p_ex
 	return OK;
 }
 
-TypedArray<Basis> VRMExtension::apply_retarget(Ref<GLTFState> gstate, Node *root_node, Skeleton3D *skeleton, Ref<BoneMap> bone_map) {
-	NodePath skeleton_path = root_node->get_path_to(skeleton);
-
-	TypedArray<Basis> poses = skeleton_rotate(root_node, skeleton, bone_map);
-	apply_rotation(root_node, skeleton);
-
-	return poses;
-}
-
 Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 	Dictionary gltf_json = gstate->get_json();
 	Dictionary gltf_vrm_extension = gltf_json["extensions"];
@@ -1436,15 +1427,9 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 			skeleton->set_motion_scale(1.0);
 		}
 	}
-	
-	bool do_retarget = false;
 
-	TypedArray<Basis> pose_diffs;
-	pose_diffs.resize(skeleton->get_bone_count());
-	pose_diffs.fill(Basis());
-	if (do_retarget) {
-		pose_diffs = apply_retarget(gstate, root_node, skeleton, human_bones_map);
-	}
+	TypedArray<Basis> pose_diffs = skeleton_rotate(root_node, skeleton, human_bones_map);
+	apply_rotation(root_node, skeleton);
 
 	skeleton->set_name("GeneralSkeleton");
 	skeleton->set_unique_name_in_owner(true);
