@@ -91,6 +91,9 @@ void VRMSecondary::_notification(int p_what) {
 			if (!top_level) {
 				return;
 			}
+			if (!get_parent()) {
+				return;
+			}
 			update_secondary_fixed = get_parent()->get("update_secondary_fixed");
 			show_gizmo_spring_bone = get_parent()->get("gizmo_spring_bone");
 
@@ -106,12 +109,18 @@ void VRMSecondary::_notification(int p_what) {
 			}
 			for (int collider_group_i = 0; collider_group_i < collider_groups.size(); ++collider_group_i) {
 				Ref<VRMColliderGroup> collider_group = collider_groups[collider_group_i];
+				if (collider_group.is_null()) {
+					continue;
+				}
 				Ref<VRMColliderGroup> new_collider_group = collider_group->duplicate(false);
 				new_collider_group->ready(skeleton);
 				collider_groups_internal.push_back(new_collider_group);
 			}
 			for (int spring_bone_i = 0; spring_bone_i < spring_bones.size(); ++spring_bone_i) {
 				Ref<VRMSpringBone> spring_bone = spring_bones[spring_bone_i];
+				if (spring_bone.is_null()) {
+					continue;
+				}
 				Ref<VRMSpringBone> new_spring_bone = spring_bone->duplicate(false);
 				Array tmp_colliders;
 				for (int collider_group_j = 0; collider_group_j < collider_groups.size(); ++collider_group_j) {
@@ -144,10 +153,16 @@ void VRMSecondary::_notification(int p_what) {
 				if (!Engine::get_singleton()->is_editor_hint() || check_for_editor_update()) {
 					for (int i = 0; i < collider_groups_internal.size(); ++i) {
 						Ref<VRMColliderGroup> collider_group = collider_groups_internal[i];
+						if (collider_group.is_null()) {
+							continue;
+						}
 						collider_group->process();
 					}
 					for (int i = 0; i < spring_bones_internal.size(); ++i) {
 						Ref<VRMSpringBone> spring_bone = spring_bones_internal[i];
+						if (spring_bone.is_null()) {
+							continue;
+						}
 						spring_bone->process(delta);
 					}
 					if (secondary_gizmo) {
