@@ -211,8 +211,10 @@ void VRMSecondary::_notification(int p_what) {
 		case NOTIFICATION_EXIT_TREE: {
 			set_physics_process(false);
 			set_process(false);
-			secondary_gizmo->queue_free();
-			secondary_gizmo = nullptr;
+			if (secondary_gizmo) {
+				secondary_gizmo->queue_free();
+				secondary_gizmo = nullptr;
+			}
 			break;
 		}
 	}
