@@ -110,8 +110,8 @@ void VRMSecondary::_notification(int p_what) {
 				new_collider_group->ready(skeleton);
 				collider_groups_internal.push_back(new_collider_group);
 			}
-			for (int i = 0; i < spring_bones.size(); ++i) {
-				Ref<VRMSpringBone> spring_bone = spring_bones[i];
+			for (int spring_bone_i = 0; spring_bone_i < spring_bones.size(); ++spring_bone_i) {
+				Ref<VRMSpringBone> spring_bone = spring_bones[spring_bone_i];
 				Ref<VRMSpringBone> new_spring_bone = spring_bone->duplicate(false);
 				Array tmp_colliders;
 				for (int collider_group_j = 0; collider_group_j < collider_groups.size(); ++collider_group_j) {
