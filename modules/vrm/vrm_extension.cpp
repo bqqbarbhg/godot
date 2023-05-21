@@ -138,10 +138,10 @@ void VRMExtension::adjust_mesh_zforward(Ref<ImporterMesh> mesh) {
 		Array bsarr = surf_data_by_mesh[surf_idx].get("bsarr");
 		Dictionary lods = surf_data_by_mesh[surf_idx].get("lods");
 		int fmt_compress_flags = surf_data_by_mesh[surf_idx].get("fmt_compress_flags");
-		String name = surf_data_by_mesh[surf_idx].get("name");
+		String surface_name = surf_data_by_mesh[surf_idx].get("name");
 		Ref<Material> mat = surf_data_by_mesh[surf_idx].get("mat");
 
-		mesh->add_surface(Mesh::PrimitiveType(prim), arr, bsarr, lods, mat, name, fmt_compress_flags);
+		mesh->add_surface(Mesh::PrimitiveType(prim), arr, bsarr, lods, mat, surface_name, fmt_compress_flags);
 	}
 }
 
@@ -1217,8 +1217,8 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 			if (bone_array.size() > 1) {
 				tmpname += vformat(" + %s roots", bone_array.size() - 1);
 			}
-			Ref<GLTFNode> gltfnode = nodes[int(bone_array[0])];
-			tmpname = gltfnode->get_name() + tmpname;
+			Ref<GLTFNode> bone_gltfnode = nodes[int(bone_array[0])];
+			tmpname = bone_gltfnode->get_name() + tmpname;
 			spring_bone->set_name(tmpname);
 		}
 
@@ -1334,8 +1334,8 @@ bool VRMExtension::add_vrm_nodes_to_skin(Dictionary obj) {
 	}
 
 	Array colliderGroups = secondaryAnimation.get("colliderGroups", Array());
-	for (int group_i = 0; group_i < colliderGroups.size(); ++group_i) {
-		Dictionary collider_group = colliderGroups[group_i];
+	for (int collider_group_i = 0; collider_group_i < colliderGroups.size(); ++collider_group_i) {
+		Dictionary collider_group = colliderGroups[collider_group_i];
 		int node = collider_group["node"];
 		if (node >= 0) {
 			new_joints_set[node] = true;
