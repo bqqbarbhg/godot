@@ -239,21 +239,6 @@ void VRMExtension::rotate_scene_180_inner(Node3D *p_node, Dictionary mesh_set, D
 	}
 }
 
-void VRMExtension::xtmp(Node3D *p_node, HashMap<Ref<Mesh>, bool> &mesh_set, HashMap<Ref<Skin>, bool> &skin_set) {
-	ImporterMeshInstance3D *importer_mesh_instance = Object::cast_to<ImporterMeshInstance3D>(p_node);
-	if (importer_mesh_instance) {
-		mesh_set[importer_mesh_instance->get_mesh()] = true;
-		skin_set[importer_mesh_instance->get_skin()] = true;
-	}
-
-	for (int child_i = 0; child_i < p_node->get_child_count(); ++child_i) {
-		Node3D *child = Object::cast_to<Node3D>(p_node->get_child(child_i));
-		if (child) {
-			xtmp(child, mesh_set, skin_set);
-		}
-	}
-}
-
 void VRMExtension::rotate_scene_180(Node3D *p_scene) {
 	Dictionary mesh_set;
 	Dictionary skin_set;

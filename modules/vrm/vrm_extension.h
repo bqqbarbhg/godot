@@ -119,7 +119,6 @@ public:
 	void adjust_mesh_zforward(Ref<ImporterMesh> mesh);
 	void skeleton_rename(Ref<GLTFState> gstate, Node *p_base_scene, Skeleton3D *p_skeleton, Ref<BoneMap> p_bone_map);
 	void rotate_scene_180_inner(Node3D *p_node, Dictionary mesh_set, Dictionary skin_set);
-	void xtmp(Node3D *p_node, HashMap<Ref<Mesh>, bool> &mesh_set, HashMap<Ref<Skin>, bool> &skin_set);
 	void rotate_scene_180(Node3D *p_scene);
 	TypedArray<Basis> skeleton_rotate(Node *p_base_scene, Skeleton3D *src_skeleton, Ref<BoneMap> p_bone_map);
 	void apply_rotation(Node *p_base_scene, Skeleton3D *src_skeleton);
