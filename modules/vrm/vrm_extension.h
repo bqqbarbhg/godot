@@ -32,7 +32,6 @@
 #define VRM_EXTENSION_H
 
 #include "core/crypto/crypto.h"
-#include "core/error/error_macros.h"
 #include "core/io/resource_loader.h"
 #include "core/math/basis.h"
 #include "core/math/transform_3d.h"
@@ -46,9 +45,6 @@
 #include "modules/gltf/gltf_defines.h"
 #include "modules/gltf/gltf_document.h"
 #include "modules/gltf/structures/gltf_node.h"
-#include "modules/vrm/vrm_constants.h"
-#include "modules/vrm/vrm_secondary.h"
-#include "modules/vrm/vrm_toplevel.h"
 #include "scene/3d/importer_mesh_instance_3d.h"
 #include "scene/3d/node_3d.h"
 #include "scene/resources/animation.h"
@@ -57,9 +53,9 @@
 #include "scene/resources/importer_mesh.h"
 #include "scene/resources/material.h"
 
-#include "vrm_collidergroup.h"
 #include "vrm_meta.h"
-#include "vrm_springbone.h"
+#include "vrm_constants.h"
+#include "vrm_toplevel.h"
 
 class VRMExtension : public GLTFDocumentExtension {
 	GDCLASS(VRMExtension, GLTFDocumentExtension);
@@ -113,9 +109,6 @@ private:
 
 	Ref<VRMConstants> vrm_constants_class;
 	Ref<VRMMeta> vrm_meta_class;
-	Ref<VRMColliderGroup> vrm_collidergroup;
-
-	VRMSecondary *vrm_secondary = nullptr;
 
 	Basis ROTATE_180_BASIS = Basis(Vector3(-1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, -1));
 	Transform3D ROTATE_180_TRANSFORM = Transform3D(ROTATE_180_BASIS, Vector3(0, 0, 0));
@@ -138,14 +131,12 @@ public:
 	Node *_get_skel_godot_node(Ref<GLTFState> gstate, Array nodes, Array skeletons, int skel_id);
 	Ref<Resource> _create_meta(Node *root_node, Dictionary vrm_extension, Ref<GLTFState> gstate, Ref<BoneMap> humanBones, Dictionary human_bone_to_idx, TypedArray<Basis> pose_diffs);
 	AnimationPlayer *create_animation_player(AnimationPlayer *animplayer, Dictionary vrm_extension, Ref<GLTFState> gstate, Dictionary human_bone_to_idx, TypedArray<Basis> pose_diffs);
-	void parse_secondary_node(Node3D *secondary_node, Dictionary vrm_extension, Ref<GLTFState> gstate, Array pose_diffs, bool is_vrm_0);
 	void add_joints_recursive(Dictionary &new_joints_set, Array gltf_nodes, int bone, bool include_child_meshes = false);
 	void add_joint_set_as_skin(Dictionary obj, Dictionary new_joints_set);
 	bool add_vrm_nodes_to_skin(Dictionary obj);
 	TypedArray<Basis> apply_retarget(Ref<GLTFState> gstate, Node *root_node, Skeleton3D *skeleton, Ref<BoneMap> bone_map);
 	Error import_preflight(Ref<GLTFState> p_state, Vector<String> p_extensions) override;
 	Error import_post(Ref<GLTFState> p_state, Node *p_node) override;
-	Node3D *generate_scene_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Node *p_scene_parent) override;
 };
 
 #endif // VRM_EXTENSION_H

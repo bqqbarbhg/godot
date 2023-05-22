@@ -29,7 +29,6 @@
 /**************************************************************************/
 
 #include "vrm_toplevel.h"
-#include "modules/vrm/vrm_secondary.h"
 #include "scene/main/node.h"
 
 void VRMTopLevel::_bind_methods() {
@@ -41,29 +40,9 @@ void VRMTopLevel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_vrm_animplayer"), &VRMTopLevel::get_vrm_animplayer);
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "vrm_animplayer"), "set_vrm_animplayer", "get_vrm_animplayer");
 
-	ClassDB::bind_method(D_METHOD("set_vrm_secondary", "path"), &VRMTopLevel::set_vrm_secondary);
-	ClassDB::bind_method(D_METHOD("get_vrm_secondary"), &VRMTopLevel::get_vrm_secondary);
-	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "vrm_secondary"), "set_vrm_secondary", "get_vrm_secondary");
-
 	ClassDB::bind_method(D_METHOD("set_vrm_meta", "meta"), &VRMTopLevel::set_vrm_meta);
 	ClassDB::bind_method(D_METHOD("get_vrm_meta"), &VRMTopLevel::get_vrm_meta);
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "vrm_meta", PROPERTY_HINT_RESOURCE_TYPE, "Resource"), "set_vrm_meta", "get_vrm_meta");
-
-	ClassDB::bind_method(D_METHOD("set_update_secondary_fixed", "value"), &VRMTopLevel::set_update_secondary_fixed);
-	ClassDB::bind_method(D_METHOD("get_update_secondary_fixed"), &VRMTopLevel::get_update_secondary_fixed);
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "update_secondary_fixed"), "set_update_secondary_fixed", "get_update_secondary_fixed");
-
-	ClassDB::bind_method(D_METHOD("set_update_in_editor", "value"), &VRMTopLevel::set_update_in_editor);
-	ClassDB::bind_method(D_METHOD("get_update_in_editor"), &VRMTopLevel::get_update_in_editor);
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "update_in_editor"), "set_update_in_editor", "get_update_in_editor");
-
-	ClassDB::bind_method(D_METHOD("set_gizmo_spring_bone", "value"), &VRMTopLevel::set_gizmo_spring_bone);
-	ClassDB::bind_method(D_METHOD("get_gizmo_spring_bone"), &VRMTopLevel::get_gizmo_spring_bone);
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "gizmo_spring_bone"), "set_gizmo_spring_bone", "get_gizmo_spring_bone");
-
-	ClassDB::bind_method(D_METHOD("set_gizmo_spring_bone_color", "color"), &VRMTopLevel::set_gizmo_spring_bone_color);
-	ClassDB::bind_method(D_METHOD("get_gizmo_spring_bone_color"), &VRMTopLevel::get_gizmo_spring_bone_color);
-	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "gizmo_spring_bone_color"), "set_gizmo_spring_bone_color", "get_gizmo_spring_bone_color");
 }
 
 void VRMTopLevel::set_vrm_skeleton(const NodePath &path) {
@@ -82,67 +61,10 @@ NodePath VRMTopLevel::get_vrm_animplayer() const {
 	return vrm_animplayer;
 }
 
-void VRMTopLevel::set_vrm_secondary(const NodePath &path) {
-	vrm_secondary = path;
-}
-
-NodePath VRMTopLevel::get_vrm_secondary() const {
-	return vrm_secondary;
-}
-
 void VRMTopLevel::set_vrm_meta(const Ref<Resource> &meta) {
 	vrm_meta = meta;
 }
 
 Ref<Resource> VRMTopLevel::get_vrm_meta() const {
 	return vrm_meta;
-}
-
-void VRMTopLevel::set_update_secondary_fixed(bool value) {
-	update_secondary_fixed = value;
-	VRMSecondary *secondary = cast_to<VRMSecondary>(get_node(vrm_secondary));
-	if (secondary) {
-		secondary->set_show_gizmo(true);
-	}
-}
-
-bool VRMTopLevel::get_update_secondary_fixed() const {
-	return update_secondary_fixed;
-}
-
-void VRMTopLevel::set_update_in_editor(bool value) {
-	update_in_editor = value;
-	VRMSecondary *secondary = cast_to<VRMSecondary>(get_node(vrm_secondary));
-	if (secondary) {
-		secondary->set_show_gizmo(true);
-	}
-}
-
-bool VRMTopLevel::get_update_in_editor() const {
-	return update_in_editor;
-}
-
-void VRMTopLevel::set_gizmo_spring_bone(bool value) {
-	gizmo_spring_bone = value;
-	VRMSecondary *secondary = cast_to<VRMSecondary>(get_node(vrm_secondary));
-	if (!secondary) {
-		return;
-	}
-	if (gizmo_spring_bone) {
-		secondary->set_show_gizmo(true);
-	} else {
-		secondary->set_show_gizmo(false);
-	}
-}
-
-bool VRMTopLevel::get_gizmo_spring_bone() const {
-	return gizmo_spring_bone;
-}
-
-void VRMTopLevel::set_gizmo_spring_bone_color(const Color &color) {
-	gizmo_spring_bone_color = color;
-}
-
-Color VRMTopLevel::get_gizmo_spring_bone_color() const {
-	return gizmo_spring_bone_color;
 }

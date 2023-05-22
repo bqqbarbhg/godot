@@ -37,7 +37,6 @@
 #include "modules/gltf/gltf_defines.h"
 #include "modules/gltf/gltf_document.h"
 #include "modules/vrm/vrm_meta.h"
-#include "modules/vrm/vrm_secondary.h"
 #include "modules/vrm/vrm_toplevel.h"
 #include "scene/resources/texture.h"
 
@@ -398,7 +397,6 @@ void VRMExtension::apply_rotation(Node *p_base_scene, Skeleton3D *src_skeleton) 
 VRMExtension::VRMExtension() {
 	vrm_constants_class.instantiate();
 	vrm_meta_class.instantiate();
-	vrm_collidergroup.instantiate();
 	FirstPersonParser.insert("Auto", FirstPersonFlag::Auto);
 	FirstPersonParser.insert("Both", FirstPersonFlag::Both);
 	FirstPersonParser.insert("FirstPersonOnly", FirstPersonFlag::FirstPersonOnly);
@@ -1128,149 +1126,6 @@ AnimationPlayer *VRMExtension::create_animation_player(AnimationPlayer *animplay
 	return animplayer;
 }
 
-void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_extension, Ref<GLTFState> gstate, Array pose_diffs, bool is_vrm_0) {
-	Array nodes = gstate->get_nodes();
-	Array skeletons = gstate->get_skeletons();
-
-	Vector3 offset_flip = is_vrm_0 ? Vector3(-1, 1, 1) : Vector3(1, 1, 1);
-
-	Dictionary vrm_extension_secondary_animation = vrm_extension["secondaryAnimation"];
-	Array vrm_extension_collider_groups = vrm_extension_secondary_animation["colliderGroups"];
-	Array collider_groups;
-	for (int group_i = 0; group_i < vrm_extension_collider_groups.size(); ++group_i) {
-		Dictionary cgroup = vrm_extension_collider_groups[group_i];
-		Ref<GLTFNode> gltfnode = nodes[int(cgroup["node"])];
-
-		Ref<VRMColliderGroup> collider_group;
-		collider_group.instantiate();
-		collider_group->get_sphere_colliders().clear(); // HACK HACK HACK
-
-		Basis pose_diff;
-		if (gltfnode->get_skeleton() == -1) {
-			Node *found_node = gstate->get_scene_node(int(cgroup["node"]));
-			collider_group->set_skeleton_or_node(secondary_node->get_path_to(found_node));
-			collider_group->set_bone("");
-			collider_group->set_name(found_node->get_name());
-		} else {
-			Skeleton3D *skeleton = cast_to<Skeleton3D>(_get_skel_godot_node(gstate, nodes, skeletons, gltfnode->get_skeleton()));
-			collider_group->set_skeleton_or_node(secondary_node->get_path_to(skeleton));
-			Ref<GLTFNode> bone_gltf_node = cast_to<GLTFNode>(nodes[int(cgroup["node"])]);
-			String bone_name = bone_gltf_node->get_name();
-			collider_group->set_bone(bone_name);
-			collider_group->set_name(collider_group->get_bone());
-			String collider_bone_name = collider_group->get_bone();
-			BoneId collider_bone_id = skeleton->find_bone(collider_bone_name);
-			if (collider_bone_id != -1) {
-				pose_diff = pose_diffs[collider_bone_id];
-			}
-		}
-		Array colliders = cgroup["colliders"];
-		for (int collider_i = 0; collider_i < colliders.size(); ++collider_i) {
-			Dictionary collider_info = colliders[collider_i];
-			Dictionary default_offset_obj;
-			default_offset_obj["x"] = 0.0;
-			default_offset_obj["y"] = 0.0;
-			default_offset_obj["z"] = 0.0;
-			Dictionary offset_obj = collider_info.get("offset", default_offset_obj);
-			Vector3 local_pos = pose_diff.xform(offset_flip) * Vector3(offset_obj["x"], offset_obj["y"], offset_obj["z"]);
-			float radius = collider_info.get("radius", 0.0);
-			collider_group->get_sphere_colliders().push_back(Plane(local_pos, radius));
-		}
-		collider_groups.push_back(collider_group);
-	}
-
-	Array vrm_extension_bone_groups = vrm_extension["secondaryAnimation"].get("boneGroups");
-	Array spring_bones;
-	for (int bone_group_i = 0; bone_group_i < vrm_extension_bone_groups.size(); ++bone_group_i) {
-		Dictionary sbone = vrm_extension_bone_groups[bone_group_i];
-		if (!sbone.has("bones")) {
-			continue;
-		}
-		Array array = sbone["bones"];
-		if (array.size() == 0) {
-			continue;
-		}
-		int first_bone_node = sbone["bones"].get(0);
-		Ref<GLTFNode> gltfnode = nodes[int(first_bone_node)];
-		Skeleton3D *skeleton = cast_to<Skeleton3D>(_get_skel_godot_node(gstate, nodes, skeletons, gltfnode->get_skeleton()));
-
-		Ref<VRMSpringBone> spring_bone;
-		spring_bone.instantiate();
-		spring_bone->set_comment(sbone.get("comment", ""));
-		spring_bone->set_stiffness_force(float(sbone.get("stiffiness", 1.0)));
-		spring_bone->set_gravity_power(float(sbone.get("gravityPower", 0.0)));
-		Dictionary default_gravity_dir;
-		default_gravity_dir["x"] = 0.0;
-		default_gravity_dir["y"] = -1.0;
-		default_gravity_dir["z"] = 0.0;
-		Dictionary gravity_dir = sbone.get("gravityDir", default_gravity_dir);
-		spring_bone->set_gravity_dir(Vector3(gravity_dir["x"], gravity_dir["y"], gravity_dir["z"]));
-		spring_bone->set_drag_force(float(sbone.get("dragForce", 0.4)));
-		spring_bone->set_hit_radius(float(sbone.get("hitRadius", 0.02)));
-
-		if (!spring_bone->get_comment().is_empty()) {
-			spring_bone->set_name(spring_bone->get_comment().split("\n")[0]);
-		} else {
-			String tmpname;
-			Array bone_array = sbone.get("bones", Array());
-			if (bone_array.size() > 1) {
-				tmpname += vformat(" + %s roots", bone_array.size() - 1);
-			}
-			Ref<GLTFNode> bone_gltfnode = nodes[int(bone_array[0])];
-			tmpname = bone_gltfnode->get_name() + tmpname;
-			spring_bone->set_name(tmpname);
-		}
-
-		spring_bone->get_collider_groups().clear(); // HACK HACK HACK
-
-		Array colliderGroups = sbone.get("colliderGroups", Array());
-		for (int collider_group_i = 0; collider_group_i < colliderGroups.size(); ++collider_group_i) {
-			int cgroup_idx = colliderGroups[collider_group_i];
-			spring_bone->get_collider_groups().push_back(collider_groups[int(cgroup_idx)]);
-		}
-
-		spring_bone->get_root_bones().clear(); // HACK HACK HACK
-		Array bones = sbone["bones"];
-		for (int bone_i = 0; bone_i < bones.size(); ++bone_i) {
-			int bone_node = bones[bone_i];
-			Ref<GLTFNode> gltf_node = nodes[int(bone_node)];
-			String bone_name = gltf_node->get_name();
-			if (skeleton->find_bone(bone_name) == -1) {
-				// Note that we make an assumption that a given SpringBone object is
-				// only part of a single Skeleton*. This error might print if a given
-				// SpringBone references bones from multiple Skeleton's.
-				print_error("Failed to find node " + itos(bone_node) + " in skel " + String(skeleton->get_path()));
-			} else {
-				spring_bone->get_root_bones().push_back(bone_name);
-			}
-		}
-
-		// Center commonly points outside of the glTF Skeleton, such as the root node.
-		spring_bone->set_center_node(secondary_node->get_path_to(secondary_node->get_owner()));
-		spring_bone->set_center_bone(String());
-		int center_node_idx = sbone.get("center", -1);
-		if (center_node_idx != -1) {
-			Ref<GLTFNode> center_gltfnode = nodes[int(center_node_idx)];
-			String bone_name = center_gltfnode->get_name();
-			if (center_gltfnode->get_skeleton() == gltfnode->get_skeleton() && skeleton->find_bone(bone_name) != -1) {
-				spring_bone->set_center_bone(bone_name);
-				spring_bone->set_center_node(NodePath());
-			} else {
-				spring_bone->set_center_bone(String());
-				spring_bone->set_center_node(String(secondary_node->get_path_to(secondary_node->get_owner())) + "/" + String(secondary_node->get_owner()->get_path_to(gstate->get_scene_node(int(center_node_idx)))));
-				if (spring_bone->get_center_node().is_empty()) {
-					print_error("Failed to find center scene node " + itos(center_node_idx));
-					spring_bone->set_center_node(secondary_node->get_path_to(secondary_node->get_owner())); // Fallback
-				}
-			}
-		}
-
-		spring_bones.push_back(spring_bone);
-	}
-
-	secondary_node->set("spring_bones", spring_bones);
-	secondary_node->set("collider_groups", collider_groups);
-}
 
 void VRMExtension::add_joints_recursive(Dictionary &new_joints_set, Array gltf_nodes, int bone, bool include_child_meshes) {
 	if (bone < 0) {
@@ -1475,32 +1330,7 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 	vrm_meta->set_humanoid_skeleton_path(humanoid_skeleton_path);
 	vrm_top_level->set_vrm_meta(vrm_meta);
 
-	Array collider_groups = vrm_extension["secondaryAnimation"].get("colliderGroups");
-	int32_t collider_groups_size = collider_groups.size();
-	Array bone_groups = vrm_extension["secondaryAnimation"].get("boneGroups");
-	int32_t bone_group_size = bone_groups.size();
 	vrm_top_level->set_unique_name_in_owner(true);
-	if (vrm_extension.has("secondaryAnimation") &&
-			(collider_groups_size > 0 ||
-					bone_group_size > 0)) {
-		Node3D *secondary_node = cast_to<Node3D>(root_node->get_node(NodePath("secondary")));
-		secondary_node->reparent(vrm_top_level, true);
-		NodePath secondary_path = String(vrm_top_level->get_path_to(root_node)) + "/" + root_node->get_path_to(secondary_node);
-		vrm_top_level->set_vrm_secondary(secondary_path);
-		parse_secondary_node(secondary_node, vrm_extension, gstate, pose_diffs, is_vrm_0);
-	}
 	return OK;
 }
-
-Node3D *VRMExtension::generate_scene_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Node *p_scene_parent) {
-	if (p_gltf_node->get_mesh() != -1) {
-		return nullptr;
-	}
-	if (p_gltf_node->get_name() == "secondary") {
-		VRMSecondary *new_secondary = memnew(VRMSecondary);
-		new_secondary->set_transform(p_gltf_node->get_xform());
-		new_secondary->set_name(p_gltf_node->get_name());
-		return new_secondary;
-	}
-	return nullptr;
-}
+ 

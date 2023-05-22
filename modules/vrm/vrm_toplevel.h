@@ -41,14 +41,8 @@ class VRMTopLevel : public Node3D {
 private:
 	NodePath vrm_skeleton;
 	NodePath vrm_animplayer;
-	NodePath vrm_secondary;
 
 	Ref<Resource> vrm_meta;
-
-	bool update_secondary_fixed = false;
-	bool update_in_editor = true;
-	bool gizmo_spring_bone = true;
-	Color gizmo_spring_bone_color = Color::named("lightyellow");
 
 protected:
 	static void _bind_methods();
@@ -63,23 +57,8 @@ public:
 	void set_vrm_animplayer(const NodePath &path);
 	NodePath get_vrm_animplayer() const;
 
-	void set_vrm_secondary(const NodePath &path);
-	NodePath get_vrm_secondary() const;
-
 	void set_vrm_meta(const Ref<Resource> &meta);
 	Ref<Resource> get_vrm_meta() const;
-
-	void set_update_secondary_fixed(bool value);
-	bool get_update_secondary_fixed() const;
-
-	void set_update_in_editor(bool value);
-	bool get_update_in_editor() const;
-
-	void set_gizmo_spring_bone(bool value);
-	bool get_gizmo_spring_bone() const;
-
-	void set_gizmo_spring_bone_color(const Color &color);
-	Color get_gizmo_spring_bone_color() const;
 };
 
 #endif // VRM_VRMTOPLEVEL_H

@@ -30,13 +30,9 @@
 
 #include "register_types.h"
 
-#include "vrm_collidergroup.h"
 #include "vrm_constants.h"
 #include "vrm_extension.h"
 #include "vrm_meta.h"
-#include "vrm_secondary.h"
-#include "vrm_spring_bone_logic.h"
-#include "vrm_springbone.h"
 #include "vrm_toplevel.h"
 
 #if defined(TOOLS_ENABLED)
@@ -52,19 +48,14 @@ static void _editor_init() {
 
 void initialize_vrm_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		GDREGISTER_CLASS(VRMSpringBone);
 		GDREGISTER_CLASS(VRMTopLevel);
-		GDREGISTER_CLASS(VRMSpringBoneLogic);
-		GDREGISTER_CLASS(VRMSecondary);
 		GDREGISTER_CLASS(VRMExtension);
 		GDREGISTER_CLASS(VRMConstants);
-		GDREGISTER_CLASS(VRMColliderGroup);
 		GDREGISTER_CLASS(VRMMeta);
 	}
 
 #ifdef TOOLS_ENABLED
 	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
-		// Editor-specific API.
 		ClassDB::APIType prev_api = ClassDB::get_current_api();
 		ClassDB::set_current_api(ClassDB::API_EDITOR);
 
