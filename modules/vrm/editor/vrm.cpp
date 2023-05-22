@@ -35,7 +35,7 @@ uint32_t EditorSceneFormatImporterVRM::get_import_flags() const {
 }
 
 void EditorSceneFormatImporterVRM::get_extensions(List<String> *r_extensions) const {
-	r_extensions->push_back("vrm");
+	r_extensions->push_back("vrm0");
 }
 
 Node *EditorSceneFormatImporterVRM::import_scene(const String &p_path, uint32_t p_flags, const HashMap<StringName, Variant> &p_options, List<String> *r_missing_deps, Error *r_err) {
