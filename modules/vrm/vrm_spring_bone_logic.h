@@ -59,18 +59,15 @@ public:
 
 	Transform3D initial_transform;
 
-	Transform3D global_pose_to_local_pose(Skeleton3D *p_skeleton, int p_bone_idx, Transform3D p_global_pose);
-	Transform3D local_pose_to_global_pose(Skeleton3D *p_skeleton, int p_bone_idx, Transform3D p_local_pose);
-
 	Transform3D get_transform(Skeleton3D *skel);
 	Quaternion get_rotation_relative_to_origin(Skeleton3D *skel);
 	Transform3D get_global_pose(Skeleton3D *skel);
 	Quaternion get_local_pose_rotation(Skeleton3D *skel);
 	void reset(Skeleton3D *skel);
 
-	void ready(Skeleton3D *skel, int idx, const Vector3 &center, const Vector3 &local_child_position, const Transform3D &default_pose);
-	void update(Skeleton3D *skel, const Vector3 &center, float stiffness_force, float drag_force, const Vector3 &external, const Array &colliders);
-	Vector3 collision(Skeleton3D *skel, const Array &colliders, const Vector3 &_next_tail);
+	void ready(Skeleton3D *skel, int idx, Vector3 center, Vector3 local_child_position, Transform3D default_pose);
+	void update(Skeleton3D *skel, Vector3 center, float stiffness_force, float drag_force, Vector3 external, Array colliders);
+	Vector3 collision(Skeleton3D *skel, const Array colliders, Vector3 _next_tail);
 	VRMSpringBoneLogic() {}
 };
 

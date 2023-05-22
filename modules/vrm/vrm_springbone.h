@@ -68,7 +68,7 @@ public:
 
 	Array verlets;
 	Array colliders;
-	Vector3 center;
+	Vector3 skeleton_space_center;
 	Skeleton3D *skeleton = nullptr;
 
 public:
@@ -98,7 +98,7 @@ protected:
 
 public:
 	void setup(bool force = false);
-	void process(float delta);
+	void process(float delta, Node3D *p_current_node);
 	void setup_recursive(int id, Transform3D center_tr);
 	void ready(Skeleton3D *ready_skel, Array colliders_ref);
 };

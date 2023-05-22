@@ -1246,7 +1246,7 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 		}
 
 		// Center commonly points outside of the glTF Skeleton, such as the root node.
-		spring_bone->set_center_node(secondary_node->get_path_to(secondary_node));
+		spring_bone->set_center_node(secondary_node->get_path_to(secondary_node->get_owner()));
 		spring_bone->set_center_bone(String());
 		int center_node_idx = sbone.get("center", -1);
 		if (center_node_idx != -1) {
@@ -1257,10 +1257,10 @@ void VRMExtension::parse_secondary_node(Node3D *secondary_node, Dictionary vrm_e
 				spring_bone->set_center_node(NodePath());
 			} else {
 				spring_bone->set_center_bone(String());
-				spring_bone->set_center_node(secondary_node->get_path_to(gstate->get_scene_node(int(center_node_idx))));
+				spring_bone->set_center_node(String(secondary_node->get_path_to(secondary_node->get_owner())) + "/" + String(secondary_node->get_owner()->get_path_to(gstate->get_scene_node(int(center_node_idx)))));
 				if (spring_bone->get_center_node().is_empty()) {
 					print_error("Failed to find center scene node " + itos(center_node_idx));
-					spring_bone->set_center_node(secondary_node->get_path_to(secondary_node)); // Fallback
+					spring_bone->set_center_node(secondary_node->get_path_to(secondary_node->get_owner())); // Fallback
 				}
 			}
 		}

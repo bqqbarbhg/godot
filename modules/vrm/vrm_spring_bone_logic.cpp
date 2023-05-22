@@ -33,44 +33,13 @@
 
 void VRMSpringBoneLogic::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("ready", "skeleton", "bone_idx", "center", "local_child_position", "default_pose"), &VRMSpringBoneLogic::ready);
-	ClassDB::bind_method(D_METHOD("global_pose_to_local_pose", "skeleton", "bone_idx", "global_pose"), &VRMSpringBoneLogic::global_pose_to_local_pose);
-	ClassDB::bind_method(D_METHOD("local_pose_to_global_pose", "skeleton", "bone_idx", "local_pose"), &VRMSpringBoneLogic::local_pose_to_global_pose);
-
 	ClassDB::bind_method(D_METHOD("get_transform", "skeleton"), &VRMSpringBoneLogic::get_transform);
 	ClassDB::bind_method(D_METHOD("get_rotation_relative_to_origin", "skeleton"), &VRMSpringBoneLogic::get_rotation_relative_to_origin);
 	ClassDB::bind_method(D_METHOD("get_global_pose", "skeleton"), &VRMSpringBoneLogic::get_global_pose);
 	ClassDB::bind_method(D_METHOD("get_local_pose_rotation", "skeleton"), &VRMSpringBoneLogic::get_local_pose_rotation);
 	ClassDB::bind_method(D_METHOD("reset", "skeleton"), &VRMSpringBoneLogic::reset);
-
 	ClassDB::bind_method(D_METHOD("update", "skeleton", "center", "stiffness_force", "drag_force", "external", "colliders"), &VRMSpringBoneLogic::update);
 	ClassDB::bind_method(D_METHOD("collision", "skeleton", "colliders", "next_tail"), &VRMSpringBoneLogic::collision);
-}
-
-Transform3D VRMSpringBoneLogic::global_pose_to_local_pose(Skeleton3D *p_skeleton, int p_bone_idx, Transform3D p_global_pose) {
-	int bone_size = p_skeleton->get_bone_count();
-	if (p_bone_idx < 0 || p_bone_idx >= bone_size) {
-		return Transform3D();
-	}
-	if (p_skeleton->get_bone_parent(p_bone_idx) >= 0) {
-		int parent_bone_idx = p_skeleton->get_bone_parent(p_bone_idx);
-		Transform3D conversion_transform = p_skeleton->get_bone_global_pose(parent_bone_idx).affine_inverse();
-		return conversion_transform * p_global_pose;
-	} else {
-		return p_global_pose;
-	}
-}
-
-Transform3D VRMSpringBoneLogic::local_pose_to_global_pose(Skeleton3D *p_skeleton, int p_bone_idx, Transform3D p_local_pose) {
-	int bone_size = p_skeleton->get_bone_count();
-	if (p_bone_idx < 0 || p_bone_idx >= bone_size) {
-		return Transform3D();
-	}
-	if (p_skeleton->get_bone_parent(p_bone_idx) >= 0) {
-		int parent_bone_idx = p_skeleton->get_bone_parent(p_bone_idx);
-		return p_skeleton->get_bone_global_pose(parent_bone_idx) * p_local_pose;
-	} else {
-		return p_local_pose;
-	}
 }
 
 Transform3D VRMSpringBoneLogic::get_transform(Skeleton3D *skel) {
@@ -93,7 +62,7 @@ void VRMSpringBoneLogic::reset(Skeleton3D *skel) {
 	skel->set_bone_global_pose_override(bone_idx, initial_transform, 1.0, true);
 }
 
-void VRMSpringBoneLogic::ready(Skeleton3D *skel, int idx, const Vector3 &center, const Vector3 &local_child_position, const Transform3D &default_pose) {
+void VRMSpringBoneLogic::ready(Skeleton3D *skel, int idx, Vector3 center, Vector3 local_child_position, Transform3D default_pose) {
 	initial_transform = default_pose;
 	bone_idx = idx;
 	Vector3 world_child_position = get_transform(skel).xform(local_child_position);
@@ -107,15 +76,9 @@ void VRMSpringBoneLogic::ready(Skeleton3D *skel, int idx, const Vector3 &center,
 	length = local_child_position.length();
 }
 
-void VRMSpringBoneLogic::update(Skeleton3D *skel, const Vector3 &center, float stiffness_force, float drag_force, const Vector3 &external, const Array &colliders) {
-	Vector3 tmp_current_tail, tmp_prev_tail;
-	if (center != Vector3()) {
-		tmp_current_tail = Transform3D(Basis(), center).xform(current_tail);
-		tmp_prev_tail = Transform3D(Basis(), center).xform(prev_tail);
-	} else {
-		tmp_current_tail = current_tail;
-		tmp_prev_tail = prev_tail;
-	}
+void VRMSpringBoneLogic::update(Skeleton3D *skel, Vector3 center, float stiffness_force, float drag_force, Vector3 external, Array colliders) {
+	Vector3 tmp_current_tail = Transform3D(Basis(), center).xform(current_tail);
+	Vector3 tmp_prev_tail = Transform3D(Basis(), center).xform(prev_tail);
 
 	// Integrate the velocity verlet.
 	Vector3 next_tail = tmp_current_tail + (tmp_current_tail - tmp_prev_tail) * (1.0 - drag_force) + (get_rotation_relative_to_origin(skel).xform(bone_axis)) * stiffness_force + external;
@@ -128,13 +91,9 @@ void VRMSpringBoneLogic::update(Skeleton3D *skel, const Vector3 &center, float s
 	next_tail = collision(skel, colliders, next_tail);
 
 	// Recording the current tails for next process.
-	if (center != Vector3()) {
-		prev_tail = Transform3D(Basis(), center).xform_inv(current_tail);
-		current_tail = Transform3D(Basis(), center).xform_inv(next_tail);
-	} else {
-		prev_tail = current_tail;
-		current_tail = next_tail;
-	}
+	
+	prev_tail = Transform3D(Basis(), center).xform_inv(current_tail);
+	current_tail = Transform3D(Basis(), center).xform_inv(next_tail);
 
 	// Apply the rotation.
 	Quaternion ft = Quaternion(get_rotation_relative_to_origin(skel).xform(bone_axis), next_tail - get_transform(skel).origin).normalized();
@@ -150,7 +109,7 @@ void VRMSpringBoneLogic::update(Skeleton3D *skel, const Vector3 &center, float s
 	skel->set_bone_pose_scale(bone_idx, local_pose.basis.get_scale());
 }
 
-Vector3 VRMSpringBoneLogic::collision(Skeleton3D *skel, const Array &colliders, const Vector3 &_next_tail) {
+Vector3 VRMSpringBoneLogic::collision(Skeleton3D *skel, const Array colliders, const Vector3 _next_tail) {
 	Vector3 out = _next_tail;
 	for (int i = 0; i < colliders.size(); ++i) {
 		Ref<SphereCollider> collider = colliders[i];

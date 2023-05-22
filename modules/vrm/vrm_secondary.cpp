@@ -164,7 +164,7 @@ void VRMSecondary::_notification(int p_what) {
 						if (spring_bone.is_null()) {
 							continue;
 						}
-						spring_bone->process(delta);
+						spring_bone->process(delta, this);
 					}
 					if (secondary_gizmo) {
 						secondary_gizmo->draw();
@@ -196,7 +196,7 @@ void VRMSecondary::_notification(int p_what) {
 						if (spring_bone.is_null()) {
 							continue;
 						}
-						spring_bone->process(delta);
+						spring_bone->process(delta, this);
 					}
 					if (secondary_gizmo) {
 						secondary_gizmo->draw();

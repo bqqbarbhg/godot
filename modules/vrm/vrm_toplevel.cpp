@@ -102,7 +102,7 @@ void VRMTopLevel::set_update_secondary_fixed(bool value) {
 	update_secondary_fixed = value;
 	VRMSecondary *secondary = cast_to<VRMSecondary>(get_node(vrm_secondary));
 	if (secondary) {
-		secondary->_notification(NOTIFICATION_READY);
+		secondary->set_show_gizmo(true);
 	}
 }
 
@@ -114,7 +114,7 @@ void VRMTopLevel::set_update_in_editor(bool value) {
 	update_in_editor = value;
 	VRMSecondary *secondary = cast_to<VRMSecondary>(get_node(vrm_secondary));
 	if (secondary) {
-		secondary->_notification(NOTIFICATION_READY);
+		secondary->set_show_gizmo(true);
 	}
 }
 
@@ -129,9 +129,9 @@ void VRMTopLevel::set_gizmo_spring_bone(bool value) {
 		return;
 	}
 	if (gizmo_spring_bone) {
-		secondary->_notification(NOTIFICATION_READY);
+		secondary->set_show_gizmo(true);
 	} else {
-		secondary->_notification(NOTIFICATION_EXIT_TREE);
+		secondary->set_show_gizmo(false);
 	}
 }
 

@@ -34,6 +34,7 @@
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/node_3d.h"
 #include "scene/3d/skeleton_3d.h"
+#include "scene/main/node.h"
 #include "scene/resources/material.h"
 
 #include "vrm_toplevel.h"
@@ -52,6 +53,21 @@ public:
 
 	bool update_secondary_fixed = false;
 	bool update_in_editor = false;
+	bool show_gizmo = false;
+
+	void set_show_gizmo(bool p_show_gizmo) {
+		show_gizmo = p_show_gizmo;
+		if(!show_gizmo) {
+			spring_bones_internal.clear();
+			collider_groups_internal.clear();
+		} else {
+			_notification(NOTIFICATION_READY);
+		}	
+	}
+
+	bool get_show_gizmo() const {
+		return show_gizmo;
+	}
 
 	Array spring_bones_internal;
 	Array collider_groups_internal;

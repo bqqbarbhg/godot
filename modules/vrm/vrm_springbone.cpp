@@ -29,6 +29,7 @@
 /**************************************************************************/
 
 #include "vrm_springbone.h"
+#include "core/string/node_path.h"
 
 String VRMSpringBone::get_comment() const {
 	return comment;
@@ -135,7 +136,7 @@ void VRMSpringBone::setup(bool force) {
 	}
 }
 
-void VRMSpringBone::process(float delta) {
+void VRMSpringBone::process(float delta, Node3D *p_current_node) {
 	if (verlets.is_empty()) {
 		if (root_bones.is_empty()) {
 			return;
@@ -146,13 +147,27 @@ void VRMSpringBone::process(float delta) {
 	float stiffness = stiffness_force * delta;
 	Vector3 external = gravity_dir * (gravity_power * delta);
 
+	if (!center_bone.is_empty()) {
+		skeleton_space_center = skeleton->get_bone_global_pose(skeleton->find_bone(center_bone)).origin;
+	} else if (center_node != NodePath()) {
+        Node3D *node = cast_to<Node3D>(p_current_node->get_node(center_node));
+        if (node) {
+            skeleton_space_center = node->get_global_transform().origin;
+        } else {
+            Node3D *root_node = cast_to<Node3D>(skeleton->get_owner());
+            if (root_node) {
+                skeleton_space_center = (skeleton->get_global_transform() * skeleton->get_bone_global_pose(skeleton->find_bone("Root")).origin;
+            }
+        }
+    }
+
 	for (int32_t verlet_i = 0; verlet_i < verlets.size(); verlet_i++) {
 		Ref<VRMSpringBoneLogic> verlet = verlets[verlet_i];
 		if (verlet.is_null()) {
 			continue;
 		}
 		verlet->radius = hit_radius;
-		verlet->update(skeleton, center, stiffness, drag_force, external, colliders);
+		verlet->update(skeleton, skeleton_space_center, stiffness, drag_force, external, colliders);
 	}
 }
 
