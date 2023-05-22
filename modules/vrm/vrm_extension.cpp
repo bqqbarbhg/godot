@@ -1111,7 +1111,6 @@ AnimationPlayer *VRMExtension::create_animation_player(AnimationPlayer *animplay
 	return animplayer;
 }
 
-
 void VRMExtension::add_joints_recursive(Dictionary &new_joints_set, Array gltf_nodes, int bone, bool include_child_meshes) {
 	if (bone < 0) {
 		return;
@@ -1318,4 +1317,3 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 	vrm_top_level->set_unique_name_in_owner(true);
 	return OK;
 }
- 

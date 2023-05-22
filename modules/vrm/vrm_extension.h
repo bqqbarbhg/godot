@@ -53,8 +53,8 @@
 #include "scene/resources/importer_mesh.h"
 #include "scene/resources/material.h"
 
-#include "vrm_meta.h"
 #include "vrm_constants.h"
+#include "vrm_meta.h"
 #include "vrm_toplevel.h"
 
 class VRMExtension : public GLTFDocumentExtension {
