@@ -40,7 +40,7 @@ class VRMConstants : public RefCounted {
 	Dictionary vrm_to_human_bone_dict;
 
 public:
-	VRMConstants(bool is_vrm_0 = true);
+	VRMConstants(bool p_is_vrm_0 = true);
 	Dictionary get_vrm_to_human_bone() const {
 		return vrm_to_human_bone_dict.duplicate();
 	}

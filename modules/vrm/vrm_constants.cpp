@@ -30,7 +30,7 @@
 
 #include "vrm_constants.h"
 
-VRMConstants::VRMConstants(bool is_vrm_0) {
+VRMConstants::VRMConstants(bool p_is_vrm_0) {
 	vrm_to_human_bone.insert("hips", "Hips");
 	vrm_to_human_bone.insert("spine", "Spine");
 	vrm_to_human_bone.insert("chest", "Chest");
@@ -86,7 +86,7 @@ VRMConstants::VRMConstants(bool is_vrm_0) {
 	vrm_to_human_bone.insert("rightLowerLeg", "RightLowerLeg");
 	vrm_to_human_bone.insert("rightFoot", "RightFoot");
 	vrm_to_human_bone.insert("rightToes", "RightToes");
-	if (is_vrm_0) {
+	if (p_is_vrm_0) {
 		vrm_to_human_bone["leftThumbIntermediate"] = "LeftThumbProximal";
 		vrm_to_human_bone["leftThumbProximal"] = "LeftThumbMetacarpal";
 		vrm_to_human_bone["rightThumbIntermediate"] = "RightThumbProximal";

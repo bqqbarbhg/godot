@@ -40,7 +40,7 @@
 #include "modules/vrm/vrm_toplevel.h"
 #include "scene/resources/texture.h"
 
-void VRMExtension::adjust_mesh_zforward(Ref<ImporterMesh> mesh) {
+void VRMExtension::adjust_mesh_z_forward(Ref<ImporterMesh> mesh) {
 	int surf_count = mesh->get_surface_count();
 	Array surf_data_by_mesh;
 	Vector<String> blendshapes;
@@ -248,7 +248,7 @@ void VRMExtension::rotate_scene_180(Node3D *p_scene) {
 	for (int32_t mesh_i = 0; mesh_i < mesh_set_keys.size(); mesh_i++) {
 		Ref<ImporterMesh> mesh = mesh_set_keys[mesh_i];
 		ERR_CONTINUE(mesh.is_null());
-		adjust_mesh_zforward(mesh);
+		adjust_mesh_z_forward(mesh);
 	}
 	for (int32_t skin_set_i = 0; skin_set_i < skin_set.size(); skin_set_i++) {
 		Ref<Skin> skin = skin_set.keys()[skin_set_i];
@@ -720,7 +720,7 @@ void VRMExtension::_update_materials(Dictionary vrm_extension, Ref<GLTFState> gs
 	}
 }
 
-Node *VRMExtension::_get_skel_godot_node(Ref<GLTFState> gstate, Array nodes, Array skeletons, int skel_id) {
+Node *VRMExtension::_get_skeleton_godot_node(Ref<GLTFState> gstate, Array nodes, Array skeletons, int skel_id) {
 	for (int node_i = 0; node_i < nodes.size(); ++node_i) {
 		Ref<GLTFNode> gltf_node = nodes[node_i];
 		if (gltf_node->get_skeleton() == skel_id) {
@@ -731,7 +731,7 @@ Node *VRMExtension::_get_skel_godot_node(Ref<GLTFState> gstate, Array nodes, Arr
 	return nullptr;
 }
 
-Ref<Resource> VRMExtension::_create_meta(Node *root_node, Dictionary vrm_extension, Ref<GLTFState> gstate, Ref<BoneMap> humanBones, Dictionary human_bone_to_idx, TypedArray<Basis> pose_diffs) {
+Ref<Resource> VRMExtension::_create_metadata(Node *root_node, Dictionary vrm_extension, Ref<GLTFState> gstate, Ref<BoneMap> humanBones, Dictionary human_bone_to_idx, TypedArray<Basis> pose_diffs) {
 	TypedArray<GLTFNode> nodes = gstate->get_nodes();
 
 	Dictionary firstperson = vrm_extension.get("firstPerson", Variant());
@@ -953,7 +953,7 @@ AnimationPlayer *VRMExtension::create_animation_player(AnimationPlayer *animplay
 	}
 	if (head_bone_idx >= 0) {
 		Ref<GLTFNode> headNode = nodes[head_bone_idx];
-		NodePath skeletonPath = animplayer->get_parent()->get_path_to(_get_skel_godot_node(gstate, nodes, skeletons, headNode->get_skeleton()));
+		NodePath skeletonPath = animplayer->get_parent()->get_path_to(_get_skeleton_godot_node(gstate, nodes, skeletons, headNode->get_skeleton()));
 		String headBone = headNode->get_name();
 		String headPath = String(skeletonPath) + ":" + headBone;
 		int firstperstrack = firstpersanim->add_track(Animation::TYPE_SCALE_3D);
@@ -1014,14 +1014,14 @@ AnimationPlayer *VRMExtension::create_animation_player(AnimationPlayer *animplay
 
 		if (lefteye > 0) {
 			Ref<GLTFNode> leftEyeNode = nodes[lefteye];
-			Skeleton3D *skeleton = cast_to<Skeleton3D>(_get_skel_godot_node(gstate, nodes, skeletons, leftEyeNode->get_skeleton()));
+			Skeleton3D *skeleton = cast_to<Skeleton3D>(_get_skeleton_godot_node(gstate, nodes, skeletons, leftEyeNode->get_skeleton()));
 			NodePath skeletonPath = animplayer->get_parent()->get_path_to(skeleton);
 			leftEyePath = String(skeletonPath) + ":" + leftEyeNode->get_name();
 		}
 
 		if (righteye > 0) {
 			Ref<GLTFNode> rightEyeNode = nodes[righteye];
-			Skeleton3D *skeleton = cast_to<Skeleton3D>(_get_skel_godot_node(gstate, nodes, skeletons, rightEyeNode->get_skeleton()));
+			Skeleton3D *skeleton = cast_to<Skeleton3D>(_get_skeleton_godot_node(gstate, nodes, skeletons, rightEyeNode->get_skeleton()));
 			NodePath skeletonPath = animplayer->get_parent()->get_path_to(skeleton);
 			rightEyePath = String(skeletonPath) + ":" + rightEyeNode->get_name();
 		}
@@ -1254,7 +1254,7 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 
 	TypedArray<GLTFSkeleton> skeletons = gstate->get_skeletons();
 	Ref<GLTFNode> hips_node = gstate->get_nodes()[human_bone_to_idx["hips"]];
-	Skeleton3D *skeleton = cast_to<Skeleton3D>(_get_skel_godot_node(gstate, gstate->get_nodes(), skeletons, hips_node->get_skeleton()));
+	Skeleton3D *skeleton = cast_to<Skeleton3D>(_get_skeleton_godot_node(gstate, gstate->get_nodes(), skeletons, hips_node->get_skeleton()));
 	if (!skeleton) {
 		ERR_PRINT("Failed to find the skeleton.");
 		return ERR_INVALID_DATA;
@@ -1310,7 +1310,7 @@ Error VRMExtension::import_post(Ref<GLTFState> gstate, Node *node) {
 	NodePath skeleton_path = String(vrm_top_level->get_path_to(root_node)) + "/" + root_node->get_path_to(skeleton);
 	vrm_top_level->set_vrm_skeleton(skeleton_path);
 
-	Ref<VRMMeta> vrm_meta = _create_meta(root_node, vrm_extension, gstate, human_bones_map, human_bone_to_idx, pose_diffs);
+	Ref<VRMMeta> vrm_meta = _create_metadata(root_node, vrm_extension, gstate, human_bones_map, human_bone_to_idx, pose_diffs);
 	NodePath humanoid_skeleton_path = root_node->get_path_to(skeleton);
 	vrm_meta->set_humanoid_skeleton_path(humanoid_skeleton_path);
 	vrm_top_level->set_vrm_meta(vrm_meta);
