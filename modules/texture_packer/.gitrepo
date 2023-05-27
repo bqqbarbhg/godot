@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:V-Sekai/godot_texture_packer.git
+	branch = master
+	commit = 2e8f8b970f134d9b9633670505840f8d34d6f14d
+	parent = 9f9983656056a625e716b4a9b1db1a0d9cb3d527
+	method = merge
+	cmdver = 0.4.6
