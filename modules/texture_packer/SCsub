@@ -1,0 +1,19 @@
+import os
+
+Import("env")
+
+module_env = env.Clone()
+
+sources = [
+    "register_types.cpp",
+    "texture_packer.cpp",
+    "rectpack2D/pack.cpp",
+    "texture_merger.cpp",
+    "texture_resource/packer_image_resource.cpp",
+    "layers/texture_layer_merger.cpp",
+]
+
+module_env.add_source_files(env.modules_sources, sources)
+
+if env.editor_build:
+    module_env.add_source_files(env.modules_sources, "editor/*.cpp")
