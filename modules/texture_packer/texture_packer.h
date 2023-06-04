@@ -26,10 +26,10 @@ SOFTWARE.
 #include "core/version.h"
 
 #include "core/io/image.h"
-#include "core/object/ref_counted.h"
-#include "core/templates/vector.h"
-#include "core/string/ustring.h"
 #include "core/math/color.h"
+#include "core/object/ref_counted.h"
+#include "core/string/ustring.h"
+#include "core/templates/vector.h"
 
 #include "scene/resources/texture.h"
 #include <vector>
@@ -93,7 +93,7 @@ private:
 	int _margin;
 
 	Vector<rect_xywhf *> _rects;
-	Vector<Ref<ImageTexture> > _generated_textures;
+	Vector<Ref<ImageTexture>> _generated_textures;
 };
 
 #endif // TEXTURE_PACKER_H

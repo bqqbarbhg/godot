@@ -25,8 +25,8 @@ SOFTWARE.
 
 #include "core/version.h"
 
-#include "core/templates/vector.h"
 #include "core/config/engine.h"
+#include "core/templates/vector.h"
 
 #include "scene/main/node.h"
 
@@ -100,7 +100,7 @@ private:
 	bool _dirty;
 
 	Ref<TexturePacker> _packer;
-	Vector<Ref<Texture> > _textures;
+	Vector<Ref<Texture>> _textures;
 };
 
 #endif

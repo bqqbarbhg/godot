@@ -25,8 +25,8 @@ SOFTWARE.
 
 #include "core/version.h"
 
-#include "core/templates/vector.h"
 #include "core/io/image.h"
+#include "core/templates/vector.h"
 
 #include "core/math/rect2.h"
 #include "scene/resources/texture.h"
@@ -34,7 +34,6 @@ SOFTWARE.
 #include "core/version.h"
 
 class TextureLayerMerger : public RefCounted {
-
 	GDCLASS(TextureLayerMerger, RefCounted);
 
 public:
