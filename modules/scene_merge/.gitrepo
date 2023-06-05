@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/V-Sekai/godot_scene_merge.git
 	branch = main
-	commit = bdaab8fe2e3d89ba1b499b8ee16ba8bc904ce96d
-	parent = ebae6581ce64da68ca534b72650f488c7d58a065
+	commit = 2a0439811be52c699e068f877ac002fab2c7656b
+	parent = 6fefd836237db78634e33aff0f3900e5cb73634c
 	method = merge
 	cmdver = 0.4.6
