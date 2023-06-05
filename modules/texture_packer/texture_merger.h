@@ -103,4 +103,4 @@ private:
 	Vector<Ref<Texture>> _textures;
 };
 
-#endif
+#endif // TEXTURE_MERGER_H
