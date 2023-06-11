@@ -117,6 +117,8 @@ public:
 
 	//
 
+	virtual int64_t get_last_mix_time_usec() const;
+
 	SpeakerMode get_speaker_mode_by_total_channels(int p_channels) const;
 	int get_total_channels_by_speaker_mode(SpeakerMode) const;
 
@@ -418,6 +420,7 @@ public:
 
 	void add_listener_changed_callback(AudioCallback p_callback, void *p_userdata);
 	void remove_listener_changed_callback(AudioCallback p_callback, void *p_userdata);
+	virtual int64_t get_last_mix_time_usec() const;
 
 	void add_update_callback(AudioCallback p_callback, void *p_userdata);
 	void remove_update_callback(AudioCallback p_callback, void *p_userdata);

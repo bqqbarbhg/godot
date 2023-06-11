@@ -222,6 +222,25 @@ void AudioStreamPlaybackWAV::do_resample(const Depth *p_src, AudioFrame *p_dst, 
 }
 
 int AudioStreamPlaybackWAV::mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
+	int32_t skip_frames = 0;
+	if (scheduled_time > 0) {
+		int64_t current_playback_time_usec = AudioServer::get_singleton()->get_last_mix_time_usec();
+
+		if (current_playback_time_usec < scheduled_time) {
+			int silence_frames = MIN(p_frames, (int)((scheduled_time - current_playback_time_usec) * AudioServer::get_singleton()->get_mix_rate()));
+
+			for (int i = 0; i < silence_frames; i++) {
+				p_buffer[i] = AudioFrame(0, 0);
+			}
+
+			skip_frames = silence_frames;
+			p_buffer += silence_frames;
+			p_frames -= silence_frames;
+		} else {
+			scheduled_time = 0;
+		}
+	}
+
 	if (!base->data || !active) {
 		for (int i = 0; i < p_frames; i++) {
 			p_buffer[i] = AudioFrame(0, 0);
@@ -402,6 +421,9 @@ int AudioStreamPlaybackWAV::mix(AudioFrame *p_buffer, float p_rate_scale, int p_
 			p_buffer[i] = AudioFrame(0, 0);
 		}
 		return mixed_frames;
+	}
+	if (p_frames != -1) {
+		p_frames += skip_frames;
 	}
 	return p_frames;
 }

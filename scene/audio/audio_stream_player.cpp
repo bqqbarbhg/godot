@@ -163,8 +163,12 @@ void AudioStreamPlayer::seek(float p_seconds) {
 
 void AudioStreamPlayer::stop() {
 	for (Ref<AudioStreamPlayback> &playback : stream_playbacks) {
+		if (playback.is_valid() && active.is_set()) {
+			set_scheduled_time(0);
+		}
 		AudioServer::get_singleton()->stop_playback_stream(playback);
 	}
+
 	stream_playbacks.clear();
 	active.clear();
 	set_process_internal(false);
@@ -330,6 +334,12 @@ void AudioStreamPlayer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("seek", "to_position"), &AudioStreamPlayer::seek);
 	ClassDB::bind_method(D_METHOD("stop"), &AudioStreamPlayer::stop);
 
+	ClassDB::bind_method(D_METHOD("set_scheduled_time", "time"), &AudioStreamPlayer::set_scheduled_time);
+	ClassDB::bind_method(D_METHOD("get_scheduled_time"), &AudioStreamPlayer::get_scheduled_time);
+
+	ClassDB::bind_method(D_METHOD("set_scheduled_time_stop", "time"), &AudioStreamPlayer::set_scheduled_time_stop);
+	ClassDB::bind_method(D_METHOD("get_scheduled_time_stop"), &AudioStreamPlayer::get_scheduled_time_stop);
+
 	ClassDB::bind_method(D_METHOD("is_playing"), &AudioStreamPlayer::is_playing);
 	ClassDB::bind_method(D_METHOD("get_playback_position"), &AudioStreamPlayer::get_playback_position);
 
@@ -364,6 +374,9 @@ void AudioStreamPlayer::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "max_polyphony", PROPERTY_HINT_NONE, ""), "set_max_polyphony", "get_max_polyphony");
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "bus", PROPERTY_HINT_ENUM, ""), "set_bus", "get_bus");
 
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "scheduled_time"), "set_scheduled_time", "get_scheduled_time");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "scheduled_time_stop"), "set_scheduled_time_stop", "get_scheduled_time_stop");
+
 	ADD_SIGNAL(MethodInfo("finished"));
 
 	BIND_ENUM_CONSTANT(MIX_TARGET_STEREO);
@@ -376,4 +389,54 @@ AudioStreamPlayer::AudioStreamPlayer() {
 }
 
 AudioStreamPlayer::~AudioStreamPlayer() {
+}
+
+double AudioStreamPlayer::get_scheduled_time() const {
+	if (stream_playbacks.is_empty()) {
+		return 0;
+	}
+	int64_t useconds = stream_playbacks[stream_playbacks.size() - 1]->get_scheduled_time();
+	return static_cast<float>(useconds) / 1000000;
+}
+
+double AudioStreamPlayer::get_scheduled_time_stop() const {
+	if (stream_playbacks.is_empty()) {
+		return 0;
+	}
+	int64_t useconds = stream_playbacks[stream_playbacks.size() - 1]->get_scheduled_stop_time();
+	return static_cast<float>(useconds) / 1000000;
+}
+
+
+void AudioStreamPlayer::set_scheduled_time(double p_seconds) {
+	if (stream_playbacks.is_empty()) {
+		return;
+	}
+
+	int64_t useconds = static_cast<int64_t>(p_seconds * 1000000);
+
+	if (p_seconds < 0) {
+		useconds = AudioServer::get_singleton()->get_last_mix_time_usec();
+	}
+
+	int last_playback_index = stream_playbacks.size() - 1;
+	stream_playbacks.write[last_playback_index]->set_scheduled_time(p_seconds);
+}
+
+
+void AudioStreamPlayer::set_scheduled_time_stop(double p_seconds) {
+	if (stream_playbacks.is_empty()) {
+		return;
+	}
+
+	int64_t p_useconds = static_cast<int64_t>(p_seconds * 1000000);
+	int64_t current_time = get_scheduled_time() + AudioServer::get_singleton()->get_last_mix_time_usec();
+
+	if (p_seconds >= 0 && current_time >= p_useconds) {
+		stop();
+		return;
+	}
+
+	int last_playback_index = stream_playbacks.size() - 1;
+	stream_playbacks.write[last_playback_index]->set_scheduled_stop_time(p_useconds);
 }

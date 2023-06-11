@@ -89,7 +89,12 @@ void AudioStreamPlayback::_bind_methods() {
 	GDVIRTUAL_BIND(_seek, "position")
 	GDVIRTUAL_BIND(_mix, "buffer", "rate_scale", "frames");
 	GDVIRTUAL_BIND(_tag_used_streams);
+	GDVIRTUAL_BIND(_set_scheduled_time, "time");
+	GDVIRTUAL_BIND(_get_scheduled_time);
+	GDVIRTUAL_BIND(_set_scheduled_stop_time, "time");
+	GDVIRTUAL_BIND(_get_scheduled_stop_time);
 }
+
 //////////////////////////////
 
 void AudioStreamPlaybackResampled::begin_resample() {
@@ -122,6 +127,24 @@ void AudioStreamPlaybackResampled::_bind_methods() {
 }
 
 int AudioStreamPlaybackResampled::mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
+	int32_t skip_frames = 0;
+	if (scheduled_time > 0) {
+		int64_t current_playback_time_usec = AudioServer::get_singleton()->get_last_mix_time_usec();
+
+		if (current_playback_time_usec < scheduled_time) {
+			int silence_frames = MIN(p_frames, (int)((scheduled_time - current_playback_time_usec) * AudioServer::get_singleton()->get_mix_rate()));
+
+			for (int i = 0; i < silence_frames; i++) {
+				p_buffer[i] = AudioFrame(0, 0);
+			}
+
+			skip_frames = silence_frames;
+			p_buffer += silence_frames;
+			p_frames -= silence_frames;
+		} else {
+			scheduled_time = 0;
+		}
+	}
 	float target_rate = AudioServer::get_singleton()->get_mix_rate();
 	float playback_speed_scale = AudioServer::get_singleton()->get_playback_speed_scale();
 
@@ -173,6 +196,9 @@ int AudioStreamPlaybackResampled::mix(AudioFrame *p_buffer, float p_rate_scale, 
 	}
 	if (mixed_frames_total == -1 && i == p_frames) {
 		mixed_frames_total = p_frames;
+	}
+	if (mixed_frames_total != -1) {
+		mixed_frames_total += skip_frames;
 	}
 	return mixed_frames_total;
 }
@@ -822,4 +848,21 @@ int AudioStreamPlaybackRandomizer::mix(AudioFrame *p_buffer, float p_rate_scale,
 AudioStreamPlaybackRandomizer::~AudioStreamPlaybackRandomizer() {
 	randomizer->playbacks.erase(this);
 }
-/////////////////////////////////////////////
+
+double AudioStreamPlayback::get_scheduled_time() const {
+	return scheduled_time;
+}
+
+void AudioStreamPlayback::set_scheduled_time(double p_time) {
+	scheduled_time = p_time;
+}
+
+double AudioStreamPlayback::get_scheduled_stop_time() const {
+	return scheduled_stop_time;
+}
+
+void AudioStreamPlayback::set_scheduled_stop_time(double p_time) {
+	scheduled_stop_time = p_time;
+}
+
+///////////////////////////////////////////// void AudioStreamPlayback::set_scheduled_stop(bool p_is_scheduled_stop) {
