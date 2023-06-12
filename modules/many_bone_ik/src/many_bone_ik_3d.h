@@ -96,6 +96,8 @@ public:
 		HUMANOID_MODE_HUMANOID,
 		HUMANOID_MODE_BODY,
 	};
+	bool is_bone_in_path_between_pins(int p_bone_idx, const HashSet<StringName> &p_pins) const;
+	bool is_bone_part_of_humanoid_mode(const StringName &bone_name, HumanoidMode humanoid_mode) const;
 	HumanoidMode humanoid_mode = HumanoidMode::HUMANOID_MODE_BODY;
 	void set_humanoid_mode(int p_mode);
 	int get_humanoid_mode() const;
