@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/V-Sekai/lasso.git
 	branch = main
-	commit = b907ae0e2bd7688766ecc0d77347fd54e742e6a0
-	parent = 37d1dfef9d81aade27ab0c56fc6b6f12f6a08045
+	commit = f832704cf7d3194bf0801311bc58a81bb730c8f1
+	parent = 85b5c274308b472a6cec189c5311556a546a8318
 	method = merge
 	cmdver = 0.4.6
