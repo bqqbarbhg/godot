@@ -1263,7 +1263,7 @@ int ManyBoneIK3D::get_humanoid_mode() const {
 	return int(humanoid_mode);
 }
 
-bool ManyBoneIK3D::is_bone_part_of_humanoid_mode(const StringName &bone_name, ManyBoneIK3D::HumanoidMode humanoid_mode) const {
+bool ManyBoneIK3D::is_bone_part_of_humanoid_mode(const StringName &p_bone_name, ManyBoneIK3D::HumanoidMode p_humanoid_mode) const {
 	Ref<SkeletonProfileHumanoid> profile;
 	profile.instantiate();
 
@@ -1291,14 +1291,14 @@ bool ManyBoneIK3D::is_bone_part_of_humanoid_mode(const StringName &bone_name, Ma
 		}
 	}
 
-	BoneId current_bone_idx = get_skeleton()->find_bone(bone_name);
-	switch (humanoid_mode) {
+	BoneId current_bone_idx = get_skeleton()->find_bone(p_bone_name);
+	switch (p_humanoid_mode) {
 		case ManyBoneIK3D::HumanoidMode::HUMANOID_MODE_ALL:
 			return true;
 		case ManyBoneIK3D::HumanoidMode::HUMANOID_MODE_HUMANOID:
-			return humanoid_bones.has(bone_name) || is_bone_in_path_between_pins(current_bone_idx, humanoid_bones);
+			return humanoid_bones.has(p_bone_name) || is_bone_in_path_between_pins(current_bone_idx, humanoid_bones);
 		case ManyBoneIK3D::HumanoidMode::HUMANOID_MODE_BODY:
-			return eleven_point_tracking_bones.has(bone_name) || is_bone_in_path_between_pins(current_bone_idx, eleven_point_tracking_bones);
+			return eleven_point_tracking_bones.has(p_bone_name) || is_bone_in_path_between_pins(current_bone_idx, eleven_point_tracking_bones);
 		default:
 			return false;
 	}
