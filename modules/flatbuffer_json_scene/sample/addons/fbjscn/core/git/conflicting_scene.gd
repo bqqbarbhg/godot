@@ -1,0 +1,6 @@
+extends RefCounted
+class_name ConflictingScene
+
+var json_scene_local:Dictionary
+var json_scene_remote:Dictionary
+var json_scene_merged:Dictionary

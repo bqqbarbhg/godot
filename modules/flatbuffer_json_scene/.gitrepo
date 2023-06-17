@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/V-Sekai/godot_flatbuffer_json_scene_merge.git
+	branch = main
+	commit = 9bd379ab7488feeb19e87d9536ebb215dca2d8d8
+	parent = 773414606079fa745d1c37fce49324ab6a09e972
+	method = merge
+	cmdver = 0.4.6
