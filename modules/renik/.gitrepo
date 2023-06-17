@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/V-Sekai/renik.git
 	branch = master
-	commit = 39d4dc85d4984c4029b2aa7c94cbedf2cd34f7df
-	parent = d0fd0b5527f8334d984fa19c3a90c0a2533fb49a
+	commit = 24ab2c4dc5c93b217d37813619aa85fb134dbe72
+	parent = 9f0f2d220c98892aca3252a79dc1b835b26fde79
 	method = merge
 	cmdver = 0.4.6
