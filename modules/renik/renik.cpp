@@ -3483,6 +3483,7 @@ HashMap<BoneId, Quaternion> RenIK::solve_ik_qcp(Ref<RenIKChain> chain,
 }
 
 void RenIK::setup_humanoid_bones(bool set_targets) {
+	ERR_FAIL_NULL(skeleton);
 	static const String HEAD = "Head";
 	static const String LEFT_HAND = "LeftHand";
 	static const String RIGHT_HAND = "RightHand";
@@ -3499,15 +3500,13 @@ void RenIK::setup_humanoid_bones(bool set_targets) {
 	bone_node_paths["RightFoot"] = NodePath("RightFoot");
 	for (const KeyValue<String, NodePath> &entry : bone_node_paths) {
 		String bone_name = entry.key;
-		if (!set_targets) {
-			bone_node_paths[bone_name] = NodePath();
-		}
 		int bone_idx = -1;
 		if (skeleton && set_targets) {
 			bone_idx = skeleton->find_bone(bone_name);
 		}
 		if (has_node(entry.value)) {
 			ik_target_spatials[bone_name] = Object::cast_to<Node3D>(get_node(entry.value));
+			bone_node_paths[bone_name] = entry.value;
 		} else {
 			Marker3D *new_position_3d = memnew(Marker3D);
 			new_position_3d->set_name(set_targets ? bone_name : String(""));
@@ -3536,25 +3535,25 @@ void RenIK::setup_humanoid_bones(bool set_targets) {
 	set_hip_target_path(bone_node_paths[HIPS]);
 	set_foot_left_target_path(bone_node_paths[LEFT_FOOT]);
 	set_foot_right_target_path(bone_node_paths[RIGHT_FOOT]);
-    for (const KeyValue<String, Node3D *> &entry : ik_target_spatials) {
-        String bone_name = entry.key;
+	for (const KeyValue<String, Node3D *> &entry : ik_target_spatials) {
+		String bone_name = entry.key;
 
-        if (skeleton && set_targets) {
-            int bone_idx = skeleton->find_bone(bone_name);
+		if (skeleton && set_targets) {
+			int bone_idx = skeleton->find_bone(bone_name);
 
-            if (bone_idx != -1) {
-                Transform3D global_pose = skeleton->get_bone_global_pose_no_override(bone_idx);
+			if (bone_idx != -1) {
+				Transform3D global_pose = skeleton->get_bone_global_pose_no_override(bone_idx);
 
-                if (ik_target_spatials[bone_name]) {
-                    ik_target_spatials[bone_name]->set_transform(global_pose);
-                }
-            }
-        } else {
-            if (ik_target_spatials[bone_name]) {
-                ik_target_spatials[bone_name]->set_transform(Transform3D());
-            }
-        }
-    }
+				if (ik_target_spatials[bone_name]) {
+					ik_target_spatials[bone_name]->set_transform(global_pose);
+				}
+			}
+		} else {
+			if (ik_target_spatials[bone_name]) {
+				ik_target_spatials[bone_name]->set_transform(Transform3D());
+			}
+		}
+	}
 }
 
 void RenIK::set_setup_humanoid_bones(bool set_targets) {
