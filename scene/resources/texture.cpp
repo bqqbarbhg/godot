@@ -2354,7 +2354,7 @@ void GradientTexture2D::_queue_update() {
 void GradientTexture2D::_update() {
 	update_pending = false;
 
-	if (gradient.is_null()) {
+	if (gradient.is_null() || gradient->is_queued_for_deletion()) {
 		return;
 	}
 	Ref<Image> image;
