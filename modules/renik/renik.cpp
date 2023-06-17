@@ -3461,14 +3461,10 @@ HashMap<BoneId, Quaternion> RenIK::solve_ik_qcp(Ref<RenIKChain> chain,
 
 	Vector<Transform3D> global_transforms = compute_global_transforms(joints, root, true_root);
 
-	static constexpr double evec_prec = static_cast<double>(1E-6);
-	static constexpr double eval_prec = static_cast<double>(1E-11);
-	QCP qcp = QCP(eval_prec, evec_prec);
-
-	compute_rest_and_target_positions(global_transforms, target, priority, rest_positions, target_positions, weights);
+	RenQCP qcp = RenQCP();
 
 	for (int joint_i = 0; joint_i < joints.size(); joint_i++) {
-		Quaternion solved_global_pose = qcp.weighted_superpose(rest_positions, target_positions, weights, false);
+		Quaternion solved_global_pose = qcp._compute_reference_and_target_positions(global_transforms, target, priority, rest_positions, target_positions, weights, rest_positions, target_positions, weights);
 
 		int parent_index = joint_i > 0 ? joint_i - 1 : 0;
 		const Basis new_rot = global_transforms[parent_index].basis;
