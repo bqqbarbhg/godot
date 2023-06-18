@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/V-Sekai/godot_texture_packer.git
 	branch = master
-	commit = 461761897119d6ce901ef8d12c6edc5890b22844
-	parent = fd5dc25240c1537d90b80507683f78bcf574f547
+	commit = c7865b2c4c582239e260cbc44b0608dd080848c1
+	parent = 7043ffb7f4b2a1f1f13b9fd637f2be31bcb4b3fa
 	method = merge
 	cmdver = 0.4.6
