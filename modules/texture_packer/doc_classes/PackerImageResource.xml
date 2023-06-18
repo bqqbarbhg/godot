@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PackerImageResource" inherits="Texture" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A simple [Texture] class containing an imported [Image] without drawing logic.
+	</brief_description>
+	<description>
+		PackerImageResource is a Texture class designed for baking textures. It contains an imported [Image] and does not register its data in the [RenderingServer]. This makes it useful for textures that are only needed for baking.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="set_data">
+			<return type="void" />
+			<param index="0" name="image" type="Image" />
+			<description>
+				Sets the image data for the [PackerImageResource].
+			</description>
+		</method>
+	</methods>
+</class>
