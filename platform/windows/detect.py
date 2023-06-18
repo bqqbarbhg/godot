@@ -584,6 +584,7 @@ def configure_mingw(env):
             "dwmapi",
             "dwrite",
             "wbemuuid",
+            "pthread",
         ]
     )
 
