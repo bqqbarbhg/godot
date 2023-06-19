@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/Geequlim/ECMAScript.git
 	branch = gd4-rebase
-	commit = 8d976e49913fb85afb9dd5378aa8727b1a545a13
-	parent = a688224d00279ef6a819ef5311b6f672c3aed78c
+	commit = f4bc58166e52d21fa04475f7544455da5ec37bc6
+	parent = 09822bc2a3a5eb0b0407f75e21abd45fdd3749e7
 	method = merge
 	cmdver = 0.4.6
