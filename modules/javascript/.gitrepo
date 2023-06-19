@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/Geequlim/ECMAScript.git
+	branch = gd4-rebase
+	commit = 78dbf97f662f11d491d53b35ca947a6d9efb9e36
+	parent = c9b7f5aed00a3d818c8bccff99ef008ce438ef79
+	method = merge
+	cmdver = 0.4.6
