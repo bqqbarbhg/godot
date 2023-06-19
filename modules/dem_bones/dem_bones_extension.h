@@ -204,26 +204,27 @@ public:
 	}
 
 	/**
-	* @brief Initialize missing skinning weights and/or bone transformations
-	* @details Depending on the status of #skinning_weights and #bone_transform_mat, this function will:
-	*   - Both #skinning_weights and #bone_transform_mat are already set: do nothing
-	*   - Only one in #skinning_weights or #bone_transform_mat is missing (zero size): initialize
-	*     missing matrix, i.e. #skinning_weights (or #bone_transform_mat)
-	*   - Both #skinning_weights and #bone_transform_mat are missing (zero size): initialize both with
-	*     rigid skinning using approximately #num_bones bones, i.e. values of #skinning_weights are 0 or 1.
-	*     LBG-VQ clustering is peformed using mesh sequence #vertex, rest
-	*     pose geometries #rest_pose_geometry and topology #fv.
-	*   @b Note: as the initialization does not use exactly #num_bones bones,
-	*     the value of #num_bones could be changed when both #skinning_weights and #bone_transform_mat are missing.
-	*
-	* This function is called at the beginning of every compute update
-	* functions as a safeguard.
-	*/
+	 * @brief Initialize missing skinning weights and/or bone transformations
+	 * @details Depending on the status of #skinning_weights and #bone_transform_mat, this function will:
+	 *   - Both #skinning_weights and #bone_transform_mat are already set: do nothing
+	 *   - Only one in #skinning_weights or #bone_transform_mat is missing (zero size): initialize
+	 *     missing matrix, i.e. #skinning_weights (or #bone_transform_mat)
+	 *   - Both #skinning_weights and #bone_transform_mat are missing (zero size): initialize both with
+	 *     rigid skinning using approximately #num_bones bones, i.e. values of #skinning_weights are 0 or 1.
+	 *     LBG-VQ clustering is peformed using mesh sequence #vertex, rest
+	 *     pose geometries #rest_pose_geometry and topology #fv.
+	 *   @b Note: as the initialization does not use exactly #num_bones bones,
+	 *     the value of #num_bones could be changed when both #skinning_weights and #bone_transform_mat are missing.
+	 *
+	 * This function is called at the beginning of every compute update
+	 * functions as a safeguard.
+	 */
 	void init() {
-		if (modelSize < 0)
+		if (modelSize < 0) {
 			modelSize =
 					sqrt((rest_pose_geometry - (rest_pose_geometry.rowwise().sum() / num_vertices).replicate(1, num_vertices)).squaredNorm() /
 							num_vertices / num_subjects);
+		}
 		if (laplacian.cols() != num_vertices) {
 			computeSmoothSolver();
 		}
@@ -1249,7 +1250,7 @@ void Dem::DemBonesExt<_Scalar, _AniMeshScalar>::clear() {
 }
 
 template <class _Scalar, class _AniMeshScalar>
-void Dem::DemBonesExt<_Scalar, _AniMeshScalar>::compute_rotations_translations_bind_matrices(int s, MatrixX &r_local_rotations, MatrixX &r_local_translations, MatrixX &gb, MatrixX &local_bind_pose_rotation, MatrixX &r_local_bind_pose_translation, bool degreeRot /*= true*/) {
+void Dem::DemBonesExt<_Scalar, _AniMeshScalar>::compute_rotations_translations_bind_matrices(int s, MatrixX &r_local_rotations, MatrixX &r_local_translations, MatrixX &gb, MatrixX &r_local_bind_pose_rotation, MatrixX &r_local_bind_pose_translation, bool degree_rot /*= true*/) {
 	compute_bind(s, gb);
 
 	if (parent.size() == 0) {
@@ -1274,7 +1275,7 @@ void Dem::DemBonesExt<_Scalar, _AniMeshScalar>::compute_rotations_translations_b
 	int nFs = frame_start_index(s + 1) - frame_start_index(s);
 	r_local_rotations.resize(nFs * 3, num_bones);
 	r_local_translations.resize(nFs * 3, num_bones);
-	local_bind_pose_rotation.resize(3, num_bones);
+	r_local_bind_pose_rotation.resize(3, num_bones);
 	r_local_bind_pose_translation.resize(3, num_bones);
 
 	// #pragma omp parallel for
@@ -1298,7 +1299,7 @@ void Dem::DemBonesExt<_Scalar, _AniMeshScalar>::compute_rotations_translations_b
 
 		Vector3 curRot = Vector3::Zero();
 		euler_angles_from_rotation_matrix_to_rot(invOM * lb.template topLeftCorner<3, 3>(), curRot, ro);
-		local_bind_pose_rotation.col(bone_i) = curRot;
+		r_local_bind_pose_rotation.col(bone_i) = curRot;
 		r_local_bind_pose_translation.col(bone_i) = lb.template topRightCorner<3, 1>();
 
 		Matrix4 _lm;
@@ -1317,9 +1318,9 @@ void Dem::DemBonesExt<_Scalar, _AniMeshScalar>::compute_rotations_translations_b
 		}
 	}
 
-	if (degreeRot) {
+	if (degree_rot) {
 		r_local_rotations *= 180 / EIGEN_PI;
-		local_bind_pose_rotation *= 180 / EIGEN_PI;
+		r_local_bind_pose_rotation *= 180 / EIGEN_PI;
 	}
 }
 
@@ -1452,33 +1453,48 @@ float lockW;
 bool hasKeyFrame = false;
 Eigen::MatrixXf m;
 
-template <typename T>
-::Vector3 eigen_to_godot_vector3(const Eigen::Matrix<T, 3, 1> &eigen_vector) {
-	return ::Vector3(static_cast<T>(eigen_vector[0]), static_cast<T>(eigen_vector[1]), static_cast<T>(eigen_vector[2]));
-}
-
 template <class _Scalar, class _AniMeshScalar>
 Dictionary Dem::DemBonesExt<_Scalar, _AniMeshScalar>::convert_blend_shapes_without_bones(Array p_mesh, ::PackedVector3Array p_vertex_array, HashMap<String, Vector<::Vector3>> p_blends, Vector<Ref<Animation>> p_anims) {
+	Dictionary output;
+	output["mesh_array"] = p_mesh;
+	output["animation_library"] = Ref<AnimationLibrary>();
+	output["skeleton"] = memnew(Skeleton3D);
+	if (p_vertex_array.size() == 0) {
+		return output;
+	}
 	if (!p_anims.size()) {
-		return Dictionary();
+		return output;
 	}
 	// TODO: 2021-10-05 Support multiple tracks by putting into one long track and then splitting back.
-	Ref<Animation> anim = p_anims[0];
+	Ref<Animation> anim;
+
+	for (Ref<Animation> current_anim : p_anims) {
+		if (current_anim->get_length() > 0.0) {
+			anim = current_anim;
+		}
+	}
 	if (anim.is_null()) {
 		return Dictionary();
 	}
 	if (!p_blends.size()) {
-		Dictionary output;
-		output["mesh_array"] = p_mesh;
 		return output;
 	}
-	Vector<PackedVector3Array> blends;
 	constexpr float FPS = 30.0f;
 	int32_t new_frames = anim->get_length() * FPS;
-	blends.resize(new_frames);
+	vertex.resize(3 * new_frames, p_vertex_array.size());
+
+	//! Animated mesh sequence, @c size = [3*#num_total_frames, #num_vertices], #vertex.@a col(@p i).@a
+	//! segment(3*@p k, 3) is the position of vertex @p i at frame @p k
+	// Eigen::Matrix<_AniMeshScalar, Eigen::Dynamic, Eigen::Dynamic> vertex;
+
 	for (int32_t frame_i = 0; frame_i < new_frames; frame_i++) {
-		blends.write[frame_i] = p_vertex_array;
+		for (int32_t j = 0; j < p_vertex_array.size(); j++) {
+			vertex(3 * frame_i + 0, j) = p_vertex_array[j].x;
+			vertex(3 * frame_i + 1, j) = p_vertex_array[j].y;
+			vertex(3 * frame_i + 2, j) = p_vertex_array[j].z;
+		}
 	}
+
 	for (int32_t track_i = 0; track_i < anim->get_track_count(); track_i++) {
 		String track_path = anim->track_get_path(track_i);
 		Animation::TrackType track_type = anim->track_get_type(track_i);
@@ -1494,8 +1510,14 @@ Dictionary Dem::DemBonesExt<_Scalar, _AniMeshScalar>::convert_blend_shapes_witho
 			if (anim->blend_shape_track_interpolate(track_i, time, &weight) != OK) {
 				continue;
 			}
-			for (int32_t vertex_i = 0; vertex_i < p_blends[track_path].size(); vertex_i++) {
-				blends.write[frame_i].write[vertex_i] = blends[frame_i][vertex_i].lerp(p_blends[track_path][vertex_i], weight);
+			Vector<::Vector3> blend_vertices = p_blends[track_path];
+			for (int32_t j = 0; j < p_vertex_array.size(); j++) {
+				::Vector3 current_vertex = ::Vector3(vertex(3 * frame_i + 0, j), vertex(3 * frame_i + 1, j), vertex(3 * frame_i + 2, j));
+				::Vector3 lerped_vertex = current_vertex.lerp(blend_vertices[j], weight);
+
+				vertex(3 * frame_i + 0, j) = p_vertex_array[j].x;
+				vertex(3 * frame_i + 1, j) = p_vertex_array[j].y;
+				vertex(3 * frame_i + 2, j) = p_vertex_array[j].z;
 			}
 			time += increment;
 			if (time >= length && !last) {
@@ -1506,7 +1528,8 @@ Dictionary Dem::DemBonesExt<_Scalar, _AniMeshScalar>::convert_blend_shapes_witho
 			}
 		}
 	}
-	num_total_frames = p_vertex_array.size();
+	num_total_frames = new_frames;
+
 	num_vertices = p_vertex_array.size();
 
 	num_subjects = 1;
@@ -1524,17 +1547,6 @@ Dictionary Dem::DemBonesExt<_Scalar, _AniMeshScalar>::convert_blend_shapes_witho
 	for (int s = 0; s < num_subjects; s++) {
 		for (int k = frame_start_index(s); k < frame_start_index(s + 1); k++) {
 			frame_subject_id[k] = s;
-		}
-	}
-
-	vertex.resize(3 * num_total_frames, num_vertices);
-	for (int32_t frame_i = 0; frame_i < num_total_frames; frame_i++) {
-		for (int32_t vertex_i = 0; vertex_i < blends[frame_i].size(); vertex_i++) {
-			const float &x = blends[frame_i][vertex_i].x;
-			const float &y = blends[frame_i][vertex_i].y;
-			const float &z = blends[frame_i][vertex_i].z;
-			fTime[frame_i] = double(frame_i * 1.0 / FPS);
-			vertex.col(vertex_i).segment(frame_i * 3, 3) << x, y, z;
 		}
 	}
 
@@ -1564,6 +1576,7 @@ Dictionary Dem::DemBonesExt<_Scalar, _AniMeshScalar>::convert_blend_shapes_witho
 	nIters = 100;
 	num_bones = 20;
 	nInitIters = 20;
+	DemBonesExt<_Scalar, _AniMeshScalar>::init();
 	DemBonesExt<_Scalar, _AniMeshScalar>::compute();
 	bool needCreateJoints = (bone_name.size() == 0);
 	double radius;
@@ -1592,35 +1605,29 @@ Dictionary Dem::DemBonesExt<_Scalar, _AniMeshScalar>::convert_blend_shapes_witho
 		bool degree_rot = false;
 		DemBonesExt<_Scalar, _AniMeshScalar>::compute_rotations_translations_bind_matrices(s, local_rotations, local_translations, gb, local_bind_pose_rotation, local_bind_pose_translation, degree_rot);
 		BoneId bone_id = skeleton->find_bone(String(bone_name[s].c_str()));
-		::Vector3 translation_vector = eigen_to_godot_vector3<real_t>(local_bind_pose_translation);
-		::Vector3 rotation_vector = eigen_to_godot_vector3<real_t>(local_bind_pose_rotation);
-		Transform3D rest = Transform3D(Basis::from_euler(rotation_vector), translation_vector);
+		Transform3D rest = Transform3D(
+				Basis::from_euler(::Vector3(local_bind_pose_rotation(0), local_bind_pose_rotation(1), local_bind_pose_rotation(2))),
+				::Vector3(local_bind_pose_translation(0), local_bind_pose_translation(1), local_bind_pose_translation(2)));
 		skeleton->set_bone_rest(bone_id, rest);
 		Ref<Animation> animation;
 		animation.instantiate();
 		animation->set_name("Animation_" + itos(s));
-		animation->set_length(fTime[frame_start_index(s + 1)] - fTime[frame_start_index(s)]);
+		animation->set_length(double(frame_start_index(s + 1)) / FPS - double(frame_start_index(s)) / FPS);
 		if (needCreateJoints) {
-			BoneId parent_bone = parent[s];
-			int32_t track_i = animation->get_track_count();
-			animation->add_track(Animation::TYPE_POSITION_3D);
-			animation->track_set_path(track_i, String(bone_name[s].c_str()));
-
-			for (int frame_i = frame_start_index(s); frame_i < frame_start_index(s + 1); ++frame_i) {
-				::Vector3 new_local_translation = eigen_to_godot_vector3<real_t>(local_translations.row(frame_i));
-				// TODO insert global_translation
-				animation->position_track_insert_key(track_i, fTime[frame_i], new_local_translation);
-			}
-
-			track_i = animation->get_track_count();
-			animation->add_track(Animation::TYPE_ROTATION_3D);
-			animation->track_set_path(track_i, String(bone_name[s].c_str()));
-
-			for (int frame_j = frame_start_index(s); frame_j < frame_start_index(s + 1); ++frame_j) {
-				::Vector3 new_local_rotation_vector = eigen_to_godot_vector3<real_t>(local_rotations.row(frame_j));
-				Quaternion local_rotation = Quaternion::from_euler(new_local_rotation_vector);
-				// TODO insert global_rotation
-				animation->rotation_track_insert_key(track_i, fTime[frame_j], local_rotation);
+			for (int32_t bone_i = 0; bone_i < num_bones; bone_i++) {
+				BoneId parent_bone = parent[bone_i];
+				int32_t track_i = animation->get_track_count();
+				animation->add_track(Animation::TYPE_POSITION_3D);
+				animation->track_set_path(track_i, String(bone_name[bone_i].c_str()));
+				for (int frame_i = frame_start_index(s); frame_i < frame_start_index(s + 1); frame_i++) {
+					animation->position_track_insert_key(track_i, double(frame_i) / FPS, ::Vector3());
+				}
+				track_i = animation->get_track_count();
+				animation->add_track(Animation::TYPE_ROTATION_3D);
+				animation->track_set_path(track_i, String(bone_name[bone_i].c_str()));
+				for (int frame_j = frame_start_index(s); frame_j < frame_start_index(s + 1); frame_j++) {
+					animation->rotation_track_insert_key(track_i, double(frame_j) / FPS, ::Quaternion());
+				}
 			}
 		}
 		animation_library->add_animation("Animation " + itos(s), animation);
@@ -1638,11 +1645,16 @@ Dictionary Dem::DemBonesExt<_Scalar, _AniMeshScalar>::convert_blend_shapes_witho
 	print_line(vformat("Number of frames %d", num_total_frames));
 	print_line(vformat("Number of skinning weights %d", skinning_weights.size()));
 
-	Dictionary output;
 	Array array_mesh;
 	array_mesh.resize(Mesh::ARRAY_MAX);
-	array_mesh[Mesh::ARRAY_INDEX] = indices;
-	array_mesh[Mesh::ARRAY_VERTEX] = p_vertex_array;
+	PackedVector3Array vertex_array;
+	vertex_array.resize(num_vertices);
+	for (int32_t vertex_i = 0; vertex_i < num_vertices;
+			vertex_i++) {
+		vertex_array[vertex_i] = ::Vector3(rest_pose_geometry.col(vertex_i)(0), rest_pose_geometry.col(vertex_i)(1), rest_pose_geometry.col(vertex_i)(2));
+	}
+	array_mesh[Mesh::ARRAY_VERTEX] = vertex_array;
+
 	output["mesh_array"] = array_mesh;
 	output["animation_library"] = animation_library;
 	output["skeleton"] = skeleton;

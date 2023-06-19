@@ -84,10 +84,16 @@ Error BlendShapeBake::convert_scene(Node *p_scene) {
 			}
 			Dem::DemBonesExt<double, float> bones;
 			Dictionary output = bones.convert_blend_shapes_without_bones(surface_arrays, surface_arrays[ArrayMesh::ARRAY_VERTEX], blends_arrays, animations);
-			st->create_from_triangle_arrays(output["mesh_array"]);
 			animations.clear();
-			Ref<AnimationLibrary> library = output["animation_library"];
-			ap->add_animation_library(library->get_name(), library);
+			Array mesh_array = output["mesh_array"];
+			st->create_from_triangle_arrays(mesh_array);
+			if (output.has("animation_library")) {
+				Ref<AnimationLibrary> library = output["animation_library"];
+				if (library.is_null()) {
+					library.instantiate();
+				}
+				ap->add_animation_library(library->get_name(), library);
+			}
 			mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, st->commit_to_arrays());
 		}
 		mesh_instance_3d->set_mesh(mesh);
