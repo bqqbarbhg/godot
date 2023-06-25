@@ -33,6 +33,7 @@
 #include "core/error/error_macros.h"
 #include "core/io/json.h"
 #include "core/object/class_db.h"
+#include "core/string/string_name.h"
 #include "core/variant/typed_array.h"
 #include "ik_bone_3d.h"
 #include "ik_kusudama_3d.h"
@@ -43,7 +44,7 @@
 #include "editor/editor_node.h"
 #endif
 
-void ManyBoneIK3D::_set_pin_count(int32_t p_value) {
+void ManyBoneIK3D::set_pin_count(int32_t p_value) {
 	int32_t old_count = pins.size();
 	pin_count = p_value;
 	pins.resize(p_value);
@@ -355,10 +356,10 @@ bool ManyBoneIK3D::_get(const StringName &p_name, Variant &r_ret) const {
 bool ManyBoneIK3D::_set(const StringName &p_name, const Variant &p_value) {
 	String name = p_name;
 	if (name == "constraint_count") {
-		_set_constraint_count(p_value);
+		set_constraint_count(p_value);
 		return true;
 	} else if (name == "pin_count") {
-		_set_pin_count(p_value);
+		set_pin_count(p_value);
 		return true;
 	} else if (name == "bone_count") {
 		_set_bone_count(p_value);
@@ -400,9 +401,9 @@ bool ManyBoneIK3D::_set(const StringName &p_name, const Variant &p_value) {
 		String begins = "constraints/" + itos(index) + "/kusudama_limit_cone/";
 		if (what == "bone_name") {
 			if (index >= constraint_names.size()) {
-				_set_constraint_count(constraint_count);
+				set_constraint_count(constraint_count);
 			}
-			_set_constraint_name(index, p_value);
+			set_constraint_name(index, p_value);
 			return true;
 		} else if (what == "twist_current") {
 			set_kusudama_twist_current(index, p_value);
@@ -546,7 +547,7 @@ void ManyBoneIK3D::set_pin_passthrough_factor(int32_t p_effector_index, const fl
 	set_dirty();
 }
 
-void ManyBoneIK3D::_set_constraint_count(int32_t p_count) {
+void ManyBoneIK3D::set_constraint_count(int32_t p_count) {
 	int32_t old_count = constraint_names.size();
 	constraint_count = p_count;
 	constraint_names.resize(p_count);
@@ -556,7 +557,8 @@ void ManyBoneIK3D::_set_constraint_count(int32_t p_count) {
 	for (int32_t constraint_i = p_count; constraint_i-- > old_count;) {
 		constraint_names.write[constraint_i] = String();
 		kusudama_limit_cone_count.write[constraint_i] = 0;
-		kusudama_limit_cones.write[constraint_i].resize(0);
+		kusudama_limit_cones.write[constraint_i].resize(1);
+		kusudama_limit_cones.write[constraint_i].write[0] = Vector4(0, 1, 0, Math_PI);
 		kusudama_twist.write[constraint_i] = Vector2(0, Math_TAU - CMP_EPSILON);
 	}
 	set_dirty();
@@ -701,7 +703,7 @@ Vector2 ManyBoneIK3D::get_kusudama_twist(int32_t p_index) const {
 	return kusudama_twist[p_index];
 }
 
-void ManyBoneIK3D::_set_constraint_name(int32_t p_index, String p_name) {
+void ManyBoneIK3D::set_constraint_name(int32_t p_index, String p_name) {
 	ERR_FAIL_INDEX(p_index, constraint_names.size());
 	constraint_names.write[p_index] = p_name;
 	set_dirty();
@@ -718,7 +720,7 @@ void ManyBoneIK3D::set_iterations_per_frame(const float &p_iterations_per_frame)
 	iterations_per_frame = p_iterations_per_frame;
 }
 
-void ManyBoneIK3D::_set_pin_bone_name(int32_t p_effector_index, StringName p_name) const {
+void ManyBoneIK3D::set_pin_bone_name(int32_t p_effector_index, StringName p_name) const {
 	ERR_FAIL_INDEX(p_effector_index, pins.size());
 	Ref<IKEffectorTemplate3D> effector_template = pins[p_effector_index];
 	effector_template->set_name(p_name);
@@ -1152,12 +1154,12 @@ void ManyBoneIK3D::register_skeleton() {
 void ManyBoneIK3D::reset_constraints() {
 	Skeleton3D *skeleton = get_skeleton();
 	if (skeleton) {
-		_set_pin_count(skeleton->get_bone_count());
-		_set_constraint_count(skeleton->get_bone_count());
+		set_pin_count(skeleton->get_bone_count());
+		set_constraint_count(skeleton->get_bone_count());
 		_set_bone_count(skeleton->get_bone_count());
 		for (int32_t bone_i = 0; bone_i < skeleton->get_bone_count(); bone_i++) {
-			_set_pin_bone_name(bone_i, skeleton->get_bone_name(bone_i));
-			_set_constraint_name(bone_i, skeleton->get_bone_name(bone_i));
+			set_pin_bone_name(bone_i, skeleton->get_bone_name(bone_i));
+			set_constraint_name(bone_i, skeleton->get_bone_name(bone_i));
 		}
 		for (int32_t bone_i : skeleton->get_parentless_bones()) {
 			set_pin_passthrough_factor(bone_i, 0.0f);
@@ -1346,293 +1348,37 @@ bool ManyBoneIK3D::get_setup_humanoid_bones() const {
 }
 
 void ManyBoneIK3D::setup_humanoid_bones(bool p_set_targets) {
-	ERR_FAIL_NULL(get_skeleton());
-
-	// | Body Part       | Description                                                                                                                                                                                                                   |
-	// |-----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-	// | Hips            | The hips can tilt forward and backward, allowing the legs to swing in a wide arc during walking or running. They can also move side-to-side, enabling the legs to spread apart or come together.                               |
-	// | Head            | The head can tilt up (look up) and down (look down), and rotate side-to-side, enabling the character to look left and right.                                                                                                   |
-	// | Neck            | The neck can tilt up and down, allowing the head to look up and down, and rotate side-to-side for looking left and right.                                                                                                       |
-	// | UpperChest      | The upper chest can tilt forward and backward, allowing for natural breathing and posture adjustments.                                                                                                                         |
-	// | Chest           | The chest can tilt forward and backward, allowing for natural breathing and posture adjustments.                                                                                                                               |
-	// | Spine           | The spine can tilt forward and backward, allowing for bending and straightening of the torso.                                                                                                                                  |
-	// | [Side]UpperLeg  | The upper leg can swing forward and backward, allowing for steps during walking and running, and rotate slightly for sitting.                                                                                                  |
-	// | [Side]LowerLeg  | The knee can bend and straighten, allowing the lower leg to move towards or away from the upper leg during walking, running, and stepping.                                                                                     |
-	// | [Side]Foot      | The ankle can tilt up (dorsiflexion) and down (plantarflexion), allowing the foot to step and adjust during walking and running. It can also rotate slightly inward or outward (inversion and eversion) for balance.         |
-	// | [Side]Shoulder  | The shoulder can tilt forward and backward, allowing the arms to swing in a wide arc. They can also move side-to-side, enabling the arms to extend outwards or cross over the chest.                                       |
-	// | [Side]UpperArm  | The upper arm can swing forward and backward, allowing for reaching and swinging motions. It can also rotate slightly for more natural arm movement.                                                                             |
-	// | [Side]LowerArm  | The elbow can bend and straighten, allowing the forearm to move towards or away from the upper arm during reaching and swinging motions.                                                                                       |
-	// | [Side]Hand      | The wrist can tilt up and down, allowing the hand to move towards or away from the forearm. It can also rotate slightly, enabling the hand to twist inward or outward for grasping and gesturing.                             |
-
-	String json_string = R"(
-	{
-		"Hips" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(0, -1, 0), "radius" : 0.1745329252 } // 10 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 1.5707963268, // 90 degrees
-				"range" : 0.0872664626 // 5 degrees
-			}
-		},
-		"Spine" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(0, 1, 0), "radius" : 0.2617993878 } // 15 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.0436332313 // 2.5 degrees
-			}
-		},
-		"Chest" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(0, 1, 0), "radius" : 0.0872664626 } // 5 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.1745329252 // 10 degrees
-			}
-		},
-		"UpperChest" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(0, 1, 0), "radius" : 0.0872664626 } // 5 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.1745329252 // 10 degrees
-			}
-		},
-		"Neck" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(0, 1, 0), "radius" : 0.3926990817 } // 22.5 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.0436332313 // 2.5 degrees
-			}
-		},
-		"Head" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(0, 1, 0), "radius" : 0.0872664626 } // 5 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.0436332313 // 2.5 degrees
-			}
-		},
-		"LeftEye" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(1, 0, 0), "radius" : 0.0436332313 }, // 2.5 degrees
-				{ "center" : Vector3(0, 1, 0), "radius" : 0.0436332313 } // 2.5 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.0436332313 // 2.5 degrees
-			}
-		},
-		"LeftShoulder" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(1, 0.5, 0), "radius" : 0.3490658504 }, // 20 degrees
-				{ "center" : Vector3(0, 1, 0.5), "radius" : 0.2617993878 } // 15 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.2617993878 // 15 degrees
-			}
-		},
-		"LeftUpperArm" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(1, 0, 0.25), "radius" : 0.872664626 }, // 50 degrees
-				{ "center" : Vector3(0, -0.25, 1), "radius" : 0.872664626 } // 50 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.2617993878 // 15 degrees
-			}
-		},
-		"LeftLowerArm" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(1, 0, 0.5), "radius" : 0.698131701 }, // 40 degrees - Top segment
-				{ "center" : Vector3(0, 1, 0.5), "radius" : 0.698131701 }, // 40 degrees - Middle segment
-				{ "center" : Vector3(0, 0, 1), "radius" : 0.698131701 } // 40 degrees - Bottom segment
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.2617993878 // 15 degrees
-			}
-		},
-		"LeftHand" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(0, 1, 0), "radius" : 1.5707963268 }, // 90 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 1.5707963268 // 90 degrees
-			}
-		},
-		"LeftUpperLeg" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(0, -1, 0), "radius" : 1.5707963268 }, // 90 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.1745329252 // 10 degrees
-			}
-		},
-		"LeftLowerLeg" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(0, 1, -0.5), "radius" : 0.698131701 }, // 40 degrees - Top segment
-				{ "center" : Vector3(1, 0, -0.5), "radius" : 0.698131701 }, // 40 degrees - Middle segment
-				{ "center" : Vector3(0, 0, -1), "radius" : 0.698131701 } // 40 degrees - Bottom segment
-			],
-			"twist_rotation_range" : {
-				"from" : 0.872665, // 50 degrees
-				"range" : 0.1745329252 // 10 degrees
-			}
-		},
-		"LeftFoot" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(0, -1, 0), "radius" : 0.7853981634 }, // 45 degrees
-				{ "center" : Vector3(0, 0, 1), "radius" : 0.7853981634 } // 45 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.0872664626 // 5 degrees
-			}
-		},
-		"LeftToes" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(0, -1, 0), "radius" : 0.3490658504 } // 20 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.0872664626 // 5 degrees
-			}
-		},
-		"RightEye" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(-1, 0, 0), "radius" : 0.0436332313 }, // 2.5 degrees
-				{ "center" : Vector3(0, 1, 0), "radius" : 0.0436332313 } // 2.5 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.0436332313 // 2.5 degrees
-			}
-		},
-		"RightShoulder" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(-1, 0.5, 0), "radius" : 0.3490658504 }, // 20 degrees
-				{ "center" : Vector3(0, 1, -0.5), "radius" : 0.2617993878 } // 15 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.2617993878 // 15 degrees
-			}
-		},
-		"RightUpperArm" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(-0.25, 0, 1), "radius" : 0.872664626 }, // 50 degrees
-				{ "center" : Vector3(-1, 0.25, 0), "radius" : 0.872664626 } // 50 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.2617993878 // 15 degrees
-			}
-		},
-		"RightLowerArm" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(1, 0, 0.5), "radius" : 0.698131701 }, // 40 degrees - Top segment
-				{ "center" : Vector3(0, 1, 0.5), "radius" : 0.698131701 }, // 40 degrees - Middle segment
-				{ "center" : Vector3(0, 0, 1), "radius" : 0.698131701 } // 40 degrees - Bottom segment
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.2617993878 // 15 degrees
-			}
-		},
-		"RightHand" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(0, 1, 0), "radius" : 1.5707963268 }, // 90 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 1.5707963268 // 90 degrees
-			}
-		},
-		"RightUpperLeg" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(0, -1, 0), "radius" : 1.5707963268 }, // 90 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.1745329252 // 10 degrees
-			}
-		},
-		"RightLowerLeg" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(1, 0, -0.5), "radius" : 0.698131701 }, // 40 degrees - Top segment
-				{ "center" : Vector3(0, 1, -0.5), "radius" : 0.698131701 }, // 40 degrees - Middle segment
-				{ "center" : Vector3(0, 0, -1), "radius" : 0.698131701 } // 40 degrees - Bottom segment
-			],
-			"twist_rotation_range" : {
-				"from" : 0.872665, // 50 degrees
-				"range" : 0.1745329252 // 10 degrees
-			}
-		},
-		"RightFoot" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(0, -1, 0), "radius" : 0.7853981634 }, // 45 degrees
-				{ "center" : Vector3(0, 0, 1), "radius" : 0.7853981634 } // 45 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.0872664626 // 5 degrees
-			}
-		},
-		"RightToes" : {
-			"swing_rotation_center_radius" : [
-				{ "center" : Vector3(0, -1, 0), "radius" : 0.3490658504 } // 20 degrees
-			],
-			"twist_rotation_range" : {
-				"from" : 0, // 0 degrees
-				"range" : 0.0872664626 // 5 degrees
-			}
-		},
-	})";
 	Ref<JSON> json;
 	json.instantiate();
-	json->parse(json_string);
+	json->parse(constraint_config_json_string);
 	Dictionary config = json->get_data();
-	Node *root = get_owner();
-	ERR_FAIL_NULL(root);
-	List<PropertyInfo> properties;
-	root->get_property_list(&properties);
-	Skeleton3D *skeleton = get_skeleton();
-
-	set_skeleton_node_path(NodePath(".."));
-	set_iterations_per_frame(10);
-	queue_print_skeleton();
-	set_stabilization_passes(1);
+	Skeleton3D *skeleton = cast_to<Skeleton3D>(get_node_or_null(get_skeleton_node_path()));
+	ERR_FAIL_NULL(skeleton);
 	skeleton->reset_bone_poses();
 
 	Ref<SkeletonProfileHumanoid> humanoid_profile = memnew(SkeletonProfileHumanoid);
 	PackedStringArray humanoid_bones;
-	Dictionary targets;
-
-	targets["Hips"] = "ManyBoneIK3D";
-	targets["Root"] = "ManyBoneIK3D";
-	targets["Head"] = "ManyBoneIK3D";
-	targets["LeftHand"] = "ManyBoneIK3D";
-	targets["RightHand"] = "ManyBoneIK3D";
-	targets["LeftFoot"] = "ManyBoneIK3D";
-	targets["RightFoot"] = "ManyBoneIK3D";
-	for (int bone_i = 0; bone_i < skeleton->get_bone_count(); ++bone_i) {
+	if (!p_set_targets) {
+		return;
+	}
+	reset_constraints();
+	set_pin_count(bone_count);
+	set_constraint_count(bone_count);
+	for (int bone_i = 0; bone_i < bone_count; bone_i++) {
 		String bone_name = skeleton->get_bone_name(bone_i);
-
+		if (skeleton->get_parentless_bones().has(bone_i)) {
+			create_pin_target_node(this, skeleton, bone_name, get_name());
+			set_pin_weight(bone_i, 0);
+		} else {
+			BoneId parent_bone_i = skeleton->get_bone_parent(bone_i);
+			String parent_bone_name = skeleton->get_bone_name(parent_bone_i);
+			create_pin_target_node(this, skeleton, bone_name, parent_bone_name);
+		}
+		set_pin_bone_name(bone_i, bone_name);
+		set_constraint_name(bone_i, bone_name);
 		if (config.has(bone_name)) {
 			Dictionary bone_config = config[bone_name];
-			int32_t constraint_id = find_constraint(bone_name);
-
+			print_line(bone_config);
 			if (bone_config.has("twist_rotation_range")) {
 				Dictionary twist_rotation_range = bone_config["twist_rotation_range"];
 
@@ -1640,46 +1386,45 @@ void ManyBoneIK3D::setup_humanoid_bones(bool p_set_targets) {
 					float twist_from = twist_rotation_range["from"];
 					float twist_range = twist_rotation_range["range"];
 					Vector2 twist = Vector2(twist_from, twist_range);
-					set_kusudama_twist(constraint_id, twist);
+					set_kusudama_twist(bone_i, twist);
 				}
 			}
 
 			if (bone_config.has("swing_rotation_center_radius")) {
 				Array cones = bone_config["swing_rotation_center_radius"];
-				set_kusudama_limit_cone_count(constraint_id, cones.size());
+				set_kusudama_limit_cone_count(bone_i, cones.size());
 
 				for (int cone_i = 0; cone_i < cones.size(); ++cone_i) {
 					Dictionary cone = cones[cone_i];
 
 					if (cone.has("center")) {
-						set_kusudama_limit_cone_center(constraint_id, cone_i, cone["center"]);
+						set_kusudama_limit_cone_center(bone_i, cone_i, cone["center"]);
 					}
 
 					if (cone.has("radius")) {
-						set_kusudama_limit_cone_radius(constraint_id, cone_i, cone["radius"]);
+						set_kusudama_limit_cone_radius(bone_i, cone_i, cone["radius"]);
 					}
 				}
 			}
 		}
-	}
-	if(!p_set_targets) {
-		return;
-	}
-	Array keys = targets.keys();
-	for (int target_i = 0; target_i < keys.size(); ++target_i) {
-		tune_bone(this, skeleton, keys[target_i], targets[keys[target_i]], root);
+		is_setup_humanoid_bones = false;
+		set_dirty();
+		set_constraint_mode(false);
 	}
 }
 
-void ManyBoneIK3D::tune_bone(ManyBoneIK3D *ik_instance, Skeleton3D *skeleton, String bone_name, String bone_name_parent, Node *owner) {
+void ManyBoneIK3D::create_pin_target_node(ManyBoneIK3D *ik_instance, Skeleton3D *skeleton, String bone_name, String bone_name_parent) {
 	int bone_i = skeleton->find_bone(bone_name);
 
 	if (bone_i == -1) {
 		return;
 	}
+	if (!get_owner()) {
+		return;
+	}
 
 	Node3D *node_3d = nullptr;
-	TypedArray<Node> children = owner->find_children("*", "");
+	TypedArray<Node> children = get_owner()->find_children("*", "");
 	Node *parent = nullptr;
 
 	for (int i = 0; i < children.size(); ++i) {
@@ -1690,7 +1435,6 @@ void ManyBoneIK3D::tune_bone(ManyBoneIK3D *ik_instance, Skeleton3D *skeleton, St
 			break;
 		}
 	}
-
 	if (!node_3d) {
 		node_3d = memnew(Node3D);
 		node_3d->set_name(bone_name);
@@ -1700,21 +1444,15 @@ void ManyBoneIK3D::tune_bone(ManyBoneIK3D *ik_instance, Skeleton3D *skeleton, St
 
 			if (String(node->get_name()) == bone_name_parent) {
 				node->add_child(node_3d, true);
-				node_3d->set_owner(owner);
+				node_3d->set_owner(get_owner());
 				parent = node;
 				break;
 			}
 		}
 	}
-
 	node_3d->set_global_transform(
 			skeleton->get_global_transform().affine_inverse() * skeleton->get_bone_global_pose_no_override(bone_i));
-
 	node_3d->set_owner(ik_instance->get_owner());
-
-	if (bone_name == "LeftToes" || bone_name == "RightToes") {
-		ik_instance->set_pin_weight(bone_i, 0);
-	}
-
-	ik_instance->set_pin_nodepath(bone_i, ik_instance->get_path_to(node_3d));
+	int32_t effector_id = ik_instance->find_effector_id(bone_name);
+	ik_instance->set_pin_nodepath(effector_id, ik_instance->get_path_to(node_3d));
 }
