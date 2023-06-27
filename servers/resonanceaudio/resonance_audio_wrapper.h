@@ -84,13 +84,13 @@ public:
 	}
 
 	void set_source_transform(AudioSourceId source, Transform3D source_transform) {
-		Quaternion source_rotation = Quaternion(source_transform.basis);
+		Quaternion source_rotation = source_transform.basis.get_rotation_quaternion();
 		resonance_api->SetSourcePosition(source.get_id(), source_transform.origin.x, source_transform.origin.y, source_transform.origin.z);
 		resonance_api->SetSourceRotation(source.get_id(), source_rotation.x, source_rotation.y, source_rotation.z, source_rotation.w);
 	}
 
 	void set_head_transform(Transform3D head_transform) {
-		Quaternion head_rotation = Quaternion(head_transform.basis);
+		Quaternion head_rotation = head_transform.basis.get_rotation_quaternion();
 		resonance_api->SetHeadPosition(head_transform.origin.x, head_transform.origin.y, head_transform.origin.z);
 		resonance_api->SetHeadRotation(head_rotation.x, head_rotation.y, head_rotation.z, head_rotation.w);
 	}
