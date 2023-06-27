@@ -504,7 +504,7 @@ void ManyBoneIK3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_stabilization_passes", "passes"), &ManyBoneIK3D::set_stabilization_passes);
 	ClassDB::bind_method(D_METHOD("get_stabilization_passes"), &ManyBoneIK3D::get_stabilization_passes);
 
-	ClassDB::bind_method(D_METHOD("setup_humanoid_bones"), &ManyBoneIK3D::setup_humanoid_bones);
+	ClassDB::bind_method(D_METHOD("setup_humanoid_bones", "enable"), &ManyBoneIK3D::setup_humanoid_bones);
 
 	ClassDB::bind_method(D_METHOD("set_setup_humanoid_bones", "set_targets"), &ManyBoneIK3D::set_setup_humanoid_bones);
 	ClassDB::bind_method(D_METHOD("get_setup_humanoid_bones"), &ManyBoneIK3D::get_setup_humanoid_bones);
@@ -1368,7 +1368,6 @@ void ManyBoneIK3D::setup_humanoid_bones(bool p_set_targets) {
 		String bone_name = skeleton->get_bone_name(bone_i);
 		if (skeleton->get_parentless_bones().has(bone_i)) {
 			create_pin_target_node(this, skeleton, bone_name, get_name());
-			set_pin_weight(bone_i, 0);
 		} else {
 			BoneId parent_bone_i = skeleton->get_bone_parent(bone_i);
 			String parent_bone_name = skeleton->get_bone_name(parent_bone_i);
