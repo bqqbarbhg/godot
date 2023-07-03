@@ -496,13 +496,11 @@ void ImportDock::_reimport_attempt() {
 void ImportDock::_reimport_and_cleanup() {
 	HashMap<String, Ref<Resource>> old_resources;
 
-	int i = 0;
 	for (const String &path : need_cleanup) {
 		Ref<Resource> res = ResourceLoader::load(path);
 		res->set_path("");
 		res->set_meta(SNAME("_skip_save_"), true);
 		old_resources[path] = res;
-		i++;
 	}
 
 	EditorResourcePreview::get_singleton()->stop(); // Don't try to re-create previews after import.
