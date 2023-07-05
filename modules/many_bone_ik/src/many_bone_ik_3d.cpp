@@ -763,7 +763,6 @@ void ManyBoneIK3D::execute(real_t delta) {
 			orientation_constraint_defaults[constraint_name] = get_constraint_orientation_transform(constraint_i);
 			bone_direction_constraint_defaults[constraint_name] = get_bone_direction_transform(constraint_i);
 		}
-		notify_property_list_changed();
 	}
 	if (bone_list.size()) {
 		Ref<IKNode3D> root_ik_bone = bone_list.write[0]->get_ik_transform();
@@ -907,6 +906,7 @@ void ManyBoneIK3D::set_pin_direction_priorities(int32_t p_pin_index, const Vecto
 void ManyBoneIK3D::set_dirty() {
 	is_dirty = true;
 	is_gizmo_dirty = true;
+	notify_property_list_changed();
 }
 
 int32_t ManyBoneIK3D::find_constraint(String p_string) const {
@@ -1346,6 +1346,31 @@ bool ManyBoneIK3D::get_setup_humanoid_bones() const {
 }
 
 void ManyBoneIK3D::setup_humanoid_bones(bool p_set_targets) {
+	// **Rotation Twist**
+	// | Body Part       | Description                                                                                                                                                                                                                   |
+	// |-----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+	// | Head            | The head can rotate side-to-side up to 60-70 degrees, enabling the character to look left and right.                                                                                                   |
+	// | Neck            | The neck can rotate side-to-side up to 50-60 degrees for looking left and right.                                                                                                       |
+	// | [Side]UpperLeg  | The upper leg can rotate slightly up to 5-10 degrees for sitting.                                                                                                  |
+	// | [Side]Foot      | The foot can also rotate slightly inward or outward (inversion and eversion) up to 10-20 degrees for balance.         |
+	// | [Side]UpperArm  | The upper arm can also rotate slightly up to 30-40 degrees for more natural arm movement.                                                                             |
+	// | [Side]Hand      | The wrist can also rotate slightly up to 20-30 degrees, enabling the hand to twist inward or outward for grasping and gesturing.                             |
+
+	// **Rotation Swing**
+	// | Body Part       | Description                                                                                                                                                                                                                   |
+	// |-----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+	// | Hips            | The hips can tilt forward and backward up to 20-30 degrees, allowing the legs to swing in a wide arc during walking or running. They can also move side-to-side up to 10-20 degrees, enabling the legs to spread apart or come together.                               |
+	// | UpperChest      | The upper chest can tilt forward and backward up to 10-20 degrees, allowing for natural breathing and posture adjustments.                                                                                                                         |
+	// | Chest           | The chest can tilt forward and backward up to 10-20 degrees, allowing for natural breathing and posture adjustments.                                                                                                                               |
+	// | Spine           | The spine can tilt forward and backward up to 35-45 degrees, allowing for bending and straightening of the torso.                                                                                                                                  |
+	// | [Side]UpperLeg  | The upper leg can swing forward and backward up to 80-90 degrees, allowing for steps during walking and running.                                                                                                  |
+	// | [Side]LowerLeg  | The knee can bend and straighten up to 110-120 degrees, allowing the lower leg to move towards or away from the upper leg during walking, running, and stepping.                                                                                     |
+	// | [Side]Foot      | The ankle can tilt up (dorsiflexion) up to 10-20 degrees and down (plantarflexion) up to 35-40 degrees, allowing the foot to step and adjust during walking and running.          |
+	// | [Side]Shoulder  | The shoulder can tilt forward and backward up to 160 degrees, allowing the arms to swing in a wide arc. They can also move side-to-side up to 40-50 degrees, enabling the arms to extend outwards or cross over the chest.                                       |
+	// | [Side]UpperArm  | The upper arm can swing forward and backward up to 110-120 degrees, allowing for reaching and swinging motions.                                                                             |
+	// | [Side]LowerArm  | The elbow can bend and straighten up to 120-130 degrees, allowing the forearm to move towards or away from the upper arm during reaching and swinging motions.                                                                                       |
+	// | [Side]Hand      | The wrist can tilt up and down up to 50-60 degrees, allowing the hand to move towards or away from the forearm.
+
 	Skeleton3D *skeleton = cast_to<Skeleton3D>(get_node_or_null(get_skeleton_node_path()));
 	ERR_FAIL_NULL(skeleton);
 	skeleton->reset_bone_poses();
@@ -1358,6 +1383,7 @@ void ManyBoneIK3D::setup_humanoid_bones(bool p_set_targets) {
 	reset_constraints();
 	set_pin_count(bone_count);
 	set_constraint_count(bone_count);
+	Vector<String> ignored_root_bones = { "Root" };
 	for (int bone_i = 0; bone_i < bone_count; bone_i++) {
 		String bone_name = skeleton->get_bone_name(bone_i);
 		if (skeleton->get_parentless_bones().has(bone_i)) {
@@ -1369,8 +1395,39 @@ void ManyBoneIK3D::setup_humanoid_bones(bool p_set_targets) {
 		}
 		set_pin_bone_name(bone_i, bone_name);
 		set_constraint_name(bone_i, bone_name);
-		is_setup_humanoid_bones = false;
+		if (!ignored_root_bones.has(bone_name) && humanoid_profile->has_bone(bone_name)) {
+			set_kusudama_limit_cone_count(bone_i, 1);
+			const int FIRST_CONE = 0;
+			BoneId humanoid_bone_id = humanoid_profile->find_bone(bone_name);
+			Transform3D humanoid_bone_pose = humanoid_profile->get_reference_pose(humanoid_bone_id);
+			Basis basis = humanoid_bone_pose.basis;
+			Vector3 forward = basis.get_column(Vector3::AXIS_Y).normalized();
+			Vector3 center(forward.x, forward.y, forward.z);
+			if (bone_name == "Hips") {
+				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, Vector3(0, -1, 0));
+				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(10.0f));
+			} else if (bone_name.ends_with("UpperLeg") || bone_name.ends_with("LowerLeg")) {
+				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, center);
+				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(90.0f));
+			} else if (bone_name.ends_with("Foot")) {
+				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, center);
+				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(45.0f));
+			} else if (bone_name.ends_with("Shoulder") || bone_name.ends_with("UpperArm")) {
+				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, center);
+				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(180.0f));
+			} else if (bone_name.ends_with("LowerArm")) {
+				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, center);
+				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(135.0f));
+			} else if (bone_name.ends_with("Hand")) {
+				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, center);
+				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(90.0f));
+			} else {
+				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, center);
+				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(45.0f));
+			}
+		}
 	}
+	is_setup_humanoid_bones = false;
 }
 
 void ManyBoneIK3D::create_pin_target_node(ManyBoneIK3D *ik_instance, Skeleton3D *skeleton, String bone_name, String bone_name_parent) {
