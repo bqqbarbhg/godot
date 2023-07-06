@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/Remi123/MotionMatching.git
+	branch = module
+	commit = 5aa164f9eb9b422b58e82cd79257b3d96302b345
+	parent = 970459615f6b2b4151742ec6d7ef8559f87fd5c5
+	method = merge
+	cmdver = 0.4.6
