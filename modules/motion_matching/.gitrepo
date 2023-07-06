@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/Remi123/MotionMatching.git
 	branch = module
-	commit = 86126b7cd2a0715dae202aac000aa9eded8a3103
-	parent = 0b6fd56540c60dfeee676ddf377b20a78703f1f9
+	commit = b0af159979e4b31c3b65d9794e83769192b2d91b
+	parent = d69af650db83a2a0f130bf702a25dad5a0177349
 	method = merge
 	cmdver = 0.4.6
