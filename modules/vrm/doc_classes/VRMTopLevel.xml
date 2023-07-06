@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VRMTopLevel" inherits="Node3D" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="vrm_animplayer" type="NodePath" setter="set_vrm_animplayer" getter="get_vrm_animplayer" default="NodePath(&quot;&quot;)">
+		</member>
+		<member name="vrm_meta" type="Resource" setter="set_vrm_meta" getter="get_vrm_meta">
+		</member>
+		<member name="vrm_skeleton" type="NodePath" setter="set_vrm_skeleton" getter="get_vrm_skeleton" default="NodePath(&quot;&quot;)">
+		</member>
+	</members>
+</class>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VRMMeta" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="allowed_user_name" type="String" setter="set_allowed_user_name" getter="get_allowed_user_name" default="&quot;&quot;">
+		</member>
+		<member name="author" type="String" setter="set_author" getter="get_author" default="&quot;&quot;">
+		</member>
+		<member name="commercial_usage" type="String" setter="set_commercial_usage" getter="get_commercial_usage" default="&quot;&quot;">
+		</member>
+		<member name="contact_information" type="String" setter="set_contact_information" getter="get_contact_information" default="&quot;&quot;">
+		</member>
+		<member name="exporter_version" type="String" setter="set_exporter_version" getter="get_exporter_version" default="&quot;&quot;">
+		</member>
+		<member name="eye_offset" type="Vector3" setter="set_eye_offset" getter="get_eye_offset" default="Vector3(0, 0, 0)">
+		</member>
+		<member name="humanoid_bone_mapping" type="BoneMap" setter="set_humanoid_bone_mapping" getter="get_humanoid_bone_mapping">
+		</member>
+		<member name="humanoid_skeleton_path" type="NodePath" setter="set_humanoid_skeleton_path" getter="get_humanoid_skeleton_path" default="NodePath(&quot;&quot;)">
+		</member>
+		<member name="license_name" type="String" setter="set_license_name" getter="get_license_name" default="&quot;&quot;">
+		</member>
+		<member name="other_license_url" type="String" setter="set_other_license_url" getter="get_other_license_url" default="&quot;&quot;">
+		</member>
+		<member name="other_permission_url" type="String" setter="set_other_permission_url" getter="get_other_permission_url" default="&quot;&quot;">
+		</member>
+		<member name="reference_information" type="String" setter="set_reference_information" getter="get_reference_information" default="&quot;&quot;">
+		</member>
+		<member name="sexual_usage" type="String" setter="set_sexual_usage" getter="get_sexual_usage" default="&quot;&quot;">
+		</member>
+		<member name="spec_version" type="String" setter="set_spec_version" getter="get_spec_version" default="&quot;&quot;">
+		</member>
+		<member name="texture" type="Texture" setter="set_texture" getter="get_texture">
+		</member>
+		<member name="title" type="String" setter="set_title" getter="get_title" default="&quot;&quot;">
+		</member>
+		<member name="version" type="String" setter="set_version" getter="get_version" default="&quot;&quot;">
+		</member>
+		<member name="violent_usage" type="String" setter="set_violent_usage" getter="get_violent_usage" default="&quot;&quot;">
+		</member>
+	</members>
+</class>
