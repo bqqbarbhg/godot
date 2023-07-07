@@ -499,6 +499,12 @@ void MotionPlayer::_notification(int p_what) {
 				f->physics_update(get_physics_process_delta_time());
 			}
 		} break;
+		case Node::NOTIFICATION_EXIT_TREE: {
+			if (kdt) {
+				delete kdt;
+				kdt = nullptr;
+			}
+		} break;
 	}
 }
 
