@@ -32,41 +32,36 @@
 
 void MotionPlayer::recalculate_weights() {
 	weights.clear();
+	using namespace motionmatchingboost::accumulators;
+	accumulator_set<double, stats<tag::min, tag::max, tag::sum, tag::count>> weight_stats, dim_stats, total;
 	for (int32_t features_index = 0; features_index < motion_features.size(); ++features_index) {
 		MotionFeature *f = Object::cast_to<MotionFeature>(motion_features[features_index]);
 
-		PackedFloat32Array new_weights = f->get_weights();
-		for (int i = 0; i < new_weights.size(); ++i) {
-			weights.push_back(new_weights[i]);
-		}
+		weights.append_array(f->get_weights());
 		print_line(vformat("%s %s", f->get_name(), f->get_weights()));
 	}
 	print_line(vformat("Total: %s", weights));
-
-	Stats weight_stats = calculate_stats(weights);
-	print_line(vformat("Sum weight: %d Count: %d", int64_t(weight_stats.sum), int64_t(weight_stats.count)));
-
-	Vector<float> dimensions;
+	for (int32_t i = 0; i < weights.size(); ++i) {
+		weight_stats(weights[i]);
+	}
+	print_line(vformat("Sum weight: %d Count: %d", int64_t(sum(weight_stats)), int64_t(count(weight_stats))));
 	for (int32_t features_index = 0; features_index < motion_features.size(); ++features_index) {
 		MotionFeature *f = Object::cast_to<MotionFeature>(motion_features[features_index]);
-		dimensions.push_back(f->get_dimension());
+		dim_stats(f->get_dimension());
 	}
-
-	Stats dim_stats = calculate_stats(dimensions);
-	print_line(vformat("Sum stats %d", int64_t(dim_stats.sum)));
-
+	print_line(vformat("Sum stats %d", int64_t(sum(dim_stats))));
 	for (int32_t features_index = 0, offset = 0; features_index < motion_features.size(); ++features_index) {
 		MotionFeature *f = Object::cast_to<MotionFeature>(motion_features[features_index]);
 		for (int32_t i = offset; i < offset + f->get_dimension(); ++i) {
-			weights.write[i] = abs(weights[i]) / weight_stats.sum / f->get_dimension();
+			weights.write[i] = abs(weights[i]) / sum(weight_stats) / f->get_dimension();
+			total(weights[i]);
 		}
 		offset += f->get_dimension();
 	}
-
-	print_line(vformat("Sum %s", weight_stats.sum));
-	if (weight_stats.min < 1.0f && weight_stats.min > 0.0f) {
+	print_line(vformat("Sum %s", sum(weight_stats)));
+	if (min(total) < 1.0f && min(total) > 0.0f) {
 		for (int32_t i = 0; i < weights.size(); ++i) {
-			weights.write[i] *= 1 / weight_stats.min;
+			weights.write[i] *= 1 / min(total);
 		}
 	}
 }
@@ -323,14 +318,18 @@ void MotionPlayer::baking_data() {
 	densities.resize(nb_dimensions);
 	densities.fill(PackedFloat32Array{ 0.0, 0.0 });
 
-	PackedFloat32Array motion_data;
-	Vector<Stats> data_stats;
-	data_stats.resize(nb_dimensions);
+	PackedFloat32Array data = PackedFloat32Array();
 	MotionData.clear();
 
 	db_anim_category.clear();
 	db_anim_index.clear();
 	db_anim_timestamp.clear();
+
+	using namespace motionmatchingboost::accumulators;
+
+	using acc_stats = stats<tag::density, tag::max, tag::min, tag::median, tag::skewness, tag::variance>;
+	const accumulator_set<float, acc_stats> default_acc(tag::density::num_bins = 10, tag::density::cache_size = 15);
+	std::vector<accumulator_set<float, acc_stats>> data_stats(nb_dimensions, default_acc);
 
 	for (int32_t anim_index = 0; anim_index < anim_names.size(); ++anim_index) {
 		std::chrono::time_point clock_start = std::chrono::system_clock::now();
@@ -374,9 +373,9 @@ void MotionPlayer::baking_data() {
 			}
 
 			for (int32_t i = 0; i < nb_dimensions; ++i) {
-				data_stats.write[i] = calculate_stats(pose_data);
+				data_stats[i](pose_data[i]);
 			}
-			motion_data.append_array(pose_data);
+			MotionData.append_array(pose_data);
 			// TODO Float to integer conversion ... needs better logic
 			db_anim_index.append(anim_index);
 			db_anim_timestamp.append(time);
@@ -389,30 +388,40 @@ void MotionPlayer::baking_data() {
 		print_line("Collecting animation data from %s in %s ms. PoseCount %s", animation->get_name(), duration, counter);
 	}
 
-	for (int32_t i = 0; i < nb_dimensions; ++i) {
-		data_stats.write[i] = calculate_stats(motion_data);
+	for (int i = 0; i < nb_dimensions; ++i) {
+		means.write[i] = mean(data_stats[i]);
+		variances.write[i] = variance(data_stats[i]);
+		Array arr{};
+		for (const std::pair<float, float> &d : density(data_stats[i])) {
+			Array density_array;
+			density_array.resize(2);
+			density_array[0] = d.first;
+			density_array[1] = d.second;
+			arr.append(density_array);
+		}
+		densities[i] = std::move(arr);
 	}
 
-	for (Stats &v : data_stats) {
-		if (v.variance <= std::numeric_limits<float>::epsilon()) {
-			v.variance = 1.0f;
+	for (float &v : variances) {
+		if (v <= std::numeric_limits<float>::epsilon()) {
+			v = 1.0f;
 		}
 	}
 
-	// Normalization
-	for (int32_t pose = 0; pose < motion_data.size() / nb_dimensions; ++pose) {
+	// // Normalization
+	for (int32_t pose = 0; pose < data.size() / nb_dimensions; ++pose) {
 		for (int offset = 0; offset < nb_dimensions; ++offset) {
-			motion_data.write[pose * nb_dimensions + offset] = (motion_data[pose * nb_dimensions + offset] - data_stats[offset].min) / (data_stats[offset].max - data_stats[offset].min);
+			data.write[pose * nb_dimensions + offset] = (data[pose * nb_dimensions + offset] - means[offset]) / variances[offset];
 		}
 	}
-	MotionData = motion_data.duplicate();
+	MotionData = data.duplicate();
 
 	print_line("Finished all animations");
-	print_line(vformat("NbDim %d NbPoses: %f Size: %d", nb_dimensions, motion_data.size() / nb_dimensions, motion_data.size()));
+	print_line(vformat("NbDim %d NbPoses: %f Size: %d", nb_dimensions, MotionData.size() / nb_dimensions, MotionData.size()));
 
 	Kdtree::KdNodeVector nodes{};
-	for (int32_t i = 0; i < motion_data.size() / nb_dimensions; ++i) {
-		auto begin = motion_data.ptr(), end = motion_data.ptr(); // We use the ptr as iterator.
+	for (int32_t i = 0; i < MotionData.size() / nb_dimensions; ++i) {
+		auto begin = MotionData.ptr(), end = MotionData.ptr(); // We use the ptr as iterator.
 		begin = std::next(begin, nb_dimensions * i);
 		end = std::next(begin, nb_dimensions);
 		std::vector<float> point(begin, end);
@@ -499,12 +508,6 @@ void MotionPlayer::_notification(int p_what) {
 				f->physics_update(get_physics_process_delta_time());
 			}
 		} break;
-		case Node::NOTIFICATION_EXIT_TREE: {
-			if (kdt) {
-				delete kdt;
-				kdt = nullptr;
-			}
-		} break;
 	}
 }
 
@@ -516,52 +519,3 @@ void MotionPlayer::set_distance_type(int value) {
 }
 
 int MotionPlayer::get_distance_type() { return distance_type; }
-
-MotionPlayer::Stats MotionPlayer::calculate_stats(const Vector<float> &p_data) {
-	Stats stats;
-
-	if (p_data.is_empty()) {
-		return stats;
-	}
-
-	float min = p_data[0];
-	float max = p_data[0];
-
-	for (int i = 1; i < p_data.size(); ++i) {
-		if (p_data[i] < min) {
-			min = p_data[i];
-		}
-		if (p_data[i] > max) {
-			max = p_data[i];
-		}
-	}
-
-	stats.min = min;
-	stats.max = max;
-
-	int size = p_data.size();
-	stats.count = size;
-
-	Vector<float> sorted_data = p_data;
-	sorted_data.sort();
-	stats.median = (size % 2 != 0) ? sorted_data[size / 2] : (sorted_data[(size - 1) / 2] + sorted_data[size / 2]) / 2.0;
-	float sum = 0.0;
-	for (const float &num : p_data) {
-		sum += num;
-	}
-	stats.sum = sum;
-	float mean = sum / size;
-	float sq_diff_sum = 0.0;
-	for (const float &d : p_data) {
-		sq_diff_sum += (d - mean) * (d - mean);
-	}
-	stats.variance = sq_diff_sum / size;
-
-	float diff_sum = 0.0;
-	for (const float &d : p_data) {
-		diff_sum += pow(d - mean, 3);
-	}
-	stats.skewness = diff_sum / (size * std::pow(stats.variance, 1.5));
-	stats.density = size / (stats.max - stats.min);
-	return stats;
-}

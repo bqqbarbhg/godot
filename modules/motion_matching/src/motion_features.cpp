@@ -31,6 +31,29 @@
 #include "motion_features.h"
 #include "scene/resources/material.h"
 
+#ifdef TOOLS_ENABLED
+void PredictionMotionFeature::debug_pose_gizmo(Ref<EditorNode3DGizmo> gizmo, const PackedFloat32Array data, Transform3D tr) {
+	Ref<StandardMaterial3D> white = gizmo->get_plugin()->get_material("white", gizmo);
+	Ref<StandardMaterial3D> green = gizmo->get_plugin()->get_material("green", gizmo);
+	Ref<StandardMaterial3D> orange = gizmo->get_plugin()->get_material("orange", gizmo);
+	for (int32_t i = 0; i < past_time_dt.size(); ++i) {
+		const int64_t offset = i * 2;
+		Vector3 pos = Vector3(data[offset + 0], 0, data[offset + 1]);
+		pos = tr.xform(pos);
+		gizmo->add_lines(PackedVector3Array{ pos, pos + Vector3(0, 1, 0) }, green);
+	}
+	const int32_t pos_offset = past_time_dt.size();
+	const int32_t traj_offset = past_time_dt.size() * 2 + future_time_dt.size() * 2;
+	for (int32_t i = 0; i < future_time_dt.size(); ++i) {
+		const int32_t offset = (pos_offset + i) * 2;
+		Vector3 pos = Vector3(data[offset + 0], 0, data[offset + 1]);
+		Vector3 traj = tr.xform(Vector3(0, 0, 1)).rotated(Vector3(0, 1, 0), data[traj_offset + i]);
+		pos = tr.xform(pos);
+		gizmo->add_lines(PackedVector3Array{ pos, pos + traj }, orange);
+	}
+}
+#endif
+
 PackedFloat32Array PredictionMotionFeature::broadphase_query_pose(Dictionary blackboard, float p_delta) {
 	PackedFloat32Array result{};
 	Array blackboard_array;
@@ -174,6 +197,29 @@ PredictionMotionFeature::PredictionMotionFeature() {
 	set_local_to_scene(true);
 }
 
+#ifdef TOOLS_ENABLED
+void BonePositionVelocityMotionFeature::debug_pose_gizmo(Ref<EditorNode3DGizmo> p_gizmo, const PackedFloat32Array p_data, Transform3D p_transform) {
+	// if (data.size() == get_dimension())
+	{
+		constexpr int s = 3;
+		for (int32_t index = 0; index < bone_names.size(); ++index) {
+			Vector3 pos = Vector3(p_data[index * s * 2 + 0], p_data[index * s * 2 + 1], p_data[index * s * 2 + 2]);
+			Vector3 vel = Vector3(p_data[index * s * 2 + s + 0], p_data[index * s * 2 + s + 1], p_data[index * s * 2 + s + 2]);
+			pos = p_transform.xform(pos);
+			vel = p_transform.xform(vel);
+			Ref<StandardMaterial3D> white = p_gizmo->get_plugin()->get_material("white", p_gizmo);
+			Ref<StandardMaterial3D> blue = p_gizmo->get_plugin()->get_material("blue", p_gizmo);
+			p_gizmo->add_lines(PackedVector3Array{ pos, pos + vel }, blue);
+			Ref<BoxMesh> box = Ref<BoxMesh>();
+			box.instantiate();
+			box->set_size(Vector3(0.05f, 0.05f, 0.05f));
+			Transform3D new_transform = Transform3D(Basis(), pos);
+			p_gizmo->add_mesh(box, white, new_transform);
+		}
+	}
+}
+#endif
+
 void BonePositionVelocityMotionFeature::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "BonePositionVelocityMotionFeature"), "set_weight_bone_pos", "get_weight_bone_pos");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "BonePositionVelocityMotionFeature"), "set_weight_bone_vel", "get_weight_bone_vel");
@@ -184,11 +230,6 @@ void BonePositionVelocityMotionFeature::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_bone_names", "value"), &BonePositionVelocityMotionFeature::set_bone_names);
 	ClassDB::bind_method(D_METHOD("get_bone_names"), &BonePositionVelocityMotionFeature::get_bone_names);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_STRING_ARRAY, "Bones"), "set_bone_names", "get_bone_names");
-
-	ClassDB::bind_method(D_METHOD("get_dimension"), &BonePositionVelocityMotionFeature::get_dimension);
-
-	ClassDB::bind_method(D_METHOD("setup_for_animation", "animation"), &RootVelocityMotionFeature::setup_for_animation);
-	ClassDB::bind_method(D_METHOD("bake_animation_pose", "animation", "time"), &RootVelocityMotionFeature::bake_animation_pose);
 }
 
 float BonePositionVelocityMotionFeature::get_weight_bone_pos() const {
@@ -370,6 +411,7 @@ void RootVelocityMotionFeature::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "Root Bone"), "set_root_bone_name", "get_root_bone_name");
 }
 
+
 void PredictionMotionFeature::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_weight_history_pos"), &PredictionMotionFeature::set_weight_history_pos);
 	ClassDB::bind_method(D_METHOD("get_weight_history_pos"), &PredictionMotionFeature::get_weight_history_pos);
@@ -403,4 +445,7 @@ void MotionFeature::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("bake_animation_pose", "animation", "time"), &MotionFeature::bake_animation_pose);
 	ClassDB::bind_method(D_METHOD("broadphase_query_pose", "blackboard", "delta"), &MotionFeature::broadphase_query_pose);
 	ClassDB::bind_method(D_METHOD("narrowphase_evaluate_cost", "data_to_evaluate"), &MotionFeature::narrowphase_evaluate_cost);
+#ifdef TOOLS_ENABLED
+	ClassDB::bind_method(D_METHOD("debug_pose_gizmo", "gizmo", "data", "root_transform"), &MotionFeature::debug_pose_gizmo);
+#endif
 }

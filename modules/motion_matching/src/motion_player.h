@@ -61,6 +61,15 @@
 #include "../thirdparty/kdtree.hpp"
 #include "motion_features.h"
 
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics/count.hpp>
+#include <boost/accumulators/statistics/max.hpp>
+#include <boost/accumulators/statistics/median.hpp>
+#include <boost/accumulators/statistics/min.hpp>
+#include <boost/accumulators/statistics/skewness.hpp>
+#include <boost/accumulators/statistics/stats.hpp>
+#include <boost/accumulators/statistics/variance.hpp>
+
 // Macro setup. Mostly there to simplify writing all those
 #define GETSET(type, variable, ...)            \
 	type variable{ __VA_ARGS__ };              \
@@ -71,20 +80,6 @@
 
 struct MotionPlayer : public Node {
 	GDCLASS(MotionPlayer, Node)
-
-	struct Stats {
-		float max = 0.0f;
-		float min = 0.0f;
-		float median = 0.0f;
-		float variance = 0.0f;
-		float skewness = 0.0f;
-		float density = 0.0f;
-		float sum = 0.0f;
-		int64_t count = 0;
-	};
-
-	Stats calculate_stats(const Vector<float> &p_data);
-
 	static constexpr float interval = 0.1;
 	static constexpr float time_delta = 1.f / 30.f;
 
