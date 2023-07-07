@@ -28,19 +28,22 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "kdtree_wrapper.h" PackedInt32Array KDTree::range_nearest_neighbors(PackedFloat32Array point, int64_t k) {
-using namespace Kdtree;
-auto begin = point.ptrw(), end = point.ptrw(); // We use the ptr as iterator.
-end = std::next(end, point.size());
-std::vector<float> p(begin, end);
-KdNodeVector result{};
-kd->range_nearest_neighbors(p, k, &result);
-PackedInt32Array indexes{};
-for (Kdtree::KdNode node : result) {
-	indexes.append(node.index);
+#include "kdtree_wrapper.h"
+
+PackedInt32Array KDTree::range_nearest_neighbors(PackedFloat32Array point, int64_t k) {
+	using namespace Kdtree;
+	auto begin = point.ptrw(), end = point.ptrw(); // We use the ptr as iterator.
+	end = std::next(end, point.size());
+	std::vector<float> p(begin, end);
+	KdNodeVector result{};
+	kd->range_nearest_neighbors(p, k, &result);
+	PackedInt32Array indexes{};
+	for (Kdtree::KdNode node : result) {
+		indexes.append(node.index);
+	}
+	return indexes;
 }
-return indexes;
-}
+
 PackedInt32Array KDTree::k_nearest_neighbors(PackedFloat32Array point, int64_t k) {
 	if (kd == nullptr) {
 		print_line("tree is null");
@@ -64,6 +67,7 @@ PackedInt32Array KDTree::k_nearest_neighbors(PackedFloat32Array point, int64_t k
 	}
 	return indexes;
 }
+
 void KDTree::_bind_methods() {
 	using namespace godot;
 	ClassDB::bind_method(D_METHOD("set_dimension", "dimensionality"), &KDTree::set_dimension);
@@ -75,6 +79,7 @@ void KDTree::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("k_nearest_neighbors", "points", "k"), &KDTree::k_nearest_neighbors);
 	ClassDB::bind_method(D_METHOD("range_nearest_neighbors", "points", "k"), &KDTree::range_nearest_neighbors);
 }
+
 void KDTree::bake_nodes(const PackedFloat32Array &points, int64_t dimensions) {
 	using namespace Kdtree;
 
@@ -102,11 +107,13 @@ void KDTree::bake_nodes(const PackedFloat32Array &points, int64_t dimensions) {
 	kd->k_nearest_neighbors(std::vector<float>(points.ptr(), std::next(points.ptr(), dimensions)), 1, &re);
 	print_line(vformat("Found result %d", (int64_t)re.size()));
 }
+
 void KDTree::set_dimension(int dim) {
 	if (dim > 0) {
 		kd->dimension = (int64_t)dim;
 	}
 }
+
 void KDTree::set_weight(int difference_type, PackedFloat32Array weight) {
 	std::vector<float> w(&weight[0], &weight[weight.size()]);
 
