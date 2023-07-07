@@ -287,3 +287,13 @@ Variant CritDampSpring::damper_exponential(Variant variable, Variant goal, float
 	float factor = 1.0f - pow(1.0f / (1.0f - ft * damping), -dt / ft);
 	return Math::lerp(variable, goal, factor);
 }
+
+Vector3 CritDampSpring::damp_adjustment_exact(Vector3 g, float halflife, float dt, float eps) {
+	float factor = 1.0 - fast_negexp((CritDampSpring::Ln2 * dt) / (halflife + eps));
+	return g * factor;
+}
+
+Quaternion CritDampSpring::damp_adjustment_exact_quat(Quaternion g, float halflife, float dt, float eps) {
+	float factor = 1.0 - fast_negexp((CritDampSpring::Ln2 * dt) / (halflife + eps));
+	return Quaternion().slerp(g, factor);
+}
