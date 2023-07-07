@@ -92,9 +92,6 @@ public:
 	virtual PackedFloat32Array broadphase_query_pose(Dictionary blackboard, float p_delta) { return {}; }
 
 	virtual float narrowphase_evaluate_cost(PackedFloat32Array to_convert) { return 0.0; }
-#ifdef TOOLS_ENABLED
-	virtual void debug_pose_gizmo(Ref<EditorNode3DGizmo> gizmo, const PackedFloat32Array data, Transform3D tr = Transform3D{}) { return; }
-#endif
 protected:
 	static void _bind_methods();
 };
@@ -163,16 +160,6 @@ public:
 
 protected:
 	static void _bind_methods();
-#ifdef TOOLS_ENABLED
-	virtual void debug_pose_gizmo(Ref<EditorNode3DGizmo> gizmo, const PackedFloat32Array data, Transform3D tr = Transform3D{}) override {
-		if (data.size() == get_dimension()) {
-			Vector3 vel = tr.xform(Vector3(data[0], data[1], data[2]));
-			Ref<StandardMaterial3D> mat = gizmo->get_plugin()->get_material("white", gizmo);
-			PackedVector3Array lines{ tr.origin, tr.origin + vel };
-			gizmo->add_lines(lines, mat);
-		}
-	}
-#endif
 };
 
 struct BonePositionVelocityMotionFeature : public MotionFeature {
@@ -205,9 +192,6 @@ struct BonePositionVelocityMotionFeature : public MotionFeature {
 
 protected:
 	static void _bind_methods();
-#ifdef TOOLS_ENABLED
-	virtual void debug_pose_gizmo(Ref<EditorNode3DGizmo> gizmo, const PackedFloat32Array data, Transform3D tr = Transform3D{}) override;
-#endif
 };
 
 struct PredictionMotionFeature : public MotionFeature {
@@ -258,9 +242,6 @@ public:
 
 protected:
 	static void _bind_methods();
-#ifdef TOOLS_ENABLED
-	virtual void debug_pose_gizmo(Ref<EditorNode3DGizmo> gizmo, const PackedFloat32Array data, Transform3D tr = Transform3D{}) override;
-#endif
 };
 
 #undef MAKE_RESOURCE_TYPE_HINT

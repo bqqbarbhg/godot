@@ -161,9 +161,6 @@ func update_shown_pose_data(pose_index: int) -> void:
 			rd.pop()
 
 		var showed_values := pose.slice(offset, offset + r.get_dimension())
-
-		r.debug_pose_gizmo(gizmo.instance, showed_values, tr)
-
 		offset += r.get_dimension()
 
 	rd.pop()
