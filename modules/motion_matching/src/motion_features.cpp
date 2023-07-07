@@ -416,7 +416,6 @@ void RootVelocityMotionFeature::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "Root Bone"), "set_root_bone_name", "get_root_bone_name");
 }
 
-
 void PredictionMotionFeature::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_weight_history_pos"), &PredictionMotionFeature::set_weight_history_pos);
 	ClassDB::bind_method(D_METHOD("get_weight_history_pos"), &PredictionMotionFeature::get_weight_history_pos);
