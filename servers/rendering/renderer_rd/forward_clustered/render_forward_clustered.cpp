@@ -945,27 +945,20 @@ void RenderForwardClustered::_fill_render_list(RenderListType p_render_list, con
 
 			if (p_render_data->scene_data->screen_mesh_lod_threshold > 0.0 && mesh_storage->mesh_surface_has_lod(surf->surface)) {
 				// Get the LOD support points on the mesh AABB.
-				Vector3 lod_support_min = inst->transformed_aabb.get_support(p_render_data->scene_data->cam_transform.basis.get_column(Vector3::AXIS_Z));
-				Vector3 lod_support_max = inst->transformed_aabb.get_support(-p_render_data->scene_data->cam_transform.basis.get_column(Vector3::AXIS_Z));
+				Vector3 forward = p_render_data->scene_data->cam_transform.basis.get_column(Vector3::AXIS_Z);
+				Vector3 support_min = inst->transformed_aabb.get_support(forward);
+				Vector3 support_max = inst->transformed_aabb.get_support(-forward);
 
 				// Get the distances to those points on the AABB from the camera origin.
-				float distance_min = (float)p_render_data->scene_data->cam_transform.origin.distance_to(lod_support_min);
-				float distance_max = (float)p_render_data->scene_data->cam_transform.origin.distance_to(lod_support_max);
-
-				float distance = 0.0;
-
-				if (distance_min * distance_max < 0.0) {
-					//crossing plane
-					distance = 0.0;
-				} else if (distance_min >= 0.0) {
-					distance = distance_min;
-				} else if (distance_max <= 0.0) {
-					distance = -distance_max;
+				real_t distance_min = p_render_data->scene_data->cam_transform.origin.distance_to(support_min);
+				real_t distance_max = p_render_data->scene_data->cam_transform.origin.distance_to(support_max);
+				real_t distance = 0;
+				real_t scale_factor = 1;
+				if (inst->transformed_aabb.has_point(p_render_data->scene_data->cam_transform.origin)) {
+					Vector3 cam_to_center = inst->transformed_aabb.get_center() - p_render_data->scene_data->cam_transform.origin;
+					scale_factor = cam_to_center.length() / inst->transformed_aabb.get_size().length();
 				}
-
-				if (p_render_data->scene_data->cam_orthogonal) {
-					distance = 1.0;
-				}
+				distance = (distance_min + distance_max) / real_t(2.0) * scale_factor;
 
 				uint32_t indices = 0;
 				surf->sort.lod_index = mesh_storage->mesh_surface_get_lod(surf->surface, inst->lod_model_scale * inst->lod_bias, distance * p_render_data->scene_data->lod_distance_multiplier, p_render_data->scene_data->screen_mesh_lod_threshold, indices);
