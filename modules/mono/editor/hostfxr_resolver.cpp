@@ -234,6 +234,11 @@ bool get_install_location_from_file(const String &p_file_path, String &r_dotnet_
 	return true;
 }
 
+#if !(__cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1700))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
 bool get_dotnet_self_registered_dir(String &r_dotnet_root) {
 #if defined(WINDOWS_ENABLED)
 	String sub_key = "SOFTWARE\\dotnet\\Setup\\InstalledVersions\\" + get_dotnet_arch();
