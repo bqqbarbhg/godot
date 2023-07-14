@@ -351,11 +351,13 @@ void RasterizerGLES3::_blit_render_target_to_screen(RID p_render_target, Display
 			glClear(GL_COLOR_BUFFER_BIT);
 		}
 	}
-
-	Vector2i screen_rect_end = p_screen_rect.get_end();
-	glBlitFramebuffer(0, 0, rt->size.x, rt->size.y,
-			p_screen_rect.position.x, flip_y ? screen_rect_end.y : p_screen_rect.position.y, screen_rect_end.x, flip_y ? p_screen_rect.position.y : screen_rect_end.y,
-			GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	if (rt->size.x > 0 && rt->size.y > 0 &&
+			p_screen_rect.size.x > 0 && p_screen_rect.size.y > 0) {
+		Vector2i screen_rect_end = p_screen_rect.get_end();
+		glBlitFramebuffer(0, 0, rt->size.x, rt->size.y,
+				p_screen_rect.position.x, flip_y ? screen_rect_end.y : p_screen_rect.position.y, screen_rect_end.x, flip_y ? p_screen_rect.position.y : screen_rect_end.y,
+				GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	}
 
 	if (read_fbo != 0) {
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
