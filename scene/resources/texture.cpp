@@ -2354,7 +2354,7 @@ void GradientTexture2D::_queue_update() {
 void GradientTexture2D::_update() {
 	update_pending = false;
 
-	if (gradient.is_null()) {
+	if (gradient.is_null() || gradient->is_queued_for_deletion()) {
 		return;
 	}
 	Ref<Image> image;
@@ -2362,7 +2362,11 @@ void GradientTexture2D::_update() {
 
 	if (gradient->get_point_count() <= 1) { // No need to interpolate.
 		image->initialize_data(width, height, false, (use_hdr) ? Image::FORMAT_RGBAF : Image::FORMAT_RGBA8);
-		image->fill((gradient->get_point_count() == 1) ? gradient->get_color(0) : Color(0, 0, 0, 1));
+		if (gradient->get_point_count() > 0) {
+			image->fill(gradient->get_color(0));
+		} else {
+			image->fill(Color(0, 0, 0, 1));
+		}
 	} else {
 		if (use_hdr) {
 			image->initialize_data(width, height, false, Image::FORMAT_RGBAF);
