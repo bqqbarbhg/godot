@@ -37,6 +37,7 @@
 #include "core/variant/typed_array.h"
 #include "ik_bone_3d.h"
 #include "ik_kusudama_3d.h"
+#include "ik_limit_cone_3d.h"
 #include "scene/3d/physics_body_3d.h"
 #include "scene/3d/skeleton_3d.h"
 #include "scene/resources/skeleton_profile.h"
@@ -213,7 +214,7 @@ void ManyBoneIK3D::_get_property_list(List<PropertyInfo> *p_list) const {
 		p_list->push_back(
 				PropertyInfo(Variant::FLOAT, "constraints/" + itos(constraint_i) + "/twist_current", PROPERTY_HINT_RANGE, "0,1,0.1,exp", constraint_usage));
 		p_list->push_back(
-				PropertyInfo(Variant::INT, "constraints/" + itos(constraint_i) + "/kusudama_limit_cone_count",PROPERTY_HINT_RANGE, "0,10,1", constraint_usage | PROPERTY_USAGE_ARRAY | PROPERTY_USAGE_READ_ONLY,
+				PropertyInfo(Variant::INT, "constraints/" + itos(constraint_i) + "/kusudama_limit_cone_count", PROPERTY_HINT_RANGE, "0,10,1", constraint_usage | PROPERTY_USAGE_ARRAY | PROPERTY_USAGE_READ_ONLY,
 						"Limit Cones,constraints/" + itos(constraint_i) + "/kusudama_limit_cone/"));
 		for (int cone_i = 0; cone_i < get_kusudama_limit_cone_count(constraint_i); cone_i++) {
 			p_list->push_back(
@@ -1387,61 +1388,92 @@ void ManyBoneIK3D::setup_humanoid_bones(bool p_set_targets) {
 	set_pin_count(bone_count);
 	set_constraint_count(bone_count);
 	Vector<String> ignored_root_bones = { "Root" };
-	Vector<String> bones = { "Root", "Head", "Neck", "LeftUpperLeg", "RightUpperLeg", "LeftFoot", "RightFoot", "LeftUpperArm", "RightUpperArm",
-		"LeftHand", "RightHand", "Hips", "UpperChest", "Chest", "Spine", "LeftLowerLeg", "RightLowerLeg", "LeftShoulder", "RightShoulder", "LeftLowerArm", "RightLowerArm" };
+	Vector<String> bones = {
+		"Head",
+		"LeftHand",
+		"RightHand",
+		"Hips",
+		"LeftFoot",
+		"RightFoot",
+	};
+	Vector<String> torso_bones = {
+		"Hips",
+		"Spine",
+		"Chest",
+		"UpperChest"
+	};
 	for (int bone_i = 0; bone_i < bone_count; bone_i++) {
 		String bone_name = skeleton->get_bone_name(bone_i);
-		bool is_found = false;
-		for (String bone : bones) {
-			if (bone_name == bone) {
-				is_found = true;
-				break;
-			}
-		}
-		if (!is_found) {
-			continue;
-		}
-		if (skeleton->get_parentless_bones().has(bone_i)) {
+		if (bones.has(bone_name)) {
 			create_pin_target_node(this, skeleton, bone_name, get_name());
-		} else {
-			BoneId parent_bone_i = skeleton->get_bone_parent(bone_i);
-			String parent_bone_name = skeleton->get_bone_name(parent_bone_i);
-			create_pin_target_node(this, skeleton, bone_name, parent_bone_name);
 		}
 		set_pin_bone_name(bone_i, bone_name);
 		set_constraint_name(bone_i, bone_name);
 		if (!ignored_root_bones.has(bone_name) && humanoid_profile->has_bone(bone_name)) {
+			set_pin_passthrough_factor(bone_i, 1.0f);
 			set_kusudama_limit_cone_count(bone_i, 1);
 			const int FIRST_CONE = 0;
+			const int SECOND_CONE = 1;
+			Vector3 down = Vector3(0, -1, 0);
 			Transform3D bone_transform = get_bone_direction_transform(bone_i);
 			Vector3 forward = bone_transform.basis.get_column(Vector3::AXIS_Y).normalized();
+			Quaternion twist_rotation, swing_rotation;
+			IKKusudama3D::get_swing_twist(bone_transform.basis, forward, swing_rotation, twist_rotation);
+			Vector3 backwards = -forward;
 			if (bone_name == "Hips") {
-				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, forward);
+				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, Vector3(0, -1, 0));
 				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(10.0f));
-			} else if (bone_name.ends_with("UpperLeg") ) {
-				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, -forward);
+			} else if (bone_name.find("Head") != -1) {
+				set_pin_passthrough_factor(bone_i, 0.0f);
+				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, forward);
+				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(90.0f));
+			} else if (bone_name.ends_with("UpperLeg")) {
+				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, backwards);
 				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(90.0f));
 			} else if (bone_name.ends_with("LowerLeg")) {
+				set_kusudama_limit_cone_count(bone_i, 2);
 				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(90.0f));
+				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(2.5f));
+				backwards.z += -1;
+				backwards.normalize();
+				set_kusudama_limit_cone_center(bone_i, SECOND_CONE, backwards);
+				set_kusudama_limit_cone_radius(bone_i, SECOND_CONE, Math::deg_to_rad(2.5f));
 			} else if (bone_name.ends_with("Foot")) {
-				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, forward);
+				set_pin_passthrough_factor(bone_i, 0.0f);
+				backwards.y += -1;
+				backwards.z += -1;
+				backwards.normalize();
+				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, backwards);
 				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(45.0f));
-			} else if (bone_name.ends_with("Shoulder") || bone_name.ends_with("UpperArm")) {
+			} else if (bone_name.ends_with("Shoulder")) {
 				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(180.0f));
-			} else if (bone_name.ends_with("LowerArm")) {
-				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(135.0f));
-			} else if (bone_name.ends_with("Hand")) {
+				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(120.0f));
+			} else if (bone_name.ends_with("UpperArm")) {
 				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, forward);
 				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(90.0f));
+			} else if (bone_name.ends_with("LowerArm")) {
+				set_kusudama_limit_cone_count(bone_i, 2);
+				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, forward);
+				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(2.5f));
+				if (bone_name.begins_with("Left")) {
+					backwards.x += -1;
+				} else {
+					backwards.x += 1;
+				}
+				backwards.z += -1;
+				backwards.normalize();
+				set_kusudama_limit_cone_center(bone_i, SECOND_CONE, backwards);
+				set_kusudama_limit_cone_radius(bone_i, SECOND_CONE, Math::deg_to_rad(2.5f));
+			} else if (bone_name.ends_with("Hand")) {
+				set_pin_passthrough_factor(bone_i, 0.0f);
+				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, forward);
+				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(60.0f));
 			} else if (bone_name.find("Thumb") != -1) {
 				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, forward);
 				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(90.0f));
 			} else {
 				set_kusudama_limit_cone_center(bone_i, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(45.0f));
+				set_kusudama_limit_cone_radius(bone_i, FIRST_CONE, Math::deg_to_rad(2.5f));
 			}
 		}
 	}
