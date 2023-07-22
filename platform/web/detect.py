@@ -41,6 +41,11 @@ def get_opts():
             "dlink_enabled", "Enable WebAssembly dynamic linking (GDExtension support). Produces bigger binaries", False
         ),
         BoolVariable("use_closure_compiler", "Use closure compiler to minimize JavaScript code", False),
+        BoolVariable(
+            "do_not_block_main_thread",
+            "Use Emscripten PROXY_TO_PTHREAD option to run the main application code to a separate thread",
+            False,
+        ),
     ]
 
 
@@ -212,6 +217,13 @@ def configure(env: "Environment"):
         env.Append(CCFLAGS=["-s", "SIDE_MODULE=2"])
         env.Append(LINKFLAGS=["-s", "SIDE_MODULE=2"])
         env.extra_suffix = ".dlink" + env.extra_suffix
+
+    # Run the main application in a web worker
+    if env["do_not_block_main_thread"]:
+        env.Append(LINKFLAGS=["-s", "PROXY_TO_PTHREAD=1"])
+        env.Append(CPPDEFINES=["PROXY_TO_PTHREAD_ENABLED"])
+        # https://github.com/emscripten-core/emscripten/issues/18034#issuecomment-1277561925
+        env.Append(LINKFLAGS=["-s", "TEXTDECODER=0"])
 
     # Reduce code size by generating less support code (e.g. skip NodeJS support).
     env.Append(LINKFLAGS=["-s", "ENVIRONMENT=web,worker"])
