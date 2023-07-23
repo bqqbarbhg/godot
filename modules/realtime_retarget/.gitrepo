@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/V-Sekai/realtime_retarget.git
 	branch = main
-	commit = d8e8a63c934a7b4e2415826f0378b55fd79b2942
-	parent = 74273dcad786b549cf53f9e68dce48b64dc1c00e
+	commit = a6592645d23fa33883e27ff7b5ad9e0a6034b43a
+	parent = c2b56db79e878e3a96c2f928fb63b6ee56c2681b
 	method = merge
 	cmdver = 0.4.6
