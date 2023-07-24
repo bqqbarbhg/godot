@@ -60,7 +60,7 @@ void ManyBoneIK3DHandleGizmoPlugin::_bind_methods() {
 }
 
 bool ManyBoneIK3DHandleGizmoPlugin::has_gizmo(Node3D *p_spatial) {
-	return cast_to<Marker3D>(p_spatial) || cast_to<ManyBoneIK>(p_spatial);
+	return cast_to<Marker3D>(p_spatial) || cast_to<ManyBoneIK3D>(p_spatial);
 }
 
 String ManyBoneIK3DHandleGizmoPlugin::get_gizmo_name() const {
@@ -80,9 +80,9 @@ void ManyBoneIK3DHandleGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 		return;
 	}
 	Node *root = node_3d->get_tree()->get_edited_scene_root();
-	TypedArray<Node> nodes = root->find_children("*", "ManyBoneIK");
+	TypedArray<Node> nodes = root->find_children("*", "ManyBoneIK3D");
 	for (int32_t node_i = 0; node_i < nodes.size(); node_i++) {
-		ManyBoneIK *many_bone_ik = cast_to<ManyBoneIK>(nodes[node_i]);
+		ManyBoneIK3D *many_bone_ik = cast_to<ManyBoneIK3D>(nodes[node_i]);
 		if (!many_bone_ik) {
 			return;
 		}
@@ -115,7 +115,11 @@ void ManyBoneIK3DHandleGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 				}
 				// TODO Find nearby pins for usability improvment.
 				int32_t pin_i = many_bone_ik->find_constraint(ik_bone->get_name());
-				Node *pin_node = many_bone_ik->get_node(many_bone_ik->get_pin_nodepath(pin_i));
+				String node_path = many_bone_ik->get_pin_nodepath(pin_i);
+				if (node_path.is_empty()) {
+					continue;
+				}
+				Node *pin_node = many_bone_ik->get_node(node_path);
 				if ((cast_to<Node>(node_3d) == pin_node && ik_bone->is_axially_constrained())) {
 					create_gizmo_handles(bone_i, ik_bone, p_gizmo, current_bone_color, many_bone_ik_skeleton, many_bone_ik);
 					create_twist_gizmo_handles(bone_i, ik_bone, p_gizmo, current_bone_color, many_bone_ik_skeleton, many_bone_ik);
@@ -148,7 +152,7 @@ int32_t ManyBoneIK3DHandleGizmoPlugin::get_priority() const {
 	return -1;
 }
 
-void ManyBoneIK3DHandleGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBone3D> ik_bone, EditorNode3DGizmo *p_gizmo, Color current_bone_color, Skeleton3D *many_bone_ik_skeleton, ManyBoneIK *p_many_bone_ik) {
+void ManyBoneIK3DHandleGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx, Ref<IKBone3D> ik_bone, EditorNode3DGizmo *p_gizmo, Color current_bone_color, Skeleton3D *many_bone_ik_skeleton, ManyBoneIK3D *p_many_bone_ik) {
 	// TEST PLAN: You will also want to make sure it's robust to translations of the skeleton node and root bone
 	Ref<IKKusudama3D> ik_kusudama = ik_bone->get_constraint();
 	if (ik_kusudama.is_null()) {
@@ -251,7 +255,7 @@ void ManyBoneIK3DHandleGizmoPlugin::create_gizmo_handles(BoneId current_bone_idx
 	}
 }
 
-void ManyBoneIK3DHandleGizmoPlugin::create_twist_gizmo_handles(BoneId current_bone_idx, Ref<IKBone3D> ik_bone, EditorNode3DGizmo *p_gizmo, Color current_bone_color, Skeleton3D *many_bone_ik_skeleton, ManyBoneIK *p_many_bone_ik) {
+void ManyBoneIK3DHandleGizmoPlugin::create_twist_gizmo_handles(BoneId current_bone_idx, Ref<IKBone3D> ik_bone, EditorNode3DGizmo *p_gizmo, Color current_bone_color, Skeleton3D *many_bone_ik_skeleton, ManyBoneIK3D *p_many_bone_ik) {
 	Ref<IKKusudama3D> ik_kusudama = ik_bone->get_constraint();
 	if (ik_kusudama.is_null()) {
 		return;
