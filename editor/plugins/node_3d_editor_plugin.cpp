@@ -92,6 +92,7 @@
 #include "scene/resources/packed_scene.h"
 #include "scene/resources/sky_material.h"
 #include "scene/resources/surface_tool.h"
+#include <cstddef>
 
 constexpr real_t DISTANCE_DEFAULT = 4;
 
@@ -5717,6 +5718,9 @@ Object *Node3DEditor::_get_editor_data(Object *p_what) {
 	Node3DEditorSelectedItem *si = memnew(Node3DEditorSelectedItem);
 
 	si->sp = sp;
+	if (sp->get_world_3d().is_null()) {
+		return nullptr;
+	}
 	si->sbox_instance = RenderingServer::get_singleton()->instance_create2(
 			selection_box->get_rid(),
 			sp->get_world_3d()->get_scenario());
