@@ -76,8 +76,9 @@ void ViewportTexture::setup_local_to_scene() {
 
 	if (vp) {
 		vp->viewport_textures.erase(this);
-		vp = nullptr;
 	}
+
+	vp = nullptr;
 
 	if (loc_scene->is_ready()) {
 		_setup_local_to_scene(loc_scene);
@@ -94,21 +95,9 @@ void ViewportTexture::set_viewport_path_in_scene(const NodePath &p_path) {
 
 	path = p_path;
 	vp_changed = true;
-
-	if (vp) {
-		vp->viewport_textures.erase(this);
-		vp = nullptr;
-	}
-
-	if (proxy.is_valid() && proxy_ph.is_null()) {
-		proxy_ph = RS::get_singleton()->texture_2d_placeholder_create();
-		RS::get_singleton()->texture_proxy_update(proxy, proxy_ph);
-	}
-
-	if (get_local_scene() && !path.is_empty()) {
+	
+	if (get_local_scene()) {
 		setup_local_to_scene();
-	} else {
-		emit_changed();
 	}
 }
 
@@ -473,30 +462,11 @@ int Viewport::_sub_window_find(Window *p_window) const {
 	return -1;
 }
 
-void Viewport::_update_viewport_path() {
-	if (viewport_textures.is_empty()) {
-		return;
-	}
-
-	Node *scene_root = get_scene_file_path().is_empty() ? get_owner() : this;
-	if (!scene_root && is_inside_tree()) {
-		scene_root = get_tree()->get_edited_scene_root();
-	}
-	if (scene_root && (scene_root == this || scene_root->is_ancestor_of(this))) {
-		NodePath path_in_scene = scene_root->get_path_to(this);
-		for (ViewportTexture *E : viewport_textures) {
-			E->path = path_in_scene;
-		}
-	}
-}
-
 void Viewport::_notification(int p_what) {
 	ERR_MAIN_THREAD_GUARD;
 
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
-			_update_viewport_path();
-
 			if (get_parent()) {
 				parent = get_parent()->get_viewport();
 				RenderingServer::get_singleton()->viewport_set_parent_viewport(viewport, parent->get_viewport_rid());
@@ -587,10 +557,6 @@ void Viewport::_notification(int p_what) {
 
 			RS::get_singleton()->viewport_set_active(viewport, false);
 			RenderingServer::get_singleton()->viewport_set_parent_viewport(viewport, RID());
-		} break;
-
-		case NOTIFICATION_PATH_RENAMED: {
-			_update_viewport_path();
 		} break;
 
 		case NOTIFICATION_INTERNAL_PHYSICS_PROCESS: {
