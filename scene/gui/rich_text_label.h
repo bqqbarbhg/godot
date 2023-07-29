@@ -543,10 +543,7 @@ private:
 	virtual Dictionary parse_expressions_for_values(Vector<String> p_expressions);
 
 	void _draw_fbg_boxes(RID p_ci, RID p_rid, Vector2 line_off, Item *it_from, Item *it_to, int start, int end, int fbg_flag);
-#ifndef DISABLE_DEPRECATED
-	// Kept for compatibility from 3.x to 4.0.
-	bool _set(const StringName &p_name, const Variant &p_value);
-#endif
+
 	bool use_bbcode = false;
 	String text;
 	void _apply_translation();
