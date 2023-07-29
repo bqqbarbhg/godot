@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/V-Sekai/v-sekai.whisper.git
+	branch = main
+	commit = ae9e767df952bfe5e9ddef76df6f7c72b0fcc9b2
+	parent = 2dc6bca9884cdb97e40d1fdaf1a1f693714e4fb1
+	method = merge
+	cmdver = 0.4.6
