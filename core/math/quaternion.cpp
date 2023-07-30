@@ -293,12 +293,9 @@ real_t Quaternion::get_angle() const {
 }
 
 Quaternion::Quaternion(const Vector3 &p_axis, real_t p_angle) {
-	if (!p_axis.is_normalized()) {
 #ifdef MATH_CHECKS
-		ERR_FAIL_COND_MSG(!p_axis.is_normalized(), "The axis Vector3 must be normalized.");
+	ERR_FAIL_COND_MSG(!p_axis.is_normalized(), "The axis Vector3 must be normalized.");
 #endif
-		return;
-	}
 	real_t d = p_axis.length();
 	if (d == 0) {
 		x = 0;
