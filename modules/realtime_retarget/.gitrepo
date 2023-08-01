@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/V-Sekai/realtime_retarget.git
+	branch = main
+	commit = a6592645d23fa33883e27ff7b5ad9e0a6034b43a
+	parent = 6588a4a29af1621086feac0117d5d4d37af957fd
+	method = merge
+	cmdver = 0.4.6
