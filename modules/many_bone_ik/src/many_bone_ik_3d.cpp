@@ -38,6 +38,7 @@
 #include "ik_bone_3d.h"
 #include "ik_kusudama_3d.h"
 #include "ik_limit_cone_3d.h"
+#include "scene/3d/marker_3d.h"
 #include "scene/3d/physics_body_3d.h"
 #include "scene/3d/skeleton_3d.h"
 #include "scene/resources/skeleton_profile.h"
@@ -136,7 +137,7 @@ void ManyBoneIK3D::_get_property_list(List<PropertyInfo> *p_list) const {
 			PropertyInfo(Variant::INT, "pin_count",
 					PROPERTY_HINT_RANGE, "0,65536,or_greater", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_ARRAY | PROPERTY_USAGE_READ_ONLY,
 					"Pins,pins/"));
-	for (int pin_i = 0; pin_i < pin_count; pin_i++) {
+	for (int pin_i = 0; pin_i < get_pin_count(); pin_i++) {
 		PropertyInfo effector_name;
 		effector_name.type = Variant::STRING_NAME;
 		effector_name.name = "pins/" + itos(pin_i) + "/bone_name";
@@ -149,10 +150,6 @@ void ManyBoneIK3D::_get_property_list(List<PropertyInfo> *p_list) const {
 				StringName string_name = StringName(name);
 				if (existing_pins.has(string_name)) {
 					continue;
-				}
-				if (is_bone_part_of_humanoid_mode(string_name, HumanoidMode(get_humanoid_mode()))) {
-					name += ",";
-					names += name;
 				}
 			}
 			effector_name.hint = PROPERTY_HINT_ENUM_SUGGESTION;
@@ -183,7 +180,7 @@ void ManyBoneIK3D::_get_property_list(List<PropertyInfo> *p_list) const {
 			PropertyInfo(Variant::INT, "constraint_count",
 					PROPERTY_HINT_RANGE, "0,256,or_greater", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_ARRAY | PROPERTY_USAGE_READ_ONLY,
 					"Kusudama Constraints,constraints/"));
-	for (int constraint_i = 0; constraint_i < ik_bones.size(); constraint_i++) {
+	for (int constraint_i = 0; constraint_i < get_constraint_count(); constraint_i++) {
 		PropertyInfo bone_name;
 		bone_name.type = Variant::STRING_NAME;
 		const uint32_t constraint_usage = PROPERTY_USAGE_DEFAULT;
@@ -191,8 +188,8 @@ void ManyBoneIK3D::_get_property_list(List<PropertyInfo> *p_list) const {
 		bone_name.name = "constraints/" + itos(constraint_i) + "/bone_name";
 		if (get_skeleton()) {
 			String names;
-			for (int bone_i = 0; bone_i < ik_bones.size(); bone_i++) {
-				String name = ik_bones[bone_i]->get_name();
+			for (int bone_i = 0; bone_i < get_constraint_count(); bone_i++) {
+				String name = get_constraint_name(bone_i);
 				if (existing_constraints.has(name)) {
 					continue;
 				}
@@ -231,35 +228,6 @@ void ManyBoneIK3D::_get_property_list(List<PropertyInfo> *p_list) const {
 		p_list->push_back(
 				PropertyInfo(Variant::TRANSFORM3D, "constraints/" + itos(constraint_i) + "/bone_direction", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR));
 	}
-	{
-		p_list->push_back(
-				PropertyInfo(Variant::INT, "bone_count",
-						PROPERTY_HINT_RANGE, "0,65536,or_greater", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_ARRAY,
-						"Bones,bones/"));
-		for (int property_bone_i = 0; property_bone_i < bone_list.size(); property_bone_i++) {
-			PropertyInfo bone_name;
-			bone_name.type = Variant::STRING_NAME;
-			const uint32_t damp_usage = PROPERTY_USAGE_DEFAULT;
-			bone_name.usage = damp_usage | PROPERTY_USAGE_READ_ONLY;
-			bone_name.name = "bones/" + itos(property_bone_i) + "/bone_name";
-			if (get_skeleton()) {
-				String names;
-				for (int bone_i = 0; bone_i < bone_list.size(); bone_i++) {
-					String name = bone_list[bone_i]->get_name();
-					name += ",";
-					names += name;
-				}
-				bone_name.hint = PROPERTY_HINT_ENUM_SUGGESTION;
-				bone_name.hint_string = names;
-			} else {
-				bone_name.hint = PROPERTY_HINT_NONE;
-				bone_name.hint_string = "";
-			}
-			p_list->push_back(bone_name);
-			p_list->push_back(
-					PropertyInfo(Variant::FLOAT, "bones/" + itos(property_bone_i) + "/damp", PROPERTY_HINT_RANGE, "0,360,0.1,radians", damp_usage));
-		}
-	}
 }
 
 bool ManyBoneIK3D::_get(const StringName &p_name, Variant &r_ret) const {
@@ -293,22 +261,6 @@ bool ManyBoneIK3D::_get(const StringName &p_name, Variant &r_ret) const {
 			return true;
 		} else if (what == "direction_priorities") {
 			r_ret = get_pin_direction_priorities(index);
-			return true;
-		}
-	} else if (name.begins_with("bones/")) {
-		int index = name.get_slicec('/', 1).to_int();
-		String what = name.get_slicec('/', 2);
-		ERR_FAIL_INDEX_V(index, bone_count, false);
-		if (what == "bone_name") {
-			Skeleton3D *skeleton = get_skeleton();
-			if (!skeleton) {
-				return false;
-			}
-			String bone_name = skeleton->get_bone_name(index);
-			r_ret = bone_name;
-			return true;
-		} else if (what == "damp") {
-			r_ret = get_bone_damp(index);
 			return true;
 		}
 	} else if (name.begins_with("constraints/")) {
@@ -367,13 +319,12 @@ bool ManyBoneIK3D::_set(const StringName &p_name, const Variant &p_value) {
 	} else if (name == "pin_count") {
 		set_pin_count(p_value);
 		return true;
-	} else if (name == "bone_count") {
-		_set_bone_count(p_value);
-		return true;
 	} else if (name.begins_with("pins/")) {
 		int index = name.get_slicec('/', 1).to_int();
 		String what = name.get_slicec('/', 2);
-		ERR_FAIL_INDEX_V(index, pin_count, true);
+		if (index >= pins.size()) {
+			set_pin_count(constraint_count);
+		}
 		if (what == "bone_name") {
 			set_pin_bone(index, p_value);
 			return true;
@@ -394,21 +345,14 @@ bool ManyBoneIK3D::_set(const StringName &p_name, const Variant &p_value) {
 			set_pin_direction_priorities(index, p_value);
 			return true;
 		}
-	} else if (name.begins_with("bones/")) {
-		int index = name.get_slicec('/', 1).to_int();
-		String what = name.get_slicec('/', 2);
-		if (what == "damp") {
-			set_bone_damp(index, p_value);
-			return true;
-		}
 	} else if (name.begins_with("constraints/")) {
 		int index = name.get_slicec('/', 1).to_int();
 		String what = name.get_slicec('/', 2);
 		String begins = "constraints/" + itos(index) + "/kusudama_limit_cone/";
+		if (index >= constraint_names.size()) {
+			set_constraint_count(constraint_count);
+		}
 		if (what == "bone_name") {
-			if (index >= constraint_names.size()) {
-				set_constraint_count(constraint_count);
-			}
 			set_constraint_name(index, p_value);
 			return true;
 		} else if (what == "painfulness") {
@@ -458,8 +402,6 @@ bool ManyBoneIK3D::_set(const StringName &p_name, const Variant &p_value) {
 }
 
 void ManyBoneIK3D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_humanoid_mode", "mode"), &ManyBoneIK3D::set_humanoid_mode);
-	ClassDB::bind_method(D_METHOD("get_humanoid_mode"), &ManyBoneIK3D::get_humanoid_mode);
 	ClassDB::bind_method(D_METHOD("get_constraint_twist_transform", "index"), &ManyBoneIK3D::get_constraint_twist_transform);
 	ClassDB::bind_method(D_METHOD("set_constraint_twist_transform", "index", "transform"), &ManyBoneIK3D::set_constraint_twist_transform);
 	ClassDB::bind_method(D_METHOD("get_constraint_orientation_transform", "index"), &ManyBoneIK3D::get_constraint_orientation_transform);
@@ -924,7 +866,9 @@ void ManyBoneIK3D::set_pin_direction_priorities(int32_t p_pin_index, const Vecto
 void ManyBoneIK3D::set_dirty() {
 	is_dirty = true;
 	is_gizmo_dirty = true;
-	timer->start();
+	if (timer->is_inside_tree()) {
+		timer->start();
+	}
 }
 
 void ManyBoneIK3D::_on_timer_timeout() {
@@ -961,7 +905,7 @@ void ManyBoneIK3D::set_skeleton_node_path(NodePath p_skeleton_node_path) {
 void ManyBoneIK3D::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_READY: {
-			add_child(timer);
+			add_child(timer, true, INTERNAL_MODE_BACK);
 			timer->set_owner(get_owner());
 			timer->start(true);
 			timer->set_wait_time(0.5);
@@ -974,6 +918,9 @@ void ManyBoneIK3D::_notification(int p_what) {
 		} break;
 		case NOTIFICATION_EXIT_TREE: {
 			set_physics_process_internal(false);
+			if (timer) {
+				timer->queue_free();
+			}
 		} break;
 		case NOTIFICATION_INTERNAL_PHYSICS_PROCESS: {
 			execute(get_process_delta_time());
@@ -998,23 +945,13 @@ void ManyBoneIK3D::remove_constraint(int32_t p_index) {
 void ManyBoneIK3D::_set_bone_count(int32_t p_count) {
 	bone_damp.resize(p_count);
 	for (int32_t bone_i = p_count; bone_i-- > bone_count;) {
-		bone_damp.write[bone_i] = Math_PI;
+		bone_damp.write[bone_i] = get_default_damp();
 	}
 	bone_count = p_count;
 }
 
 int32_t ManyBoneIK3D::get_bone_count() const {
 	return bone_count;
-}
-
-real_t ManyBoneIK3D::get_bone_damp(int32_t p_index) const {
-	ERR_FAIL_INDEX_V(p_index, bone_damp.size(), Math_PI);
-	return bone_damp[p_index];
-}
-
-void ManyBoneIK3D::set_bone_damp(int32_t p_index, real_t p_damp) {
-	ERR_FAIL_INDEX(p_index, bone_damp.size());
-	bone_damp.write[p_index] = p_damp;
 }
 
 Vector<Ref<IKBone3D>> ManyBoneIK3D::get_bone_list() const {
@@ -1174,16 +1111,14 @@ void ManyBoneIK3D::register_skeleton() {
 void ManyBoneIK3D::reset_constraints() {
 	Skeleton3D *skeleton = get_skeleton();
 	if (skeleton) {
-		set_pin_count(skeleton->get_bone_count());
-		set_constraint_count(skeleton->get_bone_count());
-		_set_bone_count(skeleton->get_bone_count());
-		for (int32_t bone_i = 0; bone_i < skeleton->get_bone_count(); bone_i++) {
-			set_pin_bone_name(bone_i, skeleton->get_bone_name(bone_i));
-			set_constraint_name(bone_i, skeleton->get_bone_name(bone_i));
-		}
-		for (int32_t bone_i : skeleton->get_parentless_bones()) {
-			set_pin_passthrough_factor(bone_i, 0.0f);
-		}
+		int32_t pin_count = get_pin_count();
+		set_pin_count(0);
+		set_pin_count(pin_count);
+		int32_t get_constraint_count = constraint_names.size();
+		set_constraint_count(0);
+		set_constraint_count(get_constraint_count);
+		_set_bone_count(0);
+		_set_bone_count(get_constraint_count);
 	}
 	set_dirty();
 }
@@ -1289,79 +1224,6 @@ Ref<IKNode3D> ManyBoneIK3D::get_godot_skeleton_transform() {
 	return godot_skeleton_transform;
 }
 
-void ManyBoneIK3D::set_humanoid_mode(int p_mode) {
-	humanoid_mode = HumanoidMode(p_mode);
-	set_dirty();
-}
-
-int ManyBoneIK3D::get_humanoid_mode() const {
-	return int(humanoid_mode);
-}
-
-bool ManyBoneIK3D::is_bone_part_of_humanoid_mode(const StringName &p_bone_name, ManyBoneIK3D::HumanoidMode p_humanoid_mode) const {
-	Ref<SkeletonProfileHumanoid> profile;
-	profile.instantiate();
-
-	HashSet<StringName> eleven_point_tracking_bones;
-	eleven_point_tracking_bones.insert(SNAME("Root"));
-	eleven_point_tracking_bones.insert(SNAME("Hips"));
-	eleven_point_tracking_bones.insert(SNAME("Head"));
-	eleven_point_tracking_bones.insert(SNAME("LeftHand"));
-	eleven_point_tracking_bones.insert(SNAME("RightHand"));
-	eleven_point_tracking_bones.insert(SNAME("LeftUpperArm"));
-	eleven_point_tracking_bones.insert(SNAME("RightUpperArm"));
-	eleven_point_tracking_bones.insert(SNAME("LeftLowerLeg"));
-	eleven_point_tracking_bones.insert(SNAME("RightLowerLeg"));
-	eleven_point_tracking_bones.insert(SNAME("LeftFoot"));
-	eleven_point_tracking_bones.insert(SNAME("RightFoot"));
-
-	HashSet<StringName> humanoid_bones;
-
-	for (int i = 0; i < profile->get_bone_size(); ++i) {
-		StringName profile_bone_name = profile->get_bone_name(i);
-
-		bool is_humanoid_bone = profile->has_bone(profile_bone_name);
-		if (is_humanoid_bone) {
-			humanoid_bones.insert(profile_bone_name);
-		}
-	}
-
-	BoneId current_bone_idx = get_skeleton()->find_bone(p_bone_name);
-	switch (p_humanoid_mode) {
-		case ManyBoneIK3D::HumanoidMode::HUMANOID_MODE_ALL:
-			return true;
-		case ManyBoneIK3D::HumanoidMode::HUMANOID_MODE_HUMANOID:
-			return humanoid_bones.has(p_bone_name) || is_bone_in_path_between_pins(current_bone_idx, humanoid_bones);
-		case ManyBoneIK3D::HumanoidMode::HUMANOID_MODE_BODY:
-			return eleven_point_tracking_bones.has(p_bone_name) || is_bone_in_path_between_pins(current_bone_idx, eleven_point_tracking_bones);
-		default:
-			return false;
-	}
-}
-
-bool ManyBoneIK3D::is_bone_in_path_between_pins(int p_bone_idx, const HashSet<StringName> &p_pins) const {
-	Skeleton3D *skeleton = get_skeleton();
-	if (!skeleton || p_pins.is_empty()) {
-		return false;
-	}
-
-	for (const StringName &pin : p_pins) {
-		int pin_bone_idx = skeleton->find_bone(pin);
-		if (pin_bone_idx == -1) {
-			continue;
-		}
-
-		while (pin_bone_idx != -1) {
-			if (pin_bone_idx == p_bone_idx) {
-				return true;
-			}
-			pin_bone_idx = skeleton->get_bone_parent(pin_bone_idx);
-		}
-	}
-
-	return false;
-}
-
 void ManyBoneIK3D::set_setup_humanoid_bones(bool set_targets) {
 	is_setup_humanoid_bones = set_targets;
 	setup_humanoid_bones(is_setup_humanoid_bones);
@@ -1397,20 +1259,16 @@ void ManyBoneIK3D::setup_humanoid_bones(bool p_set_targets) {
 	// | [Side]UpperArm  | The upper arm can swing forward and backward up to 110-120 degrees, allowing for reaching and swinging motions.                                                                             |
 	// | [Side]LowerArm  | The elbow can bend and straighten up to 120-130 degrees, allowing the forearm to move towards or away from the upper arm during reaching and swinging motions.                                                                                       |
 	// | [Side]Hand      | The wrist can tilt up and down up to 50-60 degrees, allowing the hand to move towards or away from the forearm.
-
+	set_process_thread_group(PROCESS_THREAD_GROUP_SUB_THREAD);
+	set_process_thread_group_order(100);
 	Skeleton3D *skeleton = cast_to<Skeleton3D>(get_node_or_null(get_skeleton_node_path()));
 	ERR_FAIL_NULL(skeleton);
 	skeleton->reset_bone_poses();
-
 	Ref<SkeletonProfileHumanoid> humanoid_profile = memnew(SkeletonProfileHumanoid);
 	PackedStringArray humanoid_bones;
 	if (!p_set_targets) {
 		return;
 	}
-	reset_constraints();
-	set_pin_count(bone_count);
-	set_constraint_count(bone_count);
-	Vector<String> ignored_root_bones = { "Root" };
 	Vector<String> bones = {
 		"Head",
 		"LeftHand",
@@ -1419,154 +1277,131 @@ void ManyBoneIK3D::setup_humanoid_bones(bool p_set_targets) {
 		"LeftFoot",
 		"RightFoot",
 	};
-	Vector<String> torso_bones = {
-		"Hips",
-		"Spine",
-		"Chest",
-		"UpperChest"
-	};
-	for (int bone_i = 0; bone_i < bone_count; bone_i++) {
-		String bone_name = skeleton->get_bone_name(bone_i);
-		int32_t constraint_id = find_constraint(bone_name);
-		if (bones.has(bone_name)) {
-			create_pin_target_node(this, skeleton, bone_name, get_name());
+	set_pin_count(0);
+	set_pin_count(bones.size());
+	TypedArray<Node> children = find_children("*", "Marker3D");
+	for (int i = 0; i < children.size(); ++i) {
+		Node *node = cast_to<Node>(children[i]);
+		node->queue_free();
+	}
+	for (int pin_i = 0; pin_i < bones.size(); pin_i++) {
+		String bone_name = bones[pin_i];
+		Marker3D *marker_3d = memnew(Marker3D);
+		marker_3d->set_name(bone_name);
+		add_child(marker_3d, true);
+		marker_3d->set_owner(get_owner());
+		int32_t bone_i = skeleton->find_bone(bone_name);
+		Transform3D pose = skeleton->get_global_transform().affine_inverse() * skeleton->get_bone_global_pose_no_override(bone_i);
+		marker_3d->set_global_transform(pose);
+		set_pin_nodepath(pin_i, get_path_to(marker_3d));
+		set_pin_bone_name(pin_i, bone_name);
+		set_pin_passthrough_factor(pin_i, 1.0f);
+		if (bone_name.ends_with("Foot")) {
+			set_pin_passthrough_factor(pin_i, 0.0f);
+		} else if (bone_name.ends_with("Hand")) {
+			set_pin_passthrough_factor(pin_i, 0.0f);
+		} else if (bone_name.find("Head") != -1) {
+			set_pin_passthrough_factor(pin_i, 0.0f);
 		}
-		set_pin_bone_name(constraint_id, bone_name);
-		set_constraint_name(constraint_id, bone_name);
-		if (!ignored_root_bones.has(bone_name) && humanoid_profile->has_bone(bone_name)) {
-			set_pin_passthrough_factor(constraint_id, 1.0f);
-			set_kusudama_limit_cone_count(constraint_id, 1);
-			const int FIRST_CONE = 0;
-			const int SECOND_CONE = 1;
-			Transform3D bone_transform = get_bone_direction_transform(constraint_id);
-			Vector3 forward = bone_transform.basis.get_column(Vector3::AXIS_Y).normalized();
-			Quaternion twist_rotation, swing_rotation;
-			IKKusudama3D::get_swing_twist(bone_transform.basis, forward, swing_rotation, twist_rotation);
-			Vector3 backwards = -forward;
-			if (bone_name == "Spine" || bone_name == "Chest") {
-				set_kusudama_twist(constraint_id, Vector2(Math::deg_to_rad(10.0f), Math::deg_to_rad(5.0f)));
-				set_kusudama_painfulness(constraint_id, 0.9);
-				set_kusudama_limit_cone_center(constraint_id, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(constraint_id, FIRST_CONE, Math::deg_to_rad(2.5f));
-			} else if (bone_name == "UpperChest") {
-				set_kusudama_twist(constraint_id, Vector2(Math::deg_to_rad(-20.0f), Math::deg_to_rad(5.0f)));
-				set_kusudama_painfulness(constraint_id, 0.9);
-				set_kusudama_limit_cone_center(constraint_id, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(constraint_id, FIRST_CONE, Math::deg_to_rad(10.0f));
-			} else if (bone_name == "Hips") {
-				set_kusudama_twist(constraint_id, Vector2(Math::deg_to_rad(-90.0f), Math::deg_to_rad(5.0f)));
-				set_kusudama_painfulness(constraint_id, 0.8);
-				set_kusudama_limit_cone_center(constraint_id, FIRST_CONE, Vector3(0, -1, 0));
-				set_kusudama_limit_cone_radius(constraint_id, FIRST_CONE, Math::deg_to_rad(10.0f));
-			} else if (bone_name.find("Neck") != -1) {
-				set_kusudama_painfulness(constraint_id, 0.5);
-				set_kusudama_limit_cone_center(constraint_id, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(constraint_id, FIRST_CONE, Math::deg_to_rad(2.5f));
-			} else if (bone_name.ends_with("UpperLeg")) {
-				set_kusudama_limit_cone_center(constraint_id, FIRST_CONE, backwards);
-				set_kusudama_limit_cone_radius(constraint_id, FIRST_CONE, Math::deg_to_rad(25.0f));
-			} else if (bone_name.ends_with("LowerLeg")) {
-				set_kusudama_painfulness(constraint_id, 0.7);
-				set_kusudama_limit_cone_count(constraint_id, 2);
-				set_kusudama_limit_cone_center(constraint_id, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(constraint_id, FIRST_CONE, Math::deg_to_rad(2.5f));
-				backwards.z += -1;
-				backwards.normalize();
-				set_kusudama_limit_cone_center(constraint_id, SECOND_CONE, backwards);
-				set_kusudama_limit_cone_radius(constraint_id, SECOND_CONE, Math::deg_to_rad(2.5f));
-			} else if (bone_name.ends_with("Foot")) {
-				set_kusudama_painfulness(constraint_id, 0.3);
-				set_pin_passthrough_factor(constraint_id, 0.0f);
-				backwards.y += -1;
-				backwards.z += -1;
-				backwards.normalize();
-				set_kusudama_limit_cone_center(constraint_id, FIRST_CONE, backwards);
-				set_kusudama_limit_cone_radius(constraint_id, FIRST_CONE, Math::deg_to_rad(45.0f));
-			} else if (bone_name.ends_with("Shoulder")) {
-				set_kusudama_painfulness(constraint_id, 0.6);
-				set_kusudama_limit_cone_center(constraint_id, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(constraint_id, FIRST_CONE, Math::deg_to_rad(30.0f));
-			} else if (bone_name.ends_with("UpperArm")) {
-				set_kusudama_limit_cone_center(constraint_id, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(constraint_id, FIRST_CONE, Math::deg_to_rad(90.0f));
-			} else if (bone_name.ends_with("LowerArm")) {
-				set_kusudama_limit_cone_count(constraint_id, 2);
-				set_kusudama_limit_cone_center(constraint_id, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(constraint_id, FIRST_CONE, Math::deg_to_rad(2.5f));
-				if (bone_name.begins_with("Left")) {
-					backwards.x += -1;
-				} else {
-					backwards.x += 1;
-				}
-				backwards.z += -1;
-				backwards.normalize();
-				set_kusudama_limit_cone_center(constraint_id, SECOND_CONE, backwards);
-				set_kusudama_limit_cone_radius(constraint_id, SECOND_CONE, Math::deg_to_rad(2.5f));
-			} else if (bone_name.ends_with("Hand")) {
-				set_kusudama_painfulness(constraint_id, 0.4);
-				set_pin_passthrough_factor(bone_i, 0.0f);
-				set_kusudama_limit_cone_center(constraint_id, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(constraint_id, FIRST_CONE, Math::deg_to_rad(60.0f));
-			} else if (bone_name.find("Thumb") != -1) {
-				set_kusudama_limit_cone_center(constraint_id, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(constraint_id, FIRST_CONE, Math::deg_to_rad(90.0f));
-			} else if (bone_name.find("Head") != -1) {
-				set_pin_passthrough_factor(constraint_id, 0.0f);
-				set_kusudama_limit_cone_center(constraint_id, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(constraint_id, FIRST_CONE, Math::deg_to_rad(15.0f));
-			} else if (bone_name.ends_with("Eye")) {
-				set_pin_passthrough_factor(constraint_id, 0.0f);
-				set_kusudama_limit_cone_center(constraint_id, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(constraint_id, FIRST_CONE, Math::deg_to_rad(10.0f));
+	}
+	set_constraint_count(0);
+	for (int human_bone_i = 0; human_bone_i < humanoid_profile->get_bone_size(); human_bone_i++) {
+		String bone_name = humanoid_profile->get_bone_name(human_bone_i);
+		add_constraint();
+		set_constraint_name(human_bone_i, bone_name);
+	}
+	skeleton_changed(get_skeleton());
+	for (int constraint_i = 0; constraint_i < get_constraint_count(); constraint_i++) {
+		set_kusudama_limit_cone_count(constraint_i, 1);
+		const int FIRST_CONE = 0;
+		const int SECOND_CONE = 1;
+		Transform3D bone_transform = get_bone_direction_transform(constraint_i);
+		Vector3 forward = bone_transform.basis.get_column(Vector3::AXIS_Y).normalized();
+		Quaternion twist_rotation, swing_rotation;
+		IKKusudama3D::get_swing_twist(bone_transform.basis, forward, swing_rotation, twist_rotation);
+		Vector3 backwards = -forward;
+		set_kusudama_twist(constraint_i, Vector2(Math::deg_to_rad(0.0f), Math::deg_to_rad(180.0f)));
+		String bone_name = get_constraint_name(constraint_i);
+		if (bone_name == "Spine" || bone_name == "Chest") {
+			set_kusudama_twist(constraint_i, Vector2(Math::deg_to_rad(10.0f), Math::deg_to_rad(5.0f)));
+			set_kusudama_painfulness(constraint_i, 0.9);
+			set_kusudama_limit_cone_center(constraint_i, FIRST_CONE, forward);
+			set_kusudama_limit_cone_radius(constraint_i, FIRST_CONE, Math::deg_to_rad(2.5f));
+		} else if (bone_name == "UpperChest") {
+			set_kusudama_twist(constraint_i, Vector2(Math::deg_to_rad(-20.0f), Math::deg_to_rad(5.0f)));
+			set_kusudama_painfulness(constraint_i, 0.9);
+			set_kusudama_limit_cone_center(constraint_i, FIRST_CONE, forward);
+			set_kusudama_limit_cone_radius(constraint_i, FIRST_CONE, Math::deg_to_rad(10.0f));
+		} else if (bone_name == "Hips") {
+			set_kusudama_twist(constraint_i, Vector2(Math::deg_to_rad(-90.0f), Math::deg_to_rad(5.0f)));
+			set_kusudama_painfulness(constraint_i, 0.8);
+			set_kusudama_limit_cone_center(constraint_i, FIRST_CONE, Vector3(0, -1, 0));
+			set_kusudama_limit_cone_radius(constraint_i, FIRST_CONE, Math::deg_to_rad(10.0f));
+		} else if (bone_name == "Neck") {
+			set_kusudama_painfulness(constraint_i, 0.5);
+			set_kusudama_limit_cone_center(constraint_i, FIRST_CONE, forward);
+			set_kusudama_limit_cone_radius(constraint_i, FIRST_CONE, Math::deg_to_rad(2.5f));
+		} else if (bone_name == "Head") {
+			set_kusudama_limit_cone_center(constraint_i, FIRST_CONE, forward);
+			set_kusudama_limit_cone_radius(constraint_i, FIRST_CONE, Math::deg_to_rad(15.0f));
+		} else if (bone_name.ends_with("UpperLeg")) {
+			set_kusudama_twist(constraint_i, Vector2(Math::deg_to_rad(0.0f), Math::deg_to_rad(180.0f)));
+			set_kusudama_limit_cone_center(constraint_i, FIRST_CONE, backwards);
+			set_kusudama_limit_cone_radius(constraint_i, FIRST_CONE, Math::deg_to_rad(25.0f));
+		} else if (bone_name.ends_with("LowerLeg")) {
+			set_kusudama_twist(constraint_i, Vector2(Math::deg_to_rad(0.0f), Math::deg_to_rad(180.0f)));
+			set_kusudama_painfulness(constraint_i, 0.7);
+			set_kusudama_limit_cone_count(constraint_i, 2);
+			set_kusudama_limit_cone_center(constraint_i, FIRST_CONE, forward);
+			set_kusudama_limit_cone_radius(constraint_i, FIRST_CONE, Math::deg_to_rad(2.5f));
+			backwards.z += -1;
+			backwards.normalize();
+			set_kusudama_limit_cone_center(constraint_i, SECOND_CONE, backwards);
+			set_kusudama_limit_cone_radius(constraint_i, SECOND_CONE, Math::deg_to_rad(2.5f));
+		} else if (bone_name.ends_with("Foot")) {
+			set_kusudama_twist(constraint_i, Vector2(Math::deg_to_rad(0.0f), Math::deg_to_rad(180.0f)));
+			set_kusudama_painfulness(constraint_i, 0.3);
+			backwards.y += -1;
+			backwards.z += -1;
+			backwards.normalize();
+			set_kusudama_limit_cone_center(constraint_i, FIRST_CONE, Vector3(0, -1, 0));
+			set_kusudama_limit_cone_radius(constraint_i, FIRST_CONE, Math::deg_to_rad(45.0f));
+		} else if (bone_name.ends_with("Shoulder")) {
+			set_kusudama_painfulness(constraint_i, 0.6);
+			set_kusudama_limit_cone_center(constraint_i, FIRST_CONE, forward);
+			set_kusudama_limit_cone_radius(constraint_i, FIRST_CONE, Math::deg_to_rad(30.0f));
+		} else if (bone_name.ends_with("UpperArm")) {
+			set_kusudama_limit_cone_center(constraint_i, FIRST_CONE, forward);
+			set_kusudama_limit_cone_radius(constraint_i, FIRST_CONE, Math::deg_to_rad(90.0f));
+		} else if (bone_name.ends_with("LowerArm")) {
+			set_kusudama_limit_cone_count(constraint_i, 2);
+			set_kusudama_limit_cone_center(constraint_i, FIRST_CONE, forward);
+			set_kusudama_limit_cone_radius(constraint_i, FIRST_CONE, Math::deg_to_rad(2.5f));
+			if (bone_name.begins_with("Left")) {
+				backwards.x += -1;
 			} else {
-				set_kusudama_limit_cone_center(constraint_id, FIRST_CONE, forward);
-				set_kusudama_limit_cone_radius(constraint_id, FIRST_CONE, Math::deg_to_rad(2.5f));
+				backwards.x += 1;
 			}
+			backwards.z += -1;
+			backwards.normalize();
+			set_kusudama_limit_cone_center(constraint_i, SECOND_CONE, backwards);
+			set_kusudama_limit_cone_radius(constraint_i, SECOND_CONE, Math::deg_to_rad(2.5f));
+		} else if (bone_name.ends_with("Hand")) {
+			set_kusudama_painfulness(constraint_i, 0.4);
+			set_kusudama_limit_cone_center(constraint_i, FIRST_CONE, forward);
+			set_kusudama_limit_cone_radius(constraint_i, FIRST_CONE, Math::deg_to_rad(60.0f));
+		} else if (bone_name.ends_with("Thumb")) {
+			set_kusudama_limit_cone_center(constraint_i, FIRST_CONE, forward);
+			set_kusudama_limit_cone_radius(constraint_i, FIRST_CONE, Math::deg_to_rad(90.0f));
+		} else if (bone_name.ends_with("Eye")) {
+			set_kusudama_limit_cone_center(constraint_i, FIRST_CONE, forward);
+			set_kusudama_limit_cone_radius(constraint_i, FIRST_CONE, Math::deg_to_rad(10.0f));
+		} else {
+			set_kusudama_limit_cone_center(constraint_i, FIRST_CONE, forward);
+			set_kusudama_limit_cone_radius(constraint_i, FIRST_CONE, Math::deg_to_rad(2.5f));
 		}
 	}
 	is_setup_humanoid_bones = false;
-}
-
-void ManyBoneIK3D::create_pin_target_node(ManyBoneIK3D *ik_instance, Skeleton3D *skeleton, String bone_name, String bone_name_parent) {
-	int bone_i = skeleton->find_bone(bone_name);
-
-	if (bone_i == -1) {
-		return;
-	}
-	if (!get_owner()) {
-		return;
-	}
-
-	PhysicalBone3D *physical_bone_3d = nullptr;
-	TypedArray<Node> children = get_owner()->find_children("*", "");
-
-	for (int i = 0; i < children.size(); ++i) {
-		Node *node = cast_to<Node>(children[i]);
-
-		if (String(node->get_name()) == bone_name) {
-			physical_bone_3d = cast_to<PhysicalBone3D>(node);
-			break;
-		}
-	}
-	if (!physical_bone_3d) {
-		physical_bone_3d = memnew(PhysicalBone3D);
-		physical_bone_3d->set_name(bone_name);
-		physical_bone_3d->set_bone_name(bone_name);
-
-		for (int i = 0; i < children.size(); ++i) {
-			Node *node = cast_to<Node>(children[i]);
-
-			if (String(node->get_name()) == bone_name_parent) {
-				skeleton->add_child(physical_bone_3d, true);
-				physical_bone_3d->set_owner(get_owner());
-				break;
-			}
-		}
-	}
-	physical_bone_3d->set_global_transform(
-			skeleton->get_global_transform().affine_inverse() * skeleton->get_bone_global_pose_no_override(bone_i));
-	int32_t effector_id = ik_instance->find_effector_id(bone_name);
-	ik_instance->set_pin_nodepath(effector_id, ik_instance->get_path_to(physical_bone_3d));
 }
 
 void ManyBoneIK3D::set_kusudama_painfulness(int32_t p_index, real_t p_painfulness) {
@@ -1594,4 +1429,16 @@ void ManyBoneIK3D::set_kusudama_painfulness(int32_t p_index, real_t p_painfulnes
 real_t ManyBoneIK3D::get_kusudama_painfulness(int32_t p_index) const {
 	ERR_FAIL_INDEX_V(p_index, constraint_names.size(), 0.0f);
 	return bone_painfulness[p_index];
+}
+
+void ManyBoneIK3D::add_constraint() {
+	int32_t old_count = constraint_count;
+	set_constraint_count(constraint_count + 1);
+	constraint_names.write[old_count] = String();
+	kusudama_limit_cone_count.write[old_count] = 0;
+	kusudama_limit_cones.write[old_count].resize(1);
+	kusudama_limit_cones.write[old_count].write[0] = Vector4(0, 1, 0, Math_PI);
+	kusudama_twist.write[old_count] = Vector2(0, Math_TAU - CMP_EPSILON);
+	bone_painfulness.write[old_count] = 0.0f;
+	set_dirty();
 }
