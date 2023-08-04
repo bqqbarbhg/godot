@@ -2,10 +2,10 @@
 
 #include "core/templates/list.h"
 #include "core/templates/local_vector.h"
-#include "ecs_world.h"
-#include "godex/components/child.h"
 #include "scene/2d/node_2d.h"
 #include "scene/3d/node_3d.h"
+
+#include "ecs_world.h"
 #include "script_ecs.h"
 #include "shared_component_resource.h"
 

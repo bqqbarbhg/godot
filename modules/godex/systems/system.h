@@ -3,7 +3,7 @@
 #include "core/string/string_name.h"
 #include "core/templates/local_vector.h"
 #include "core/templates/oa_hash_map.h"
-#include "godex/ecs_types.h"
+#include "../ecs_types.h"
 
 class World;
 class Pipeline;
