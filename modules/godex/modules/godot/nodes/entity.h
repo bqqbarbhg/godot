@@ -53,7 +53,7 @@ template <class C>
 struct EntityInternal : public EntityBase {
 	friend class WorldECS;
 
-	C *owner;
+	C *owner = nullptr;
 	bool sync_transform = false;
 	bool reference_by_nodepath = true;
 
