@@ -1,0 +1,102 @@
+name: 🏁 Windows Builds
+
+on:
+  workflow_call:
+
+# Global Settings
+# SCONS_CACHE for windows must be set in the build environment
+env:
+  GODOT_REF: 970459615f6b2b4151742ec6d7ef8559f87fd5c5
+  SCONSFLAGS: platform=windows verbose=yes warnings=all werror=yes debug_symbols=no module_text_server_fb_enabled=true
+  SCONS_CACHE_MSVC_CONFIG: true
+  BASE_BRANCH: "4.1"
+
+jobs:
+  windows-editor:
+    # Windows 10 with latest image
+    runs-on: "windows-latest"
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Editor (target=editor, tests=yes)
+            cache-name: windows-editor
+            target: editor
+            tests: true
+            # Skip debug symbols, they're way too big with MSVC.
+            sconsflags: debug_symbols=no vsproj=yes
+            bin: "./bin/godot.windows.editor.x86_64.console.exe"
+
+          - name: Template (target=template_release)
+            cache-name: windows-template
+            target: template_release
+            tests: false
+            sconsflags: debug_symbols=no
+    steps:
+    - name: Clone godex
+      uses: actions/checkout@v3
+      with:
+       path: modules/godex
+
+    - name: Clone godot for godex
+      uses: actions/checkout@v3
+      with:
+       repository: godotengine/godot
+       ref: ${{ env.GODOT_REF }}
+       path: godot
+
+    - name: Apply patches
+      working-directory: godot
+      run: |
+        git apply ../modules/godex/patches/add_custom_iterator.patch --reject --ignore-space-change --ignore-whitespace
+        git apply ../modules/godex/patches/Adjust_build_for_godex.patch --reject --ignore-space-change --ignore-whitespace
+        git apply ../modules/godex/patches/Add_godex_additions_to_doc.patch --reject --ignore-space-change --ignore-whitespace
+
+    - name: Commit
+      working-directory: godot
+      run: |
+        git config user.email "noone@example.com"
+        git config user.name "No one"
+        git commit -a -m "Create clean diff"
+
+    - name: Setup Godot build cache
+      uses: ./godot/.github/actions/godot-cache
+      with:
+        cache-name: ${{ matrix.cache-name }}
+      continue-on-error: true
+
+    - name: Setup python and scons
+      uses: ./godot/.github/actions/godot-deps
+
+    - name: Setup MSVC problem matcher
+      uses: ammaraskar/msvc-problem-matcher@master
+
+    - name: Compilation
+      uses: ./godot/.github/actions/godot-build
+      with:
+        sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
+        platform: windows
+        target: ${{ matrix.target }}
+        tests: ${{ matrix.tests }}
+        working-directory: godot
+
+    # Execute unit tests for the editor
+    - name: Unit tests
+      working-directory: godot
+      if: ${{ matrix.tests }}
+      run: |
+        ${{ matrix.bin }} --version
+        ${{ matrix.bin }} --help
+        ${{ matrix.bin }} --test --headless
+
+    - name: Prepare artifact
+      working-directory: godot
+      run: |
+        Remove-Item bin/* -Include *.exp,*.lib,*.pdb -Force
+
+    - name: Upload artifact
+      uses: ./godot/.github/actions/upload-artifact
+      with:
+        name: ${{ matrix.cache-name }}
+        path: "godot/bin/*"

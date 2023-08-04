@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DynamicQuery" inherits="GodexWorldFetcher" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+		Scripting API: Please edit XML with descriptions.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="begin">
+			<return type="void" />
+			<param index="0" name="world" type="Object" />
+			<description>
+			</description>
+		</method>
+		<method name="changed_component">
+			<return type="void" />
+			<param index="0" name="component_id" type="int" />
+			<param index="1" name="is_mutable" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="count" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="end">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="fetch">
+			<return type="void" />
+			<param index="0" name="entity_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_component" qualifiers="const">
+			<return type="Object" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_current_entity_id" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="has" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="entity_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_valid" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="maybe_component">
+			<return type="void" />
+			<param index="0" name="component_id" type="int" />
+			<param index="1" name="is_mutable" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="next">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="not_component">
+			<return type="void" />
+			<param index="0" name="component_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="prepare_world">
+			<return type="void" />
+			<param index="0" name="world" type="Object" />
+			<description>
+			</description>
+		</method>
+		<method name="reset">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="set_space">
+			<return type="void" />
+			<param index="0" name="space" type="int" enum="ECS.Space" />
+			<description>
+			</description>
+		</method>
+		<method name="with_component">
+			<return type="void" />
+			<param index="0" name="component_id" type="int" />
+			<param index="1" name="is_mutable" type="bool" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

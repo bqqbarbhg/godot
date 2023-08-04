@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/Beliar83/godex.git
+	branch = dev_main
+	commit = 62230f550be4eca321e48c27e2727aefc73f88d5
+	parent = 725beaa7afce294f38d4aca1fa287249021b6bf8
+	method = merge
+	cmdver = 0.4.6
