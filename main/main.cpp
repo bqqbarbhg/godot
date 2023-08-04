@@ -3370,7 +3370,6 @@ bool Main::iteration() {
 
 	uint64_t physics_process_ticks = 0;
 	uint64_t process_ticks = 0;
-	uint64_t navigation_process_ticks = 0;
 
 	frame += ticks_elapsed;
 
@@ -3386,6 +3385,15 @@ bool Main::iteration() {
 
 	// process all our active interfaces
 	XRServer::get_singleton()->_process();
+
+#ifdef CUSTOM_ITERATOR
+	exit = custom_iteration(process_step, physics_step, &advance, time_scale);
+#endif
+
+#ifndef CUSTOM_PHYSICS_ITERATOR
+	uint64_t navigation_process_ticks = 0;
+
+	Engine::get_singleton()->_in_physics = true;
 
 	for (int iters = 0; iters < advance.physics_steps; ++iters) {
 		if (Input::get_singleton()->is_using_input_buffering() && agile_input_event_flushing) {
@@ -3437,6 +3445,8 @@ bool Main::iteration() {
 	if (Input::get_singleton()->is_using_input_buffering() && agile_input_event_flushing) {
 		Input::get_singleton()->flush_buffered_events();
 	}
+	Engine::get_singleton()->_in_physics = false;
+#endif
 
 	uint64_t process_begin = OS::get_singleton()->get_ticks_usec();
 
@@ -3469,7 +3479,9 @@ bool Main::iteration() {
 		ScriptServer::get_language(i)->frame();
 	}
 
+#ifndef CUSTOM_AUDIO_ITERATOR
 	AudioServer::get_singleton()->update();
+#endif
 
 	if (EngineDebugger::is_active()) {
 		EngineDebugger::get_singleton()->iteration(frame_time, process_ticks, physics_process_ticks, physics_step);
