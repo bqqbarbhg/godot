@@ -2603,6 +2603,7 @@ Vector<Ref<EditorScenePostImportPlugin>> ResourceImporterScene::post_importer_pl
 bool ResourceImporterScene::ResourceImporterScene::has_advanced_options() const {
 	return true;
 }
+
 void ResourceImporterScene::ResourceImporterScene::show_advanced_options(const String &p_path) {
 	SceneImportSettings::get_singleton()->open_settings(p_path, animation_importer);
 }

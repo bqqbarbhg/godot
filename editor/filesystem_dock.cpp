@@ -1110,7 +1110,7 @@ void FileSystemDock::_select_file(const String &p_path, bool p_select_in_favorit
 		if (resource_type == "PackedScene") {
 			bool is_imported = false;
 
-			{
+			if (ResourceImporterScene::get_scene_singleton()) {
 				List<String> importer_exts;
 				ResourceImporterScene::get_scene_singleton()->get_recognized_extensions(&importer_exts);
 				String extension = fpath.get_extension();
@@ -1122,7 +1122,7 @@ void FileSystemDock::_select_file(const String &p_path, bool p_select_in_favorit
 				}
 			}
 
-			if (is_imported) {
+			if (is_imported && ResourceImporterScene::get_scene_singleton()) {
 				ResourceImporterScene::get_scene_singleton()->show_advanced_options(fpath);
 			} else {
 				EditorNode::get_singleton()->open_request(fpath);
@@ -1130,7 +1130,7 @@ void FileSystemDock::_select_file(const String &p_path, bool p_select_in_favorit
 		} else if (resource_type == "AnimationLibrary") {
 			bool is_imported = false;
 
-			{
+			if (ResourceImporterScene::get_animation_singleton()) {
 				List<String> importer_exts;
 				ResourceImporterScene::get_animation_singleton()->get_recognized_extensions(&importer_exts);
 				String extension = fpath.get_extension();
@@ -1142,7 +1142,7 @@ void FileSystemDock::_select_file(const String &p_path, bool p_select_in_favorit
 				}
 			}
 
-			if (is_imported) {
+			if (is_imported && ResourceImporterScene::get_animation_singleton()) {
 				ResourceImporterScene::get_animation_singleton()->show_advanced_options(fpath);
 			} else {
 				EditorNode::get_singleton()->open_request(fpath);
