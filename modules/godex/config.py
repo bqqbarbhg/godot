@@ -34,4 +34,10 @@ def get_doc_classes():
         "PipelineECS",
         "System",
         "WorldECS",
+        "DatabagDynamicFetcher",
+        "EventsEmitterDynamicFetcher",
+        "ComponentDynamicExposer",
+        "EventsReceiverDynamicFetcher",
+        "StorageDynamicFetcher",
+        "GodexWorldFetcher",
     ]
