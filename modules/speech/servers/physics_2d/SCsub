@@ -1,4 +1,3 @@
-Import('env')
+Import("env")
 
-env.add_source_files(env.servers_sources,"*.cpp")
-
+env.add_source_files(env.servers_sources, "*.cpp")

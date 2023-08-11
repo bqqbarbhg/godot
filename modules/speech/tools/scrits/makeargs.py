@@ -1,5 +1,4 @@
-
-text="""
+text = """
 #define FUNC$numR(m_r,m_func,$argt)\\
 	virtual m_r m_func($argtp) { \\
 		if (Thread::get_caller_ID()!=server_thread) {\\
@@ -64,25 +63,18 @@ text="""
 """
 
 
+for i in range(1, 8):
+    tp = ""
+    p = ""
+    t = ""
+    for j in range(i):
+        if j > 0:
+            tp += ", "
+            p += ", "
+            t += ", "
+        tp += "m_arg" + str(j + 1) + " p" + str(j + 1)
+        p += "p" + str(j + 1)
+        t += "m_arg" + str(j + 1)
 
-for i in range(1,8):
-
-	tp=""
-	p=""
-	t=""
-	for j in range(i):
-		if (j>0):
-			tp+=", "
-			p+=", "
-			t+=", "
-		tp +=("m_arg"+str(j+1)+" p"+str(j+1))
-		p+=("p"+str(j+1))
-		t+=("m_arg"+str(j+1))
-
-	t = text.replace("$argtp",tp).replace("$argp",p).replace("$argt",t).replace("$num",str(i))
-	print(t)
-		
-
-
-
-
+    t = text.replace("$argtp", tp).replace("$argp", p).replace("$argt", t).replace("$num", str(i))
+    print(t)
