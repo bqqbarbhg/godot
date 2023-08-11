@@ -8,6 +8,7 @@
 #include "scene/gui/option_button.h"
 #include "scene/gui/panel_container.h"
 #include "scene/gui/text_edit.h"
+#include "scene/resources/style_box_flat.h"
 
 class EditorNode;
 class WorldECS;

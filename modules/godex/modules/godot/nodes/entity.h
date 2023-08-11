@@ -6,6 +6,7 @@
 #include "scene/3d/node_3d.h"
 
 #include "ecs_world.h"
+#include "../../../components/child.h"
 #include "script_ecs.h"
 #include "shared_component_resource.h"
 

@@ -12,7 +12,9 @@
 #include "systems/dynamic_system.h"
 #include "utils/fetchers.h"
 
+#ifdef TOOLS_ENABLED
 Ref<Components3DGizmoPlugin> component_gizmo;
+#endif
 
 void initialize_godex_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS) {
@@ -51,7 +53,8 @@ void uninitialize_godex_module(ModuleInitializationLevel p_level) {
 		ECS *ecs = ECS::get_singleton();
 		ECS::__set_singleton(nullptr);
 		memdelete(ecs);
-
+#ifdef TOOLS_ENABLED
 		component_gizmo = Ref<Components3DGizmoPlugin>();
+#endif
 	}
 }
