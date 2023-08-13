@@ -78,7 +78,7 @@ layout(std140) uniform FrameData { //ubo:0
 	float delta;
 
 	float particle_size;
-	float pad0;
+	float amount_ratio;
 	float pad1;
 	float pad2;
 
