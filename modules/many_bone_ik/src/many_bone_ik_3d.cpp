@@ -172,6 +172,8 @@ void ManyBoneIK3D::_get_property_list(List<PropertyInfo> *p_list) const {
 		p_list->push_back(
 				PropertyInfo(Variant::FLOAT, "constraints/" + itos(constraint_i) + "/twist_range", PROPERTY_HINT_RANGE, "-359.9,359.9,0.1,radians,exp", constraint_usage));
 		p_list->push_back(
+				PropertyInfo(Variant::FLOAT, "constraints/" + itos(constraint_i) + "/twist_current", PROPERTY_HINT_RANGE, "-359.9,359.9,0.1,radians,exp", constraint_usage));	
+		p_list->push_back(
 				PropertyInfo(Variant::INT, "constraints/" + itos(constraint_i) + "/kusudama_limit_cone_count", PROPERTY_HINT_RANGE, "0,10,1", constraint_usage | PROPERTY_USAGE_ARRAY | PROPERTY_USAGE_READ_ONLY,
 						"Limit Cones,constraints/" + itos(constraint_i) + "/kusudama_limit_cone/"));
 		for (int cone_i = 0; cone_i < get_kusudama_limit_cone_count(constraint_i); cone_i++) {
@@ -280,6 +282,9 @@ bool ManyBoneIK3D::_get(const StringName &p_name, Variant &r_ret) const {
 		} else if (what == "twist_range") {
 			r_ret = get_kusudama_twist(index).y;
 			return true;
+		} else if (what == "twist_current") {
+			r_ret = get_kusudama_twist_current(index);
+			return true;
 		} else if (what == "kusudama_limit_cone_count") {
 			r_ret = get_kusudama_limit_cone_count(index);
 			return true;
@@ -361,6 +366,9 @@ bool ManyBoneIK3D::_set(const StringName &p_name, const Variant &p_value) {
 		} else if (what == "twist_range") {
 			Vector2 twist_range = get_kusudama_twist(index);
 			set_kusudama_twist(index, Vector2(twist_range.x, p_value));
+			return true;
+		} else if (what == "twist_current") {
+			set_kusudama_twist_current(index, p_value);
 			return true;
 		} else if (what == "kusudama_limit_cone_count") {
 			set_kusudama_limit_cone_count(index, p_value);
@@ -1253,10 +1261,15 @@ void ManyBoneIK3D::setup_humanoid_bones(bool p_set_targets) {
 	Vector<String> bones = {
 		"Root",
 		"Head",
+		"UpperChest",
+		"LeftShoulder",
 		"LeftHand",
+		"RightShoulder",
 		"RightHand",
-		"Hips",
+		"Spine",
+		"LeftLowerLeg",
 		"LeftFoot",
+		"RightLowerLeg",
 		"RightFoot",
 	};
 	set_pin_count(0);
@@ -1264,22 +1277,23 @@ void ManyBoneIK3D::setup_humanoid_bones(bool p_set_targets) {
 	TypedArray<Node> children = find_children("*", "Marker3D");
 	for (int i = 0; i < children.size(); ++i) {
 		Node *node = cast_to<Node>(children[i]);
-		node->queue_free();
+		memdelete(node);
 	}
 	for (int pin_i = 0; pin_i < bones.size(); pin_i++) {
 		String bone_name = bones[pin_i];
 		Marker3D *marker_3d = memnew(Marker3D);
 		marker_3d->set_name(bone_name);
-		add_child(marker_3d, true);
+		add_child(marker_3d);
 		marker_3d->set_owner(get_owner());
 		int32_t bone_i = skeleton->find_bone(bone_name);
 		Transform3D pose = skeleton->get_global_transform().affine_inverse() * skeleton->get_bone_global_pose_no_override(bone_i);
 		marker_3d->set_global_transform(pose);
 		set_pin_nodepath(pin_i, get_path_to(marker_3d));
 		set_pin_bone_name(pin_i, bone_name);
-		if (bone_name == "Hips") {
-			set_pin_passthrough_factor(pin_i, 1);
+		if (bone_name == "Root") {
+			continue;
 		}
+		set_pin_passthrough_factor(pin_i, 1.0f);
 	}
 	skeleton_changed(get_skeleton());
 	set_constraint_count(0);
@@ -1302,7 +1316,8 @@ void ManyBoneIK3D::setup_humanoid_bones(bool p_set_targets) {
 						bone_name.ends_with("RingDistal") ||
 						bone_name.ends_with("LittleProximal") ||
 						bone_name.ends_with("LittleIntermediate") ||
-						bone_name.ends_with("LittleDistal");
+						bone_name.ends_with("LittleDistal") ||
+						bone_name.ends_with("Eye");
 		if (isFinger) {
 			continue;
 		}
@@ -1310,9 +1325,6 @@ void ManyBoneIK3D::setup_humanoid_bones(bool p_set_targets) {
 		int32_t constraint_i = get_constraint_count();
 		add_constraint();
 		set_constraint_name(constraint_i, bone_name);
-		if (bone_name.ends_with("Eye") || bone_name == "Root" || bone_name == "LeftToes" || bone_name == "RightToes") {
-			continue;
-		}
 		set_kusudama_resistance(constraint_i, 1.0);
 	}
 	for (int bone_i = 0; bone_i < humanoid_profile->get_bone_size(); bone_i++) {
@@ -1388,7 +1400,7 @@ SkeletonProfileHumanoidConstraint::SkeletonProfileHumanoidConstraint() {
 		y_up_backwards.y = -y_up_backwards.y;
 		float twist_range = Math::deg_to_rad(360.0f);
 		float twist_from = reference_pose.basis.get_euler().y;
-		float resistance = 0.0f;
+		float resistance = 1.0;
 		if (bone_name == "Spine" || bone_name == "Chest") {
 			twist_from = -1.5708;
 			twist_range = 3.14159;
@@ -1428,6 +1440,8 @@ SkeletonProfileHumanoidConstraint::SkeletonProfileHumanoidConstraint() {
 			swing_limit_cones.push_back(LimitCone(y_up, Math::deg_to_rad(90.0f)));
 			resistance = 0.3;
 		} else if (bone_name == "LeftLowerArm" || bone_name == "RightLowerArm") {
+			twist_from = Math::deg_to_rad(-55.0f);
+			twist_range = Math::deg_to_rad(50.0f);
 			swing_limit_cones.push_back(LimitCone(y_up, Math::deg_to_rad(2.5f)));
 			swing_limit_cones.push_back(LimitCone(MODEL_FRONT, Math::deg_to_rad(2.5f)));
 			swing_limit_cones.push_back(LimitCone(y_up_backwards, Math::deg_to_rad(2.5f)));
@@ -1438,17 +1452,11 @@ SkeletonProfileHumanoidConstraint::SkeletonProfileHumanoidConstraint() {
 		} else if (bone_name == "LeftThumb" || bone_name == "RightThumb") {
 			swing_limit_cones.push_back(LimitCone(y_up, Math::deg_to_rad(90.0f)));
 			resistance = 0.6;
-		} else if (bone_name == "LeftEye" || bone_name == "RightEye") {
-			swing_limit_cones.push_back(LimitCone(y_up, Math::deg_to_rad(10.0f)));
-		} else if (bone_name == "LeftToes" || bone_name == "RightToes") {
-			continue;
-		}
-		if (bone_name == "LeftHand" || bone_name == "RightHand") {
-			twist_range = Math::deg_to_rad(20.0f);
 		}
 		set_bone_constraint(bone_name, twist_from - twist_range / 2, twist_range, swing_limit_cones, resistance);
 	}
 }
+
 SkeletonProfileHumanoidConstraint::BoneConstraint SkeletonProfileHumanoidConstraint::get_bone_constraint(const StringName &p_bone_name) const {
 	if (bone_constraints.has(p_bone_name)) {
 		return bone_constraints[p_bone_name];
@@ -1458,4 +1466,46 @@ SkeletonProfileHumanoidConstraint::BoneConstraint SkeletonProfileHumanoidConstra
 }
 void SkeletonProfileHumanoidConstraint::set_bone_constraint(const StringName &p_bone_name, float p_twist_from, float p_twist_range, Vector<LimitCone> p_swing_limit_cones, float p_resistance = 0.0f) {
 	bone_constraints[p_bone_name] = BoneConstraint(p_twist_from, p_twist_range, p_swing_limit_cones, p_resistance);
+}
+
+real_t ManyBoneIK3D::get_kusudama_twist_current(int32_t p_index) const {
+	ERR_FAIL_INDEX_V(p_index, constraint_names.size(), 0.0f);
+	String bone_name = constraint_names[p_index];
+	if (!segmented_skeletons.size()) {
+		return 0;
+	}
+	for (Ref<IKBoneSegment3D> segmented_skeleton : segmented_skeletons) {
+		if (segmented_skeleton.is_null()) {
+			continue;
+		}
+		Ref<IKBone3D> ik_bone = segmented_skeleton->get_ik_bone(get_skeleton()->find_bone(bone_name));
+		if (ik_bone.is_null()) {
+			continue;
+		}
+		if (ik_bone->get_constraint().is_null()) {
+			continue;
+		}
+		return ik_bone->get_constraint()->get_current_twist_rotation(ik_bone->get_ik_transform(), ik_bone->get_bone_direction_transform(), ik_bone->get_constraint_twist_transform());
+	}
+	return 0;
+}
+
+void ManyBoneIK3D::set_kusudama_twist_current(int32_t p_index, real_t p_rotation) {
+	ERR_FAIL_INDEX(p_index, constraint_names.size());
+	String bone_name = constraint_names[p_index];
+	for (Ref<IKBoneSegment3D> segmented_skeleton : segmented_skeletons) {
+		if (segmented_skeleton.is_null()) {
+			continue;
+		}
+		Ref<IKBone3D> ik_bone = segmented_skeleton->get_ik_bone(get_skeleton()->find_bone(bone_name));
+		if (ik_bone.is_null()) {
+			continue;
+		}
+		if (ik_bone->get_constraint().is_null()) {
+			continue;
+		}
+		ik_bone->get_constraint()->set_current_twist_rotation(ik_bone->get_ik_transform(), ik_bone->get_bone_direction_transform(), ik_bone->get_constraint_twist_transform(), p_rotation);
+		ik_bone->set_skeleton_bone_pose(get_skeleton());
+		notify_property_list_changed();
+	}
 }
