@@ -744,11 +744,6 @@ void Skeleton3DEditor::create_editors() {
 
 	edit_mode = false;
 
-	if (skeleton) {
-		skeleton->add_child(handles_mesh_instance);
-		handles_mesh_instance->set_skeleton_path(NodePath(""));
-	}
-
 	// Keying buttons.
 	animation_hb = memnew(HBoxContainer);
 	ne->add_control_to_menu_panel(animation_hb);
@@ -867,7 +862,6 @@ void Skeleton3DEditor::_notification(int p_what) {
 				skeleton->disconnect("pose_updated", callable_mp(this, &Skeleton3DEditor::_update_properties));
 				skeleton->set_transform_gizmo_visible(true);
 #endif
-				handles_mesh_instance->get_parent()->remove_child(handles_mesh_instance);
 			}
 			edit_mode_toggled(false);
 		} break;
@@ -904,45 +898,6 @@ Skeleton3DEditor::Skeleton3DEditor(EditorInspectorPluginSkeleton *e_plugin, Skel
 		editor_plugin(e_plugin),
 		skeleton(p_skeleton) {
 	singleton = this;
-
-	// Handle.
-	handle_material = Ref<ShaderMaterial>(memnew(ShaderMaterial));
-	handle_shader = Ref<Shader>(memnew(Shader));
-	handle_shader->set_code(R"(
-// Skeleton 3D gizmo handle shader.
-
-shader_type spatial;
-render_mode unshaded, shadows_disabled, depth_draw_always;
-uniform sampler2D texture_albedo : source_color;
-uniform float point_size : hint_range(0,128) = 32;
-void vertex() {
-	if (!OUTPUT_IS_SRGB) {
-		COLOR.rgb = mix( pow((COLOR.rgb + vec3(0.055)) * (1.0 / (1.0 + 0.055)), vec3(2.4)), COLOR.rgb* (1.0 / 12.92), lessThan(COLOR.rgb,vec3(0.04045)) );
-	}
-	VERTEX = VERTEX;
-	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * MODEL_MATRIX * vec4(VERTEX.xyz, 1.0);
-	POSITION.z = mix(POSITION.z, 0, 0.999);
-	POINT_SIZE = point_size;
-}
-void fragment() {
-	vec4 albedo_tex = texture(texture_albedo,POINT_COORD);
-	vec3 col = albedo_tex.rgb + COLOR.rgb;
-	col = vec3(min(col.r,1.0),min(col.g,1.0),min(col.b,1.0));
-	ALBEDO = col;
-	if (albedo_tex.a < 0.5) { discard; }
-	ALPHA = albedo_tex.a;
-}
-)");
-	handle_material->set_shader(handle_shader);
-	Ref<Texture2D> handle = EditorNode::get_singleton()->get_gui_base()->get_theme_icon(SNAME("EditorBoneHandle"), SNAME("EditorIcons"));
-	handle_material->set_shader_parameter("point_size", handle->get_width());
-	handle_material->set_shader_parameter("texture_albedo", handle);
-
-	handles_mesh_instance = memnew(MeshInstance3D);
-	handles_mesh_instance->set_cast_shadows_setting(GeometryInstance3D::SHADOW_CASTING_SETTING_OFF);
-	handles_mesh.instantiate();
-	handles_mesh_instance->set_mesh(handles_mesh);
-
 	create_editors();
 }
 
@@ -959,7 +914,6 @@ void Skeleton3DEditor::update_bone_original() {
 }
 
 void Skeleton3DEditor::_hide_handles() {
-	handles_mesh_instance->hide();
 }
 
 void Skeleton3DEditor::_draw_gizmo() {
@@ -981,31 +935,6 @@ void Skeleton3DEditor::_draw_gizmo() {
 }
 
 void Skeleton3DEditor::_draw_handles() {
-	const int bone_count = skeleton->get_bone_count();
-
-	handles_mesh->clear_surfaces();
-
-	if (bone_count) {
-		handles_mesh_instance->show();
-
-		handles_mesh->surface_begin(Mesh::PRIMITIVE_POINTS);
-
-		for (int i = 0; i < bone_count; i++) {
-			Color c;
-			if (i == selected_bone) {
-				c = Color(1, 1, 0);
-			} else {
-				c = Color(0.1, 0.25, 0.8);
-			}
-			Vector3 point = skeleton->get_bone_global_pose(i).origin;
-			handles_mesh->surface_set_color(c);
-			handles_mesh->surface_add_vertex(point);
-		}
-		handles_mesh->surface_end();
-		handles_mesh->surface_set_material(0, handle_material);
-	} else {
-		handles_mesh_instance->hide();
-	}
 }
 
 TreeItem *Skeleton3DEditor::_find(TreeItem *p_node, const NodePath &p_path) {
@@ -1088,8 +1017,6 @@ void Skeleton3DEditor::select_bone(int p_idx) {
 
 Skeleton3DEditor::~Skeleton3DEditor() {
 	singleton = nullptr;
-
-	handles_mesh_instance->queue_free();
 
 	Node3DEditor *ne = Node3DEditor::get_singleton();
 
