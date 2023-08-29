@@ -30,7 +30,7 @@
 
 #include "register_types.h"
 
-#include "src/lbfgsbpp.h"
+#include "thirdparty/lbfgsbpp.h"
 
 void initialize_lbfgs_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS) {
