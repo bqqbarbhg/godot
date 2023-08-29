@@ -31,12 +31,14 @@
 #include "register_types.h"
 
 #include "src/lbfgspp.h"
+#include "src/lbfgsbpp.h"
 
 
 void initialize_lbfgs_module(ModuleInitializationLevel p_level) {
 #ifdef TOOLS_ENABLED
 #endif
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS) {
+		GDREGISTER_CLASS(LBFGSSolver);
 		GDREGISTER_CLASS(LBFGSBSolver);
 	}
 }

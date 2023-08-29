@@ -1,24 +1,24 @@
-#ifndef MLBFGSSolver_H
-#define MLBFGSSolver_H
+#ifndef MLBFGSBSolver_H
+#define MLBFGSBSolver_H
 
 #include "core/error/error_macros.h"
 #include "core/object/gdvirtual.gen.inc"
 #include "core/object/ref_counted.h"
 #include "core/object/script_language.h"
 
-#include "../thirdparty/LBFGSpp/include/LBFGS.h"
+#include "../thirdparty/LBFGSpp/include/LBFGSB.h"
 #include "thirdparty/eigen/Eigen/Core"
 
 #include <iostream>
 #include <functional>
 
-class LBFGSSolver : public RefCounted {
-	GDCLASS(LBFGSSolver, RefCounted);
+class LBFGSBSolver : public RefCounted {
+	GDCLASS(LBFGSBSolver, RefCounted);
 
 protected:
 	static void _bind_methods() {
 		GDVIRTUAL_BIND(_call_operator, "x", "grad");
-		ClassDB::bind_method(D_METHOD("minimize", "x", "fx"), &LBFGSSolver::minimize);
+		ClassDB::bind_method(D_METHOD("minimize", "x", "fx", "lower_bound", "upper_bound"), &LBFGSBSolver::minimize);
 	}
 	GDVIRTUAL2R(double, _call_operator, const TypedArray<double>&, TypedArray<double>);
 
@@ -28,12 +28,12 @@ protected:
         return call_operator(p_x, r_grad); 
     };
 public:
-    LBFGSSolver() {        
-        operator_pointer = std::bind(&LBFGSSolver::native_operator, this, std::placeholders::_1, std::placeholders::_2);
+    LBFGSBSolver() {        
+        operator_pointer = std::bind(&LBFGSBSolver::native_operator, this, std::placeholders::_1, std::placeholders::_2);
     }
 	double native_operator(const Eigen::VectorXd &r_x, Eigen::VectorXd &r_grad) {
-		TypedArray<double> x = LBFGSSolver::eigen_to_godot(r_x);
-		TypedArray<double> grad = LBFGSSolver::eigen_to_godot(r_grad);
+		TypedArray<double> x = LBFGSBSolver::eigen_to_godot(r_x);
+		TypedArray<double> grad = LBFGSBSolver::eigen_to_godot(r_grad);
 		Eigen::VectorXd vec(r_grad.size());
 		for (int i = 0; i < r_grad.size(); ++i) {
 			vec[i] = r_grad[i];
@@ -68,17 +68,20 @@ public:
         return array;
 	};
 	Array minimize(const TypedArray<double> &p_x,
-			const double &p_fx) {
-		LBFGSpp::LBFGSParam<double> param;
+			const double &p_fx, const TypedArray<double> &p_lower_bound, const TypedArray<double> &p_upper_bound) {
+		LBFGSpp::LBFGSBParam<double> param;
 		param.epsilon = 1e-6;
 		param.max_iterations = 100;
 
-		LBFGSpp::LBFGSSolver<double> solver(param);
+		LBFGSpp::LBFGSBSolver<double> solver(param);
+
+		const Eigen::VectorXd lower_bound = godot_to_eigen(p_lower_bound);
+		const Eigen::VectorXd upper_bound = godot_to_eigen(p_upper_bound);
 
 		Eigen::VectorXd x = godot_to_eigen(p_x);
 
 		double fx = p_fx;
-		int niter = solver.minimize(operator_pointer, x, fx);
+		int niter = solver.minimize(operator_pointer, x, fx, lower_bound, upper_bound);
 		Array ret;
 		ret.push_back(niter);
 		ret.push_back(eigen_to_godot(x));
@@ -87,4 +90,4 @@ public:
 	}
 };
 
-#endif // MLBFGSSolver_H
+#endif // MLBFGSBSolver_H
