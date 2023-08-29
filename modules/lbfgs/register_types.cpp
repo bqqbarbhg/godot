@@ -32,13 +32,11 @@
 
 #include "src/lbfgsbpp.h"
 
-
 void initialize_lbfgs_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS) {
 		GDREGISTER_CLASS(LBFGSBSolver);
 	}
 }
-
 
 void uninitialize_lbfgs_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
