@@ -28,12 +28,12 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef LBFGS_H
-#define LBFGS_H
+#ifndef LBFGS_REGISTER_TYPES_H
+#define LBFGS_REGISTER_TYPES_H
 
 #include "modules/register_module_types.h"
 
 void initialize_lbfgs_module(ModuleInitializationLevel p_level);
 void uninitialize_lbfgs_module(ModuleInitializationLevel p_level);
 
-#endif // LBFGS_H
+#endif // LBFGS_REGISTER_TYPES_H

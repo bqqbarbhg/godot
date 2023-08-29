@@ -28,8 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef MLBFGSBSolver_H
-#define MLBFGSBSolver_H
+#ifndef LBFGSBPP_H
+#define LBFGSBPP_H
 
 #include "core/error/error_macros.h"
 #include "core/object/gdvirtual.gen.inc"
@@ -63,4 +63,4 @@ public:
 			const double &p_fx, const TypedArray<double> &p_lower_bound, const TypedArray<double> &p_upper_bound);
 };
 
-#endif // MLBFGSBSolver_H
+#endif // LBFGSBPP_H
