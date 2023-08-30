@@ -33,6 +33,14 @@
 
 Array LBFGSBSolver::minimize(const TypedArray<double> &p_x,
 		const double &p_fx, const TypedArray<double> &p_lower_bound, const TypedArray<double> &p_upper_bound) {
+	Array ret;
+	ret.push_back(0);
+	ret.push_back(TypedArray<double>());
+	ret.push_back(0);
+	ERR_FAIL_COND_V(!p_x.size(), ret);
+	ERR_FAIL_COND_V(!p_lower_bound.size(), ret);
+	ERR_FAIL_COND_V(!p_upper_bound.size(), ret);
+	ERR_FAIL_COND_V(p_x.size() == p_lower_bound.size() && p_lower_bound.size() == p_upper_bound.size(), ret);
 	LBFGSpp::LBFGSBParam<double> param;
 	param.epsilon = 1e-6;
 	param.max_iterations = 100;
@@ -44,7 +52,7 @@ Array LBFGSBSolver::minimize(const TypedArray<double> &p_x,
 
 	double fx = p_fx;
 	int number_of_iterations = solver.minimize(operator_pointer, x, fx, lower_bound, upper_bound);
-	Array ret;
+	ret.clear();
 	ret.push_back(number_of_iterations);
 	ret.push_back(eigen_to_godot(x));
 	ret.push_back(fx);
