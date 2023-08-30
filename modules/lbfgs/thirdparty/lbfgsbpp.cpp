@@ -40,7 +40,7 @@ Array LBFGSBSolver::minimize(const TypedArray<double> &p_x,
 	ERR_FAIL_COND_V(!p_x.size(), ret);
 	ERR_FAIL_COND_V(!p_lower_bound.size(), ret);
 	ERR_FAIL_COND_V(!p_upper_bound.size(), ret);
-	ERR_FAIL_COND_V(p_x.size() == p_lower_bound.size() && p_lower_bound.size() == p_upper_bound.size(), ret);
+	ERR_FAIL_COND_V(p_x.size() != p_lower_bound.size() || p_lower_bound.size() != p_upper_bound.size(), ret);
 	LBFGSpp::LBFGSBParam<double> param;
 	param.epsilon = 1e-6;
 	param.max_iterations = 100;
