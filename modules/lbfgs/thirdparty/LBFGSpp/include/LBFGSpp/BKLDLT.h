@@ -520,9 +520,9 @@ public:
         }
 
         // 5. x = P'y
-        for (Index i = npermc - 1; i >= 0; i--)
+        for (Index j = npermc - 1; j >= 0; j--)
         {
-            std::swap(x[m_permc[i].first], x[m_permc[i].second]);
+            std::swap(x[m_permc[j].first], x[m_permc[j].second]);
         }
         return 0;
     }
