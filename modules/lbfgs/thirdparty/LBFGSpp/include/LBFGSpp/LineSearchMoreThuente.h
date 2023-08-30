@@ -412,8 +412,8 @@ public:
             // the best one so far. If not, go to the next iteration and find a better one
             if (step >= step_max)
             {
-                const Scalar ft = fx - fx_init - step * test_decr;
-                if (ft <= fI_lo)
+                const Scalar ft2 = fx - fx_init - step * test_decr;
+                if (ft2 <= fI_lo)
                 {
                     // std::cout << "** Maximum step size reached\n\n";
                     // std::cout << "========================= Leaving line search =========================\n\n";
@@ -431,8 +431,8 @@ public:
 
             // First test whether the last step is better than I_lo
             // If yes, return the last step
-            const Scalar ft = fx - fx_init - step * test_decr;
-            if (ft <= fI_lo)
+            const Scalar ft3 = fx - fx_init - step * test_decr;
+            if (ft3 <= fI_lo)
                 return OK;
 
             // Then the best step size so far is I_lo, but it needs to be positive
