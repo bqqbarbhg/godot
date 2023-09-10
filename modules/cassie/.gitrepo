@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/V-Sekai/V-Sekai.cassie.git
+	branch = main
+	commit = ca35b9f8289f85233b086024b9c3610abe600067
+	parent = fc99492d3066098e938449b10e02f8e01d07e2d1
+	method = merge
+	cmdver = 0.4.6
