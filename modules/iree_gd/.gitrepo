@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/RechieKho/iree.gd.git
+	branch = module
+	commit = 2a1762ec91afe00869e66b66eaadb128f1a35651
+	parent = fc99492d3066098e938449b10e02f8e01d07e2d1
+	method = merge
+	cmdver = 0.4.6

@@ -1,0 +1,14 @@
+# CMake build directory
+/build/ 
+
+# CMake generated temporary files.
+/.tmp/
+
+# Custom helper scripts, binaries, and configurations.
+/custom/
+/compile_commands.json
+/.vscode/
+
+# Caches
+/.cache/
+/.ccls-cache/
