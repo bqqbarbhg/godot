@@ -364,3 +364,12 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 *.lnk
+
+!modules/*/thirdparty/*
+!modules/speech/thirdparty/AEC3/base/abseil/absl/log
+!modules/speech/thirdparty/opus/celt/arm
+!modules/speech/thirdparty/opus/celt/x86
+!modules/speech/thirdparty/opus/silk/arm
+!modules/speech/thirdparty/opus/silk/x86
+!modules/speech/thirdparty/libsamplerate/Win32
+!modules/speech/thirdparty/opus/silk/fixed/x86
