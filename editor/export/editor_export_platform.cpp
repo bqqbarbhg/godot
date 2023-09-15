@@ -44,6 +44,7 @@
 #include "editor/editor_settings.h"
 #include "editor/editor_string_names.h"
 #include "editor/export/editor_export.h"
+#include "editor/export/editor_export_platform.h"
 #include "editor/plugins/script_editor_plugin.h"
 #include "editor_export_plugin.h"
 #include "scene/resources/image_texture.h"
@@ -187,6 +188,11 @@ void EditorExportPlatform::gen_debug_flags(Vector<String> &r_flags, int p_flags)
 
 	if (p_flags & DEBUG_FLAG_VIEW_NAVIGATION) {
 		r_flags.push_back("--debug-navigation");
+	}
+
+	if (p_flags & DEBUG_FLAG_DISABLE_XR_MODE) {
+		r_flags.push_back("--xr-mode");
+		r_flags.push_back("off");
 	}
 }
 

@@ -30,6 +30,7 @@
 
 #include "debugger_editor_plugin.h"
 
+#include "core/config/project_settings.h"
 #include "core/os/keyboard.h"
 #include "editor/debugger/editor_debugger_node.h"
 #include "editor/debugger/editor_debugger_server.h"
@@ -39,6 +40,7 @@
 #include "editor/editor_settings.h"
 #include "editor/plugins/script_editor_plugin.h"
 #include "scene/gui/menu_button.h"
+#include "servers/xr_server.h"
 
 DebuggerEditorPlugin::DebuggerEditorPlugin(PopupMenu *p_debug_menu) {
 	EditorDebuggerServer::initialize();
@@ -88,6 +90,9 @@ DebuggerEditorPlugin::DebuggerEditorPlugin(PopupMenu *p_debug_menu) {
 	debug_menu->add_check_shortcut(ED_SHORTCUT("editor/keep_server_open", TTR("Keep Debug Server Open")), SERVER_KEEP_OPEN);
 	debug_menu->set_item_tooltip(-1,
 			TTR("When this option is enabled, the editor debug server will stay open and listen for new sessions started outside of the editor itself."));
+	debug_menu->add_check_shortcut(ED_SHORTCUT("editor/allow_xr_mode", TTR("Allow XR Mode")), RUN_DEBUG_XR_MODE);
+	debug_menu->set_item_tooltip(-1,
+			TTR("When this option is enabled, XR mode is kept at the current settings. If the option is disabled, the XR mode is set to off."));
 
 	// Multi-instance, start/stop
 	instances_menu = memnew(PopupMenu);
@@ -191,6 +196,12 @@ void DebuggerEditorPlugin::_menu_option(int p_option) {
 			EditorSettings::get_singleton()->set_project_metadata("debug_options", "server_keep_open", !ischecked);
 
 		} break;
+		case RUN_DEBUG_XR_MODE: {
+			bool ischecked = debug_menu->is_item_checked(debug_menu->get_item_index(RUN_DEBUG_XR_MODE));
+			
+			debug_menu->set_item_checked(debug_menu->get_item_index(RUN_DEBUG_XR_MODE), !ischecked);
+			EditorSettings::get_singleton()->set_project_metadata("debug_options", "allow_xr_mode", !ischecked);
+		} break;
 	}
 }
 
@@ -216,6 +227,7 @@ void DebuggerEditorPlugin::_update_debug_options() {
 	bool check_live_debug = EditorSettings::get_singleton()->get_project_metadata("debug_options", "run_live_debug", true);
 	bool check_reload_scripts = EditorSettings::get_singleton()->get_project_metadata("debug_options", "run_reload_scripts", true);
 	bool check_server_keep_open = EditorSettings::get_singleton()->get_project_metadata("debug_options", "server_keep_open", false);
+	bool check_allow_xr_mode = EditorSettings::get_singleton()->get_project_metadata("debug_options", "allow_xr_mode", true);
 	int instances = EditorSettings::get_singleton()->get_project_metadata("debug_options", "run_debug_instances", 1);
 
 	if (check_deploy_remote) {
@@ -244,6 +256,9 @@ void DebuggerEditorPlugin::_update_debug_options() {
 	}
 	if (check_server_keep_open) {
 		_menu_option(SERVER_KEEP_OPEN);
+	}
+	if (check_allow_xr_mode) {
+		_menu_option(RUN_DEBUG_XR_MODE);
 	}
 
 	int len = instances_menu->get_item_count();

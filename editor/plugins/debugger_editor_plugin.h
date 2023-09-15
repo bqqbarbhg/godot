@@ -55,6 +55,7 @@ private:
 		RUN_DEPLOY_REMOTE_DEBUG,
 		RUN_RELOAD_SCRIPTS,
 		SERVER_KEEP_OPEN,
+		RUN_DEBUG_XR_MODE,
 	};
 
 	void _update_debug_options();

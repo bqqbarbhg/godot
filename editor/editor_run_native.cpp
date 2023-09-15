@@ -118,6 +118,7 @@ Error EditorRunNative::start_run_native(int p_id) {
 	bool deploy_dumb = EditorSettings::get_singleton()->get_project_metadata("debug_options", "run_file_server", false);
 	bool debug_collisions = EditorSettings::get_singleton()->get_project_metadata("debug_options", "run_debug_collisions", false);
 	bool debug_navigation = EditorSettings::get_singleton()->get_project_metadata("debug_options", "run_debug_navigation", false);
+	bool disable_xr_mode = EditorSettings::get_singleton()->get_project_metadata("debug_options", "allow_xr_mode", false);
 
 	if (deploy_debug_remote) {
 		flags |= EditorExportPlatform::DEBUG_FLAG_REMOTE_DEBUG;
@@ -130,6 +131,9 @@ Error EditorRunNative::start_run_native(int p_id) {
 	}
 	if (debug_navigation) {
 		flags |= EditorExportPlatform::DEBUG_FLAG_VIEW_NAVIGATION;
+	}
+	if (disable_xr_mode) {
+		flags |= EditorExportPlatform::DEBUG_FLAG_DISABLE_XR_MODE;
 	}
 
 	eep->clear_messages();
