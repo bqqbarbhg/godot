@@ -78,6 +78,17 @@
 #include <cstdint>
 #include <limits>
 
+static size_t _file_access_read_fn(void *user, void *data, size_t size) {
+	FileAccess *file = static_cast<FileAccess*>(user);
+	return (size_t)file->get_buffer((uint8_t*)data, (uint64_t)size);
+}
+
+static bool _file_access_skip_fn(void *user, size_t size) {
+	FileAccess *file = static_cast<FileAccess*>(user);
+	file->seek(file->get_position() + size);
+	return true;
+}
+
 static Ref<ImporterMesh> _mesh_to_importer_mesh(Ref<Mesh> p_mesh) {
 	Ref<ImporterMesh> importer_mesh;
 	importer_mesh.instantiate();
@@ -5425,6 +5436,8 @@ void FBXDocument::_convert_animation(Ref<FBXState> p_state, AnimationPlayer *p_a
 }
 
 Error FBXDocument::_parse(Ref<FBXState> p_state, String p_path, Ref<FileAccess> p_file) {
+	p_state->scene.reset();
+
 	Error err = ERR_INVALID_DATA;
 	if (p_file.is_null()) {
 		return FAILED;
@@ -5432,8 +5445,15 @@ Error FBXDocument::_parse(Ref<FBXState> p_state, String p_path, Ref<FileAccess> 
 
 	ufbx_load_opts opts = {};
 	ufbx_error error;
-	Vector<uint8_t> data = p_file->get_buffer(p_file->get_length());
-	ufbx_scene *scene = ufbx_load_memory(data.ptr(), data.size(), &opts, &error);
+
+	ufbx_stream file_stream = {};
+	file_stream.read_fn = &_file_access_read_fn;
+	file_stream.skip_fn = &_file_access_skip_fn;
+	file_stream.user = p_file.ptr();
+
+	p_state->scene = ufbx_scene_ref(ufbx_load_stream(&file_stream, &opts, &error));
+
+	ufbx_scene *scene = p_state->scene.get();
 	if (!scene) {
 		ERR_PRINT(vformat("Failed to load: %s", error.description.data));
 		return FAILED;
@@ -5451,7 +5471,6 @@ Error FBXDocument::_parse(Ref<FBXState> p_state, String p_path, Ref<FileAccess> 
 		}
 	}	
 	ERR_FAIL_NULL_V(scene, err);
-	ufbx_free_scene(scene);
 
 	// p_file->seek(0);
 	// uint32_t magic = p_file->get_32();
