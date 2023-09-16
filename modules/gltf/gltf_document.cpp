@@ -4341,8 +4341,49 @@ Error GLTFDocument::_verify_skin(Ref<GLTFState> p_state, Ref<GLTFSkin> p_skin) {
 }
 
 Error GLTFDocument::_parse_skins(Ref<GLTFState> p_state) {
-	if (!p_state->json.has("skins")) {
-		return OK;
+	if (!p_state->json.has("meshes") && p_state->json.has("animations")) {
+		const Array &animations = p_state->json["animations"];
+		for (GLTFAnimationIndex animation_i = 0; animation_i < animations.size(); animation_i++) {
+			Ref<GLTFSkin> skin;
+			skin.instantiate();
+			Ref<Skin> godot_skin;
+			godot_skin.instantiate();
+			const Dictionary &d = animations[animation_i];
+
+			if (!d.has("channels") || !d.has("samplers")) {
+				continue;
+			}
+
+			Array channels = d["channels"];
+
+			for (int j = 0; j < channels.size(); j++) {
+				const Dictionary &c = channels[j];
+				if (!c.has("target")) {
+					continue;
+				}
+
+				const Dictionary &t = c["target"];
+				if (!t.has("node") || !t.has("path")) {
+					continue;
+				}
+
+				ERR_FAIL_COND_V(!c.has("sampler"), ERR_PARSE_ERROR);
+
+				GLTFNodeIndex node = t["node"];
+
+				ERR_FAIL_INDEX_V(node, p_state->nodes.size(), ERR_PARSE_ERROR);
+				Ref<GLTFNode> gltf_node = p_state->nodes[node];
+				if (gltf_node.is_valid()) {
+					skin->joints.push_back(node);
+					skin->joints_original.push_back(node);
+
+					p_state->nodes.write[node]->joint = true;
+					godot_skin->add_named_bind(gltf_node->get_name(), gltf_node->get_xform());
+				}
+			}
+			skin->set_godot_skin(godot_skin);
+			p_state->skins.push_back(skin);
+		}
 	}
 
 	const Array &skins = p_state->json["skins"];
