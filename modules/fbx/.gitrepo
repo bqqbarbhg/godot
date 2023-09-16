@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/V-Sekai/godot-ufbx.git
 	branch = blend-shape-fix
-	commit = 0b874ae8ba78bfbf85cc956f9ad62434e032ced3
-	parent = f1161b5d9e228fe650ca7683cfbe5eb052487139
+	commit = b2dcd5357671203e351cda232272b368ba4689eb
+	parent = 906a6dcf160c9408de46fe897404c02aa02f8bfa
 	method = merge
 	cmdver = 0.4.6
