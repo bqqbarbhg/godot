@@ -43,10 +43,6 @@ static void _editor_init() {
 	Ref<EditorSceneFormatImporterUFBX> import_fbx;
 	import_fbx.instantiate();
 	ResourceImporterScene::add_importer(import_fbx);
-
-	Ref<EditorSceneFormatImporterUFBX> importer;
-	importer.instantiate();
-	ResourceImporterScene::get_scene_singleton()->add_importer(importer);
 }
 #endif // TOOLS_ENABLED
 
@@ -57,11 +53,7 @@ static void _editor_init() {
 
 void initialize_fbx_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		// glTF API available at runtime.
-		GDREGISTER_CLASS(FBXAccessor);
 		GDREGISTER_CLASS(FBXAnimation);
-		GDREGISTER_CLASS(FBXBufferView);
-		GDREGISTER_CLASS(FBXCamera);
 		GDREGISTER_CLASS(FBXDocument);
 		GDREGISTER_CLASS(FBXDocumentExtension);
 		GDREGISTER_CLASS(FBXMesh);
@@ -70,7 +62,6 @@ void initialize_fbx_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(FBXSkin);
 		GDREGISTER_CLASS(FBXState);
 		GDREGISTER_CLASS(FBXTexture);
-		GDREGISTER_CLASS(FBXTextureSampler);
 	}
 
 #ifdef TOOLS_ENABLED
@@ -80,14 +71,6 @@ void initialize_fbx_module(ModuleInitializationLevel p_level) {
 		ClassDB::set_current_api(ClassDB::API_EDITOR);
 
 		GDREGISTER_CLASS(EditorSceneFormatImporterUFBX);
-
-		GDREGISTER_CLASS(EditorSceneFormatImporterUFBX);
-		// Can't (a priori) run external app on these platforms.
-		GLOBAL_DEF_RST("filesystem/import/blender/enabled.android", false);
-		GLOBAL_DEF_RST("filesystem/import/blender/enabled.web", false);
-		GLOBAL_DEF_RST("filesystem/import/fbx/enabled.android", false);
-		GLOBAL_DEF_RST("filesystem/import/fbx/enabled.web", false);
-
 		ClassDB::set_current_api(prev_api);
 		EditorNode::add_init_callback(_editor_init);
 	}
