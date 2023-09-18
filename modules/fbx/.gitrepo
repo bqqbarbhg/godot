@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = https://github.com/V-Sekai/godot-ufbx.git
-	branch = main
-	commit = 57c1e6f4b3b0007e8b43b195a83e4cffe4a182c9
-	parent = 742dc65de6308d026be3ca1a241a1911fd6f38fe
+	branch = animation-baking
+	commit = 6d0514d86c98ceb00ae8d37df827d98ab47089e0
+	parent = 2025b3b995b406d87a4e6d76c01d24db9c8c8e6f
 	method = merge
 	cmdver = 0.4.6
