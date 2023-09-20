@@ -25,3 +25,10 @@ runs:
         python -c "import sys; print(sys.version)"
         python -m pip install scons==4.4.0
         scons --version
+
+    - name: Checkout godot engine repo
+      uses: actions/checkout@v3
+      with:
+        repository: v-sekai/godot
+        path: godot
+        ref: groups-4.2
