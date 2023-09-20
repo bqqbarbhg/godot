@@ -176,3 +176,10 @@ Validate extension JSON: API was removed: classes/TileMap/methods/set_quadrant_s
 Validate extension JSON: API was removed: classes/TileMap/properties/cell_quadrant_size
 
 cell_quadrant_size/quadrant_size of the TileMap API was renamed to rendering_quadrant_size.
+
+
+GH-79527
+--------
+Validate extension JSON: Error: Field 'classes/ParticleProcessMaterial/properties/orbit_velocity_curve': type changed value in new API, from "CurveTexture" to "CurveTexture,CurveXYZTexture".
+
+Added accepted curve type from only CurveTexture to CurveXYZTexture.
