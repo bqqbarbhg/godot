@@ -63,3 +63,95 @@ jobs:
     # appropriately.
     needs: linux-build
     uses: ./.github/workflows/godot_cpp_test.yml
+
+  release:
+    needs: godot-cpp-test
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/groups-4.2')
+    
+    steps:
+      - name: Download android-template artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: android-template
+          path: ./artifacts/android-template
+
+      - name: Download godot-api-dump artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: godot-api-dump
+          path: ./artifacts/godot-api-dump
+
+      - name: Download ios-template artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ios-template
+          path: ./artifacts/ios-template
+
+      - name: Download linux-editor-mono artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: linux-editor-mono
+          path: ./artifacts/linux-editor-mono
+
+      - name: Download linux-template-minimal artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: linux-template-minimal
+          path: ./artifacts/linux-template-minimal
+
+      - name: Download linux-template-mono artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: linux-template-mono
+          path: ./artifacts/linux-template-mono
+
+      - name: Download macos-editor artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: macos-editor
+          path: ./artifacts/macos-editor
+
+      - name: Download macos-template artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: macos-template
+          path: ./artifacts/macos-template
+
+      - name: Download web-template artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: web-template
+          path: ./artifacts/web-template
+
+      - name: Download windows-editor artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: windows-editor
+          path: ./artifacts/windows-editor
+
+      - name: Download windows-template artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: windows-template
+          path: ./artifacts/windows-template
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/groups-4.2')
+        with:
+          files: |
+            ./artifacts/android-template/android-template.zip
+            ./artifacts/godot-api-dump/godot-api-dump.zip
+            ./artifacts/ios-template/ios-template.zip
+            ./artifacts/linux-editor-mono/linux-editor-mono.zip
+            ./artifacts/linux-template-minimal/linux-template-minimal.zip
+            ./artifacts/linux-template-mono/linux-template-mono.zip
+            ./artifacts/macos-editor/macos-editor.zip
+            ./artifacts/macos-template/macos-template.zip
+            ./artifacts/web-template/web-template.zip
+            ./artifacts/windows-editor/windows-editor.zip
+            ./artifacts/windows-template/windows-template.zip
+          body: "This is a https://github.com/V-Sekai/godot release"
+          generate_release_notes: true
+          append_body: true
