@@ -64,135 +64,94 @@ jobs:
     needs: linux-build
     uses: ./.github/workflows/godot_cpp_test.yml
 
-  release:  
-    if: startsWith(github.ref, 'refs/tags/groups-4.2*')
-    needs:
-      [
-        godot-cpp-test
-      ]
+  release:
+    needs: godot-cpp-test
     runs-on: ubuntu-latest
-
+    if: startsWith(github.ref, 'refs/tags/groups-4.2')
+    
     steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.VSEKAI_GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-      - name: Download artifacts
+      - name: Download android-template artifact
         uses: actions/download-artifact@v2
-
-      - name: Upload android-template artifact to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.VSEKAI_GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./android-template
-          asset_name: android-template
-          asset_content_type: application/zip
+          name: android-template
+          path: ./artifacts/android-template
 
-      - name: Upload godot-api-dump artifact to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.VSEKAI_GITHUB_TOKEN }}
+      - name: Download godot-api-dump artifact
+        uses: actions/download-artifact@v2
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./godot-api-dump
-          asset_name: godot-api-dump
-          asset_content_type: application/zip
+          name: godot-api-dump
+          path: ./artifacts/godot-api-dump
 
-      - name: Upload ios-template artifact to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.VSEKAI_GITHUB_TOKEN }}
+      - name: Download ios-template artifact
+        uses: actions/download-artifact@v2
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./ios-template
-          asset_name: ios-template
-          asset_content_type: application/zip
+          name: ios-template
+          path: ./artifacts/ios-template
 
-      - name: Upload linux-editor-mono artifact to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.VSEKAI_GITHUB_TOKEN }}
+      - name: Download linux-editor-mono artifact
+        uses: actions/download-artifact@v2
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./linux-editor-mono
-          asset_name: linux-editor-mono
-          asset_content_type: application/zip
+          name: linux-editor-mono
+          path: ./artifacts/linux-editor-mono
 
-      - name: Upload linux-template-minimal artifact to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.VSEKAI_GITHUB_TOKEN }}
+      - name: Download linux-template-minimal artifact
+        uses: actions/download-artifact@v2
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./linux-template-minimal
-          asset_name: linux-template-minimal
-          asset_content_type: application/zip
+          name: linux-template-minimal
+          path: ./artifacts/linux-template-minimal
 
-      - name: Upload linux-template-mono artifact to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.VSEKAI_GITHUB_TOKEN }}
+      - name: Download linux-template-mono artifact
+        uses: actions/download-artifact@v2
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./linux-template-mono
-          asset_name: linux-template-mono
-          asset_content_type: application/zip
+          name: linux-template-mono
+          path: ./artifacts/linux-template-mono
 
-      - name: Upload macos-editor artifact to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.VSEKAI_GITHUB_TOKEN }}
+      - name: Download macos-editor artifact
+        uses: actions/download-artifact@v2
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./macos-editor
-          asset_name: macos-editor
-          asset_content_type: application/zip
+          name: macos-editor
+          path: ./artifacts/macos-editor
 
-      - name: Upload macos-template artifact to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.VSEKAI_GITHUB_TOKEN }}
+      - name: Download macos-template artifact
+        uses: actions/download-artifact@v2
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./macos-template
-          asset_name: macos-template
-          asset_content_type: application/zip
+          name: macos-template
+          path: ./artifacts/macos-template
 
-      - name: Upload web-template artifact to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.VSEKAI_GITHUB_TOKEN }}
+      - name: Download web-template artifact
+        uses: actions/download-artifact@v2
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./web-template
-          asset_name: web-template
-          asset_content_type: application/zip
+          name: web-template
+          path: ./artifacts/web-template
 
-      - name: Upload windows-editor artifact to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.VSEKAI_GITHUB_TOKEN }}
+      - name: Download windows-editor artifact
+        uses: actions/download-artifact@v2
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./windows-editor
-          asset_name: windows-editor
-          asset_content_type: application/zip
+          name: windows-editor
+          path: ./artifacts/windows-editor
 
-      - name: Upload windows-template artifact to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.VSEKAI_GITHUB_TOKEN }}
+      - name: Download windows-template artifact
+        uses: actions/download-artifact@v2
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./windows-template
-          asset_name: windows-template
-          asset_content_type: application/zip
+          name: windows-template
+          path: ./artifacts/windows-template
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/groups-4.2')
+        with:
+          files: |
+            ./artifacts/android-template/android-template.zip
+            ./artifacts/godot-api-dump/godot-api-dump.zip
+            ./artifacts/ios-template/ios-template.zip
+            ./artifacts/linux-editor-mono/linux-editor-mono.zip
+            ./artifacts/linux-template-minimal/linux-template-minimal.zip
+            ./artifacts/linux-template-mono/linux-template-mono.zip
+            ./artifacts/macos-editor/macos-editor.zip
+            ./artifacts/macos-template/macos-template.zip
+            ./artifacts/web-template/web-template.zip
+            ./artifacts/windows-editor/windows-editor.zip
+            ./artifacts/windows-template/windows-template.zip
+          body: "This is a https://github.com/V-Sekai/godot release"
+          generate_release_notes: true
+          append_body: true
