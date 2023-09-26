@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/V-Sekai/godot-ufbx.git
 	branch = main
-	commit = 927ff11af923877cddfd05cb155839048e469cdf
-	parent = df2a2fc7e0d2fae6b43eb0f5835a1a593a683002
+	commit = bfe3470d3ec07fe62f169462ff32404109a30b01
+	parent = 858b76de2632c0183dba6633dcfd73f22b6be2cc
 	method = merge
 	cmdver = 0.4.6
