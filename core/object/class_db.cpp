@@ -31,6 +31,7 @@
 #include "class_db.h"
 
 #include "core/config/engine.h"
+#include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
 #include "core/os/mutex.h"
 #include "core/version.h"
@@ -221,10 +222,11 @@ uint32_t ClassDB::get_api_hash(APIType p_api) {
 
 				hash = hash_murmur3_one_64(mb->get_default_argument_count(), hash);
 
-				for (int i = 0; i < mb->get_default_argument_count(); i++) {
-					//hash should not change, i hope for tis
-					Variant da = mb->get_default_argument(i);
-					hash = hash_murmur3_one_64(da.hash(), hash);
+				for (int i = 0; i < mb->get_argument_count(); i++) {
+					if (mb->has_default_argument(i)) {
+						Variant da = mb->get_default_argument(i);
+						hash = hash_murmur3_one_64(da.hash(), hash);
+					}
 				}
 
 				hash = hash_murmur3_one_64(mb->get_hint_flags(), hash);
@@ -377,7 +379,14 @@ bool ClassDB::can_instantiate(const StringName &p_class) {
 	OBJTYPE_RLOCK;
 
 	ClassInfo *ti = classes.getptr(p_class);
-	ERR_FAIL_NULL_V_MSG(ti, false, "Cannot get class '" + String(p_class) + "'.");
+	if (!ti) {
+		if (!ScriptServer::is_global_class(p_class)) {
+			ERR_FAIL_V_MSG(false, "Cannot get class '" + String(p_class) + "'.");
+		}
+		String path = ScriptServer::get_global_class_path(p_class);
+		Ref<Script> scr = ResourceLoader::load(path);
+		return scr.is_valid() && scr->is_valid() && !scr->is_abstract();
+	}
 #ifdef TOOLS_ENABLED
 	if (ti->api == API_EDITOR && !Engine::get_singleton()->is_editor_hint()) {
 		return false;
@@ -394,7 +403,9 @@ bool ClassDB::is_virtual(const StringName &p_class) {
 		if (!ScriptServer::is_global_class(p_class)) {
 			ERR_FAIL_V_MSG(false, "Cannot get class '" + String(p_class) + "'.");
 		}
-		return false;
+		String path = ScriptServer::get_global_class_path(p_class);
+		Ref<Script> scr = ResourceLoader::load(path);
+		return scr.is_valid() && scr->is_valid() && scr->is_abstract();
 	}
 #ifdef TOOLS_ENABLED
 	if (ti->api == API_EDITOR && !Engine::get_singleton()->is_editor_hint()) {
