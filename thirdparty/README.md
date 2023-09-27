@@ -407,6 +407,64 @@ Files extracted from upstream source:
 - `jpge*.{c,h}`
 
 
+## libdatachannel
+
+- Upstream: https://github.com/paullouisageneau/libdatachannel
+- Version: 0.19.1 (c59cea8973fe5a182feb3159638af338752efa9b, 2023)
+- License: MPL 2.0
+
+File extracted from upstream release tarball:
+
+- All `*.h` and `*.hpp` from `include/rtc/` to `thirdparty/libdatachannel/include/rtc/`.
+- All `*.cpp` from `src/impl/` to `thirdparty/libdatachannel/src/impl/` except `dtlssrtptransport.cpp`, `poll*.cpp`, `*tls*.cpp`, `sha.cpp`, `ws*.cpp`, `websocket*.cpp`.
+- All `*.cpp` from `src/` to `thirdparty/libdatachannel/src/` except for all files containing the word "packet", "h265nalunit.cpp" and "capi.cpp".
+- The entire folder `deps/plog/include/plog/` to `thirdparty/libdatachannel/deps/plog/include/plog/`. No other files in deps/plog are needed.
+- The entire folder `deps/usrsctp/usrsctplib/` to `thirdparty/libdatachannel/deps/usrsctp/usrsctplib/`
+- All `*.c` and `*.h` files in `deps/libjuice/src/` to `thirdparty/libdatachannel/deps/libjuice/src/`
+- `juice.h` from `deps/libjuice/include/juice/` to `thirdparty/libdatachannel/deps/libjuice/include/juice/`
+- The `LICENSE` file.
+- The `deps/plog/LICENSE` file.
+- The `deps/usrsctp/LICENSE.md` file.
+- The `deps/libjuice/LICENSE` file.
+- Added 2 files `include/rtc/exception_wrapper_godot.hpp` and `src/exception_wrapper_godot.cpp`
+  providing try/catch exception wrappers around rtc functions.
+- Apply `thirdparty/libdatachannel/patches/virtual_destructor.patch` to add missing virtual destructors.
+- Apply `thirdparty/libdatachannel/patches/disable_mbedtls_strerror.patch` to avoid calls
+- Apply `thirdparty/libdatachannel/patches/avoid_exceptions.patch` to avoid usage of C++ exceptions
+  to `mbedtls_strerror` which may be missing on some linux platforms.
+
+## libdatachannel Submodules:
+
+### libjuice
+
+- Upstream: https://github.com/paullouisageneau/libjuice
+- Version: 1.3.1 (7d7a66d439b2e3e55e3f2494ff1176d527335674, 2023)
+- License: MPL 2.0
+
+Module location:
+
+- thirdparty/libdatachannel/deps/libjuice
+
+### plog
+
+- Upstream: https://github.com/SergiusTheBest/plog
+- Version: 1.1.10 (e21baecd4753f14da64ede979c5a19302618b752, 2023)
+- License: MIT
+
+Module location:
+
+- thirdparty/libdatachannel/deps/plog
+
+### usrsctp
+
+- Upstream: https://github.com/sctplab/usrsctp
+- Version: git (5ca29ac7d8055802c7657191325c06386640ac24, 2023)
+- License: BSD-3-Clause
+
+Module location:
+
+- thirdparty/libdatachannel/deps/usrsctp
+
 ## libktx
 
 - Upstream: https://github.com/KhronosGroup/KTX-Software
@@ -496,15 +554,15 @@ Patch `godot-node-debug-fix.patch` workarounds shadowing of godot's Node class i
 ## mbedtls
 
 - Upstream: https://github.com/Mbed-TLS/mbedtls
-- Version: 2.28.4 (aeb97a18913a86f051afab11b2c92c6be0c2eb83, 2023)
+- Version: 3.4.1 (72718dd87e087215ce9155a826ee5a66cfbe9631, 2023)
 - License: Apache 2.0
 
 File extracted from upstream release tarball:
 
-- All `*.h` from `include/mbedtls/` to `thirdparty/mbedtls/include/mbedtls/` except `config_psa.h` and `psa_util.h`.
+- All `*.h` from `include/mbedtls/` to `thirdparty/mbedtls/include/mbedtls/`.
+- All `*.h` from `include/psa/` to `thirdparty/mbedtls/include/psa/`
 - All `*.c` and `*.h` from `library/` to `thirdparty/mbedtls/library/` except those starting with `psa_*`.
 - The `LICENSE` file.
-- Applied the patch in `patches/windows-arm64-hardclock.diff`.
   Applied the patch in `aesni-no-arm-intrinsics.patch` to fix MSVC ARM build.
 - Added 2 files `godot_core_mbedtls_platform.c` and `godot_core_mbedtls_config.h`
   providing configuration for light bundling with core.
