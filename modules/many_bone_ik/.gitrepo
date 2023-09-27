@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/V-Sekai/many_bone_ik
+	branch = master
+	commit = 820b56d5dcc1eac585cbf0b04fd4778a6f93bcf7
+	parent = f4c7bf6c9c54f1c5370fa4bc331671a7f542ad60
+	method = merge
+	cmdver = 0.4.6
