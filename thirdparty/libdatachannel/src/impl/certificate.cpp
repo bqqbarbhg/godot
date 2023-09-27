@@ -281,7 +281,7 @@ Certificate Certificate::Generate(CertificateType type, const string &commonName
 
 		const size_t certificateBufferSize = 4096;
 		unsigned char certificateBuffer[certificateBufferSize];
-		memset(certificateBuffer, 0, certificateBufferSize);
+		std::memset(certificateBuffer, 0, certificateBufferSize);
 
 		auto certificateLen = mbedtls_x509write_crt_der(
 		    &wcrt, certificateBuffer, certificateBufferSize, mbedtls_ctr_drbg_random, &drbg);

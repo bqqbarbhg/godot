@@ -351,7 +351,7 @@ Files extracted from upstream source:
 File extracted from upstream release tarball:
 
 - All `*.h` and `*.hpp` from `include/rtc/` to `thirdparty/libdatachannel/include/rtc/`.
-- All `*.cpp` from `src/impl/` to `thirdparty/libdatachannel/src/impl/` except `dtlssrtptransport.cpp`.
+- All `*.cpp` from `src/impl/` to `thirdparty/libdatachannel/src/impl/` except `dtlssrtptransport.cpp`, `poll*.cpp`, `*tls*.cpp`, `sha.cpp`, `ws*.cpp`, `websocket*.cpp`.
 - All `*.cpp` from `src/` to `thirdparty/libdatachannel/src/` except for all files containing the word "packet", "h265nalunit.cpp" and "capi.cpp".
 - The entire folder `deps/plog/include/plog/` to `thirdparty/libdatachannel/deps/plog/include/plog/`. No other files in deps/plog are needed.
 - The entire folder `deps/usrsctp/usrsctplib/` to `thirdparty/libdatachannel/deps/usrsctp/usrsctplib/`
