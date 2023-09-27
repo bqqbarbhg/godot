@@ -12,6 +12,7 @@
 #include "transport.hpp"
 #include "utils.hpp"
 
+#include <cstring>
 #include <iostream>
 #include <random>
 #include <sstream>

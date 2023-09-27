@@ -11,6 +11,7 @@
 
 #include <cassert>
 #include <chrono>
+#include <cstring>
 #include <iomanip>
 #include <mutex>
 #include <sstream>
@@ -280,7 +281,7 @@ Certificate Certificate::Generate(CertificateType type, const string &commonName
 
 		const size_t certificateBufferSize = 4096;
 		unsigned char certificateBuffer[certificateBufferSize];
-		std::memset(certificateBuffer, 0, certificateBufferSize);
+		memset(certificateBuffer, 0, certificateBufferSize);
 
 		auto certificateLen = mbedtls_x509write_crt_der(
 		    &wcrt, certificateBuffer, certificateBufferSize, mbedtls_ctr_drbg_random, &drbg);
