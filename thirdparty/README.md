@@ -365,6 +365,7 @@ File extracted from upstream release tarball:
   providing try/catch exception wrappers around rtc functions.
 - Apply `thirdparty/libdatachannel/patches/virtual_destructor.patch` to add missing virtual destructors.
 - Apply `thirdparty/libdatachannel/patches/disable_mbedtls_strerror.patch` to avoid calls
+- Apply `thirdparty/libdatachannel/patches/avoid_exceptions.patch` to avoid usage of C++ exceptions
   to `mbedtls_strerror` which may be missing on some linux platforms.
 
 ## libdatachannel Submodules:
