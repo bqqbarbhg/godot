@@ -151,6 +151,10 @@ elif env["builtin_libdatachannel"] and env["libdatachannel"]:
     #         env_thirdparty.Append(CCFLAGS=["/EHsc"])
     #     else:
     #         env_thirdparty["CCFLAGS"] = [x for x in env_thirdparty["CCFLAGS"] if "-fno-exceptions" not in x]
+    if env.msvc:
+        env_thirdparty["CCFLAGS"] = ["/O1" if x == "/O2" else x for x in env_thirdparty["CCFLAGS"]]
+    else:
+        env_thirdparty["CCFLAGS"] = ["-Os" if x[:2] == '-O' and (x != '-Od' and x != '-O0') else x for x in env_thirdparty["CCFLAGS"]]
     env_thirdparty.add_source_files(thirdparty_obj, thirdparty_sources)
     env.modules_sources += thirdparty_obj
 
