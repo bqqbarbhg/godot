@@ -310,6 +310,15 @@ void BoneAttachment3D::_notification(int p_what) {
 				_override_dirty = false;
 			}
 		} break;
+		case NOTIFICATION_NODE_RECACHE_REQUESTED: {
+			// Ensures bindings are properly updated after a scene reload.
+			_check_unbind();
+			if (use_external_skeleton) {
+				_update_external_skeleton_cache();
+			}
+			bone_idx = -1;
+			_check_bind();
+		} break;
 	}
 }
 
