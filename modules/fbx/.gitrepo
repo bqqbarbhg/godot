@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/V-Sekai/godot-ufbx.git
+	branch = main
+	commit = d65e68a7aad5b3003236381dd1da24f6fbef1390
+	parent = 195e04fae320731702ce1d218937890fe25c98f7
+	method = merge
+	cmdver = 0.4.6
