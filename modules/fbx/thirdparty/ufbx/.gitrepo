@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/ufbx/ufbx.git
+	branch = master
+	commit = e6bd7ea0833f1bd8732812100b69c596e1f69b64
+	parent = 8ed98bb19b3d2be1941d1e57b60911918ca3f8f2
+	method = merge
+	cmdver = 0.4.6
