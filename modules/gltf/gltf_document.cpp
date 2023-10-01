@@ -2762,6 +2762,9 @@ Error GLTFDocument::_parse_meshes(Ref<GLTFState> p_state) {
 				}
 				array[Mesh::ARRAY_WEIGHTS] = weights;
 			}
+			if (a.has("JOINTS_0") && a.has("JOINTS_1") && a.has("WEIGHTS_0") && a.has("WEIGHTS_1")) {
+				flags |= Mesh::ARRAY_FLAG_USE_8_BONE_WEIGHTS;
+			}
 
 			if (p.has("indices")) {
 				Vector<int> indices = _decode_accessor_as_ints(p_state, p["indices"], false);
