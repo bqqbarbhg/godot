@@ -318,6 +318,9 @@ void Skeleton3D::_notification(int p_what) {
 				set_physics_process_internal(true);
 			}
 		} break;
+		case NOTIFICATION_NODE_RECACHE_REQUESTED: {
+			reset_bone_poses();
+		} break;
 #endif // _3D_DISABLED
 	}
 }
