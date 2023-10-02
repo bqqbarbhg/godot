@@ -36,6 +36,7 @@
 #include "core/math/static_raycaster.h"
 #include "scene/resources/surface_tool.h"
 
+#include <cstddef>
 #include <cstdint>
 
 void ImporterMesh::Surface::split_normals(const LocalVector<int> &p_indices, const LocalVector<Vector3> &p_normals) {
@@ -483,6 +484,8 @@ void ImporterMesh::generate_lods(float p_normal_merge_angle, float p_normal_spli
 				WARN_PRINT("Mesh LOD generation failed for mesh " + get_name() + " surface " + itos(i) + ", mesh is too complex. Some automatic LODs were not generated.");
 				break;
 			}
+			const size_t MAX_MESH_INDICES = pow(2, 24);
+			ERR_BREAK(new_index_count >= MAX_MESH_INDICES);
 
 			new_indices.resize(new_index_count);
 
@@ -507,7 +510,7 @@ void ImporterMesh::generate_lods(float p_normal_merge_angle, float p_normal_spli
 
 				int32_t *new_indices_ptr = new_indices.ptrw();
 
-				int current_ray_count = 0;
+				int32_t current_ray_count = 0;
 				for (unsigned int j = 0; j < new_index_count; j += 3) {
 					const Vector3 &v0 = vertices_ptr[new_indices_ptr[j + 0]];
 					const Vector3 &v1 = vertices_ptr[new_indices_ptr[j + 1]];
@@ -522,9 +525,9 @@ void ImporterMesh::generate_lods(float p_normal_merge_angle, float p_normal_spli
 					Vector3 dir = face_normal / face_area;
 					int ray_count = CLAMP(5.0 * face_area * error_factor, 16, 64);
 
+					ERR_BREAK(current_ray_count + ray_count >= MAX_MESH_INDICES);
 					rays.resize(current_ray_count + ray_count);
 					StaticRaycaster::Ray *rays_ptr = rays.ptrw();
-
 					ray_uvs.resize(current_ray_count + ray_count);
 					Vector2 *ray_uvs_ptr = ray_uvs.ptr();
 
@@ -543,12 +546,14 @@ void ImporterMesh::generate_lods(float p_normal_merge_angle, float p_normal_spli
 
 						Vector3 org = v0 * w + v1 * u + v2 * v;
 						org -= dir * ray_bias;
+						ERR_BREAK(current_ray_count + k >= MAX_MESH_INDICES);
 						rays_ptr[current_ray_count + k] = StaticRaycaster::Ray(org, dir, 0.0f, ray_length);
 						rays_ptr[current_ray_count + k].id = j / 3;
 						ray_uvs_ptr[current_ray_count + k] = Vector2(u, v);
 					}
 
 					current_ray_count += ray_count;
+					ERR_BREAK(current_ray_count >= MAX_MESH_INDICES);
 				}
 
 				raycaster->intersect(rays);
