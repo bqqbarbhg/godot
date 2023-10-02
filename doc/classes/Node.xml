@@ -1012,9 +1012,6 @@
 		<constant name="NOTIFICATION_ENABLED" value="29">
 			Notification received when the node is enabled again after being disabled. See [constant PROCESS_MODE_DISABLED].
 		</constant>
-		<constant name="NOTIFICATION_NODE_RECACHE_REQUESTED" value="30">
-			Notification received when other nodes in the tree may have been removed/replaced and node pointers may require re-caching.
-		</constant>
 		<constant name="NOTIFICATION_EDITOR_PRE_SAVE" value="9001">
 			Notification received right before the scene with the node is saved in the editor. This notification is only sent in the Godot editor and will not occur in exported projects.
 		</constant>
@@ -1056,6 +1053,9 @@
 		</constant>
 		<constant name="NOTIFICATION_VP_MOUSE_EXIT" value="1011">
 			Notification received when the mouse cursor leaves the [Viewport]'s visible area, that is not occluded behind other [Control]s or [Window]s, provided its [member Viewport.gui_disable_input] is [code]false[/code] and regardless if it's currently focused or not.
+		</constant>
+		<constant name="NOTIFICATION_NODE_RECACHE_REQUESTED" value="2001">
+			Notification received when other nodes in the tree may have been removed/replaced and node pointers may require re-caching.
 		</constant>
 		<constant name="NOTIFICATION_OS_MEMORY_WARNING" value="2009">
 			Notification received from the OS when the application is exceeding its allocated memory.
