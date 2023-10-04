@@ -35,6 +35,7 @@
 #include "core/io/dir_access.h"
 #include "core/string/print_string.h"
 #include "core/templates/local_vector.h"
+#include "core/templates/pair.h"
 #include "scene/3d/importer_mesh_instance_3d.h"
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/node_3d.h"
@@ -240,106 +241,13 @@ Node *EditorSceneImporterMMDPMX::import_mmd_pmx_scene(const String &p_path, uint
 			skeleton->set_bone_parent(bone_i, parent_index);
 		}
 	}
+	skeleton->set_bone_name(skeleton->find_bone(String(L"センター")), "Root");
+	BoneId hips_id = skeleton->find_bone(String(L"下半身"));
+	skeleton->set_bone_name(hips_id, "Hips");
+	BoneId spine_id = skeleton->find_bone(String(L"上半身"));
+	skeleton->set_bone_name(spine_id, "Spine");
+	set_bone_rest_and_parent(skeleton, spine_id, hips_id);
 
-	HashMap<String, String> bone_name_map;
-	bone_name_map[String(L"センター")] = "Hips";
-	bone_name_map[String(L"下半身")] = "Spine";
-	bone_name_map[String(L"上半身")] = "Chest";
-
-	for (uint32_t bone_i = 0; bone_i < bone_count; bone_i++) {
-		String bone_name = skeleton->get_bone_name(bone_i);
-		HashMap<String, String>::Iterator found_bone = bone_name_map.find(bone_name);
-		if (found_bone) {
-			skeleton->set_bone_name(bone_i, found_bone->value);
-		}
-	}
-
-	BoneId hip_id = skeleton->find_bone("Hips");
-	BoneId spine_id = skeleton->find_bone("Spine");
-	BoneId lower_body_id = skeleton->find_bone("LowerBody");
-
-	skeleton->set_bone_parent(spine_id, hip_id);
-	skeleton->set_bone_parent(lower_body_id, spine_id);
-	for (uint32_t bone_i = 0; bone_i < bone_count; bone_i++) {
-		if (skeleton->get_bone_parent(bone_i) == lower_body_id) {
-			skeleton->set_bone_parent(bone_i, hip_id);
-		}
-	}
-	HashMap<String, String> rename_bone_name_map;
-	rename_bone_name_map[L"全ての親"] = "Root";
-	rename_bone_name_map[L"グルーブ"] = "Groove";
-	rename_bone_name_map[L"上半身2"] = "UpperChest";
-	rename_bone_name_map[L"首"] = "Neck";
-	rename_bone_name_map[L"頭"] = "Head";
-	rename_bone_name_map[L"左肩"] = "LeftShoulder";
-	rename_bone_name_map[L"左腕"] = "LeftUpperArm";
-	rename_bone_name_map[L"左ひじ"] = "LeftLowerArm";
-	rename_bone_name_map[L"左手首"] = "LeftHand";
-	rename_bone_name_map[L"右肩"] = "RightShoulder";
-	rename_bone_name_map[L"右腕"] = "RightUpperArm";
-	rename_bone_name_map[L"右ひじ"] = "RightLowerArm";
-	rename_bone_name_map[L"右手首"] = "RightHand";
-	rename_bone_name_map[L"左足"] = "LeftUpperLeg";
-	rename_bone_name_map[L"左ひざ"] = "LeftLowerLeg";
-	rename_bone_name_map[L"左足首"] = "LeftFoot";
-	rename_bone_name_map[L"右足"] = "RightUpperLeg";
-	rename_bone_name_map[L"右ひざ"] = "RightLowerLeg";
-	rename_bone_name_map[L"右足首"] = "RightFoot";
-	rename_bone_name_map[L"左目"] = "LeftEye";
-	rename_bone_name_map[L"右目"] = "RightEye";
-	rename_bone_name_map[L"左足先"] = "LeftToes";
-	rename_bone_name_map[L"右足先"] = "RightToes";
-
-	rename_bone_name_map[L"左親指０"] = "LeftThumbProximal";
-	rename_bone_name_map[L"左親指１"] = "LeftThumbIntermediate";
-	rename_bone_name_map[L"左親指２"] = "LeftThumbDistal";
-
-	rename_bone_name_map[L"右親指０"] = "RightThumbProximal";
-	rename_bone_name_map[L"右親指１"] = "RightThumbIntermediate";
-	rename_bone_name_map[L"右親指２"] = "RightThumbDistal";
-
-	rename_bone_name_map[L"左人指１"] = "LeftIndexProximal";
-	rename_bone_name_map[L"左人指２"] = "LeftIndexIntermediate";
-	rename_bone_name_map[L"左人指３"] = "LeftIndexDistal";
-	rename_bone_name_map[L"右人指１"] = "RightIndexProximal";
-	rename_bone_name_map[L"右人指２"] = "RightIndexIntermediate";
-	rename_bone_name_map[L"右人指３"] = "RightIndexDistal";
-
-	rename_bone_name_map[L"左中指１"] = "LeftMiddleProximal";
-	rename_bone_name_map[L"左中指２"] = "LeftMiddleIntermediate";
-	rename_bone_name_map[L"左中指３"] = "LeftMiddleDistal";
-	rename_bone_name_map[L"右中指１"] = "RightMiddleProximal";
-	rename_bone_name_map[L"右中指２"] = "RightMiddleIntermediate";
-	rename_bone_name_map[L"右中指３"] = "RightMiddleDistal";
-
-	rename_bone_name_map[L"左薬指１"] = "LeftRingProximal";
-	rename_bone_name_map[L"左薬指２"] = "LeftRingIntermediate";
-	rename_bone_name_map[L"左薬指３"] = "LeftRingDistal";
-	rename_bone_name_map[L"右薬指１"] = "RightRingProximal";
-	rename_bone_name_map[L"右薬指２"] = "RightRingIntermediate";
-	rename_bone_name_map[L"右薬指３"] = "RightRingDistal";
-
-	rename_bone_name_map[L"左小指１"] = "LeftLittleProximal";
-	rename_bone_name_map[L"左小指２"] = "LeftLittleIntermediate";
-	rename_bone_name_map[L"左小指３"] = "LeftLittleDistal";
-	rename_bone_name_map[L"右小指１"] = "RightLittleProximal";
-	rename_bone_name_map[L"右小指２"] = "RightLittleIntermediate";
-	rename_bone_name_map[L"右小指３"] = "RightLittleDistal";
-
-	for (uint32_t bone_i = 0; bone_i < bone_count; bone_i++) {
-		String bone_name = skeleton->get_bone_name(bone_i);
-		HashMap<String, String>::Iterator found_bone = rename_bone_name_map.find(bone_name);
-		if (found_bone) {
-			skeleton->set_bone_name(bone_i, found_bone->value);
-		}
-	}
-	BoneId chest_id = skeleton->find_bone("Chest");
-	Transform3D chest_global_pose = skeleton->get_bone_global_pose(chest_id);
-	Transform3D spine_global_pose_inverse = skeleton->get_bone_global_pose(spine_id).affine_inverse();    
-	Transform3D chest_to_spine_pose = spine_global_pose_inverse * chest_global_pose;
-	Transform3D new_chest_rest_pose = chest_to_spine_pose;    
-	skeleton->set_bone_rest(chest_id, new_chest_rest_pose);  
-	skeleton->set_bone_parent(chest_id, spine_id);      
 	root->add_child(skeleton, true);
 	skeleton->set_owner(root);
 
