@@ -53,6 +53,6 @@ int main(int argc, char *argv[]) {
 }
 
 #include "core/libgodot/libgodot.h"
-extern "C" LIBGODOT_API int godot_main(int argc, char *argv[]) {
+LIBGODOT_API int godot_main(int argc, char *argv[]) {
 	return main(argc, argv);
 }

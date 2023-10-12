@@ -39,6 +39,7 @@
 #include "core/crypto/crypto_core.h"
 #include "core/version_generated.gen.h"
 #include "main/main.h"
+#include "core/libgodot/libgodot_internal.h"
 
 #include <dlfcn.h>
 #include <libproc.h>
@@ -218,6 +219,10 @@ _FORCE_INLINE_ String OS_MacOS::get_framework_executable(const String &p_path) {
 }
 
 Error OS_MacOS::open_dynamic_library(const String p_path, void *&p_library_handle, bool p_also_set_library_path, String *r_resolved_path) {
+	if (libgodot_open_dynamic_library(p_path, p_library_handle, p_also_set_library_path, r_resolved_path)) {
+		return OK;
+	}
+
 	String path = get_framework_executable(p_path);
 
 	if (!FileAccess::exists(path)) {
