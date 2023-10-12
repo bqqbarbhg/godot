@@ -32,9 +32,9 @@
 
 #include "core/io/certs_compressed.gen.h"
 #include "core/io/dir_access.h"
+#include "core/libgodot/libgodot_internal.h"
 #include "main/main.h"
 #include "servers/display_server.h"
-#include "core/libgodot/libgodot_internal.h"
 
 #ifdef X11_ENABLED
 #include "x11/display_server_x11.h"

@@ -41,9 +41,9 @@
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/file_access_pack.h"
+#include "core/libgodot/libgodot_internal.h"
 #include "drivers/unix/syslog_logger.h"
 #include "main/main.h"
-#include "core/libgodot/libgodot_internal.h"
 
 #import <AudioToolbox/AudioServices.h>
 #import <CoreText/CoreText.h>

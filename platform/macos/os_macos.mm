@@ -38,8 +38,8 @@
 
 #include "core/crypto/crypto_core.h"
 #include "core/version_generated.gen.h"
-#include "main/main.h"
 #include "core/libgodot/libgodot_internal.h"
+#include "main/main.h"
 
 #include <dlfcn.h>
 #include <libproc.h>

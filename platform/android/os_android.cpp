@@ -41,12 +41,12 @@
 #include "core/config/project_settings.h"
 #include "core/extension/gdextension_manager.h"
 #include "core/io/xml_parser.h"
+#include "core/libgodot/libgodot_internal.h"
 #include "drivers/unix/dir_access_unix.h"
 #include "drivers/unix/file_access_unix.h"
 #include "main/main.h"
 #include "scene/main/scene_tree.h"
 #include "servers/rendering_server.h"
-#include "core/libgodot/libgodot_internal.h"
 
 #include <dlfcn.h>
 #include <sys/system_properties.h>

@@ -636,7 +636,7 @@ Error OS_Unix::open_dynamic_library(const String p_path, void *&p_library_handle
 	if (libgodot_open_dynamic_library(p_path, p_library_handle, p_also_set_library_path, r_resolved_path)) {
 		return OK;
 	}
-	
+
 	String path = p_path;
 
 	if (FileAccess::exists(path) && path.is_relative_path()) {
