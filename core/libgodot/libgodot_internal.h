@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  main.m                                                                */
+/*  libgodot_internal.h                                                            */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,31 +28,13 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#import "godot_app_delegate.h"
+#ifndef LIBGODOT_INTERNAL_H
+#define LIBGODOT_INTERNAL_H
 
-#import <UIKit/UIKit.h>
-#include <stdio.h>
+#include "core/variant/variant.h"
 
-int gargc;
-char **gargv;
+bool libgodot_open_dynamic_library(const String p_path, void *&p_library_handle, bool p_also_set_library_path, String *r_resolved_path);
+bool libgodot_close_dynamic_library(void *p_library_handle);
+bool libgodot_get_dynamic_library_symbol_handle(void *p_library_handle, const String p_name, void *&p_symbol_handle, bool p_optional);
 
-int main(int argc, char *argv[]) {
-#if defined(VULKAN_ENABLED)
-	//MoltenVK - enable full component swizzling support
-	setenv("MVK_CONFIG_FULL_IMAGE_VIEW_SWIZZLE", "1", 1);
-#endif
-
-	gargc = argc;
-	gargv = argv;
-
-	@autoreleasepool {
-		NSString *className = NSStringFromClass([GodotApplicalitionDelegate class]);
-		UIApplicationMain(argc, argv, nil, className);
-	}
-	return 0;
-}
-
-#include "core/libgodot/libgodot.h"
-extern "C" LIBGODOT_API int godot_main(int argc, char *argv[]) {
-	return main(argc, argv);
-}
+#endif // LIBGODOT_INTERNAL_H

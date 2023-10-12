@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  main.m                                                                */
+/*  libgodot.h                                                            */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,31 +28,40 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#import "godot_app_delegate.h"
+#ifndef LIBGODOT_H
+#define LIBGODOT_H
 
-#import <UIKit/UIKit.h>
-#include <stdio.h>
-
-int gargc;
-char **gargv;
-
-int main(int argc, char *argv[]) {
-#if defined(VULKAN_ENABLED)
-	//MoltenVK - enable full component swizzling support
-	setenv("MVK_CONFIG_FULL_IMAGE_VIEW_SWIZZLE", "1", 1);
+#if defined(WINDOWS_ENABLED) | defined(UWP_ENABLED)
+#define LIBGODOT_API __declspec(dllexport)
+#elif defined(ANDROID_ENABLED)
+#include <jni.h>
+#define LIBGODOT_API JNIEXPORT
+#elif defined(X11_ENABLED) | defined(LINUXBSD_ENABLED) | defined(MACOS_ENABLED) | defined(IOS_ENABLED)
+#define LIBGODOT_API __attribute__((visibility("default")))
+#elif defined(WEB_ENABLED)
+#include <emscripten/emscripten.h>
+#define LIBGODOT_API extern EMSCRIPTEN_KEEPALIVE
 #endif
 
-	gargc = argc;
-	gargv = argv;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-	@autoreleasepool {
-		NSString *className = NSStringFromClass([GodotApplicalitionDelegate class]);
-		UIApplicationMain(argc, argv, nil, className);
-	}
-	return 0;
-}
+#if defined(LIBGODOT_API) 
 
-#include "core/libgodot/libgodot.h"
-extern "C" LIBGODOT_API int godot_main(int argc, char *argv[]) {
-	return main(argc, argv);
+// True means it failed and should fallback to os
+LIBGODOT_API void libgodot_bind_open_dynamic_library(bool (*open_dynamic_library_bind)(const char *, void **, bool, const char **));
+LIBGODOT_API void libgodot_bind_close_dynamic_library(bool (*close_dynamic_library_bind)(void *));
+LIBGODOT_API void libgodot_bind_get_dynamic_library_symbol_handle(bool (*get_dynamic_library_symbol_handle_bind)(void *, const char *, void **, bool));
+
+#if !(defined(WEB_ENABLED) | defined(ANDROID_ENABLED))
+LIBGODOT_API int godot_main(int argc, char *argv[]);
+#endif
+
+#endif
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif // LIBGODOT_H

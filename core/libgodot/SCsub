@@ -1,0 +1,3 @@
+Import("env")
+env_libgodot = env.Clone()
+env_libgodot.add_source_files(env.core_sources, "*.cpp")
