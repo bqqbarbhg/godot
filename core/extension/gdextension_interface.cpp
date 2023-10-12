@@ -1346,7 +1346,13 @@ static GDExtensionMethodBindPtr gdextension_classdb_get_method_bind(GDExtensionC
 		ERR_PRINT("Method '" + classname + "." + methodname + "' has changed and no compatibility fallback has been provided. Please open an issue.");
 		return nullptr;
 	}
-	ERR_FAIL_NULL_V(mb, nullptr);
+	ERR_FAIL_NULL_V(mb, nullptr);    
+#ifndef LIBRARY_ENABLED
+	if (mb->get_hash() != p_hash) {
+		ERR_PRINT("Hash mismatch for method '" + classname + "." + methodname + "'.");
+		return nullptr;
+	}
+#endif
 	return (GDExtensionMethodBindPtr)mb;
 }
 
