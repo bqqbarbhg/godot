@@ -37,8 +37,8 @@
 #include "macos_terminal_logger.h"
 
 #include "core/crypto/crypto_core.h"
-#include "core/version_generated.gen.h"
 #include "core/libgodot/libgodot_internal.h"
+#include "core/version_generated.gen.h"
 #include "main/main.h"
 
 #include <dlfcn.h>
