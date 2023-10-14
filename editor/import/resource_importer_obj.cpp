@@ -324,6 +324,8 @@ static Error _parse_obj(const String &p_path, List<Ref<Mesh>> &r_meshes, bool p_
 					if (idx < 2) {
 						idx = 1 ^ idx;
 					}
+					idx += 1;
+					idx %= 3;
 
 					if (face[idx].size() == 3) {
 						int norm = face[idx][2].to_int() - 1;
@@ -381,14 +383,15 @@ static Error _parse_obj(const String &p_path, List<Ref<Mesh>> &r_meshes, bool p_
 					surf_tool->generate_normals();
 				}
 
+				// Force triangle pairs to share tangents.
+				surf_tool->index();
+
 				if (generate_tangents && uvs.size()) {
 					surf_tool->generate_tangents();
 				} else {
 					// We need tangents in order to compress vertex data. So disable if tangents aren't generated.
 					mesh_flags &= ~RS::ARRAY_FLAG_COMPRESS_ATTRIBUTES;
 				}
-
-				surf_tool->index();
 
 				print_verbose("OBJ: Current material library " + current_material_library + " has " + itos(material_map.has(current_material_library)));
 				print_verbose("OBJ: Current material " + current_material + " has " + itos(material_map.has(current_material_library) && material_map[current_material_library].has(current_material)));
