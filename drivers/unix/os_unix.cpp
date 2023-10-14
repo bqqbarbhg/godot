@@ -29,6 +29,7 @@
 /**************************************************************************/
 
 #include "os_unix.h"
+#include "core/libgodot/libgodot_internal.h"
 
 #ifdef UNIX_ENABLED
 
@@ -632,6 +633,10 @@ String OS_Unix::get_locale() const {
 }
 
 Error OS_Unix::open_dynamic_library(const String p_path, void *&p_library_handle, bool p_also_set_library_path, String *r_resolved_path) {
+	if (libgodot_open_dynamic_library(p_path, p_library_handle, p_also_set_library_path, r_resolved_path)) {
+		return OK;
+	}
+
 	String path = p_path;
 
 	if (FileAccess::exists(path) && path.is_relative_path()) {
@@ -661,6 +666,10 @@ Error OS_Unix::open_dynamic_library(const String p_path, void *&p_library_handle
 }
 
 Error OS_Unix::close_dynamic_library(void *p_library_handle) {
+	if (libgodot_close_dynamic_library(p_library_handle)) {
+		return OK;
+	}
+
 	if (dlclose(p_library_handle)) {
 		return FAILED;
 	}
@@ -668,6 +677,10 @@ Error OS_Unix::close_dynamic_library(void *p_library_handle) {
 }
 
 Error OS_Unix::get_dynamic_library_symbol_handle(void *p_library_handle, const String p_name, void *&p_symbol_handle, bool p_optional) {
+	if (libgodot_get_dynamic_library_symbol_handle(p_library_handle, p_name, p_symbol_handle, p_optional)) {
+		return OK;
+	}
+
 	const char *error;
 	dlerror(); // Clear existing errors
 

@@ -36,6 +36,7 @@
 
 #include "core/config/project_settings.h"
 #include "core/debugger/engine_debugger.h"
+#include "core/libgodot/libgodot_internal.h"
 #include "drivers/unix/dir_access_unix.h"
 #include "drivers/unix/file_access_unix.h"
 #include "main/main.h"
@@ -240,6 +241,10 @@ bool OS_Web::is_userfs_persistent() const {
 }
 
 Error OS_Web::open_dynamic_library(const String p_path, void *&p_library_handle, bool p_also_set_library_path, String *r_resolved_path) {
+	if (libgodot_open_dynamic_library(p_path, p_library_handle, p_also_set_library_path, r_resolved_path)) {
+		return OK;
+	}
+
 	String path = p_path.get_file();
 	p_library_handle = dlopen(path.utf8().get_data(), RTLD_NOW);
 	ERR_FAIL_NULL_V_MSG(p_library_handle, ERR_CANT_OPEN, vformat("Can't open dynamic library: %s. Error: %s.", p_path, dlerror()));

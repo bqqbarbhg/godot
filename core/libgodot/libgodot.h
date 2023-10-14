@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  godot_linuxbsd.cpp                                                    */
+/*  libgodot.h                                                            */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,64 +28,40 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "os_linuxbsd.h"
+#ifndef LIBGODOT_H
+#define LIBGODOT_H
 
-#include "main/main.h"
-
-#include <limits.h>
-#include <locale.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#if defined(SANITIZERS_ENABLED)
-#include <sys/resource.h>
+#if defined(WINDOWS_ENABLED) | defined(UWP_ENABLED)
+#define LIBGODOT_API __declspec(dllexport)
+#elif defined(ANDROID_ENABLED)
+#include <jni.h>
+#define LIBGODOT_API JNIEXPORT
+#elif defined(X11_ENABLED) | defined(LINUXBSD_ENABLED) | defined(MACOS_ENABLED) | defined(IOS_ENABLED)
+#define LIBGODOT_API __attribute__((visibility("default")))
+#elif defined(WEB_ENABLED)
+#include <emscripten/emscripten.h>
+#define LIBGODOT_API extern EMSCRIPTEN_KEEPALIVE
 #endif
 
-int main(int argc, char *argv[]) {
-#if defined(SANITIZERS_ENABLED)
-	// Note: Set stack size to be at least 30 MB (vs 8 MB default) to avoid overflow, address sanitizer can increase stack usage up to 3 times.
-	struct rlimit stack_lim = { 0x1E00000, 0x1E00000 };
-	setrlimit(RLIMIT_STACK, &stack_lim);
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-	OS_LinuxBSD os;
+#if defined(LIBGODOT_API) 
 
-	setlocale(LC_CTYPE, "");
+// True means it failed and should fallback to os
+LIBGODOT_API void libgodot_bind_open_dynamic_library(bool (*open_dynamic_library_bind)(const char *, void **, bool, const char **));
+LIBGODOT_API void libgodot_bind_close_dynamic_library(bool (*close_dynamic_library_bind)(void *));
+LIBGODOT_API void libgodot_bind_get_dynamic_library_symbol_handle(bool (*get_dynamic_library_symbol_handle_bind)(void *, const char *, void **, bool));
 
-	// We must override main when testing is enabled
-	TEST_MAIN_OVERRIDE
+#if !(defined(WEB_ENABLED) | defined(ANDROID_ENABLED))
+LIBGODOT_API int godot_main(int argc, char *argv[]);
+#endif
 
-	char *cwd = (char *)malloc(PATH_MAX);
-	ERR_FAIL_NULL_V(cwd, ERR_OUT_OF_MEMORY);
-	char *ret = getcwd(cwd, PATH_MAX);
+#endif
 
-	Error err = Main::setup(argv[0], argc - 1, &argv[1]);
-	if (err != OK) {
-		free(cwd);
-
-		if (err == ERR_HELP) { // Returned by --help and --version, so success.
-			return 0;
-		}
-		return 255;
-	}
-
-	if (Main::start()) {
-		os.set_exit_code(EXIT_SUCCESS);
-		os.run(); // it is actually the OS that decides how to run
-	}
-	Main::cleanup();
-
-	if (ret) { // Previous getcwd was successful
-		if (chdir(cwd) != 0) {
-			ERR_PRINT("Couldn't return to previous working directory.");
-		}
-	}
-	free(cwd);
-
-	return os.get_exit_code();
+#ifdef __cplusplus
 }
+#endif
 
-#include "core/libgodot/libgodot.h"
-extern "C" LIBGODOT_API int godot_main(int argc, char *argv[]) {
-	return main(argc, argv);
-}
+#endif // LIBGODOT_H

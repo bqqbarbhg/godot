@@ -46,6 +46,7 @@
 #include "servers/audio_server.h"
 #include "servers/rendering/rendering_server_default.h"
 #include "servers/text_server.h"
+#include "core/libgodot/libgodot_internal.h"
 
 #include <avrt.h>
 #include <bcrypt.h>
@@ -353,6 +354,10 @@ void debug_dynamic_library_check_dependencies(const String &p_root_path, const S
 #endif
 
 Error OS_Windows::open_dynamic_library(const String p_path, void *&p_library_handle, bool p_also_set_library_path, String *r_resolved_path) {
+	if (libgodot_open_dynamic_library(p_path, p_library_handle, p_also_set_library_path, r_resolved_path)) {
+		return OK;
+	}
+
 	String path = p_path.replace("/", "\\");
 
 	if (!FileAccess::exists(path)) {
@@ -410,6 +415,10 @@ Error OS_Windows::open_dynamic_library(const String p_path, void *&p_library_han
 }
 
 Error OS_Windows::close_dynamic_library(void *p_library_handle) {
+	if (libgodot_close_dynamic_library(p_library_handle)) {
+		return OK;
+	}
+
 	if (!FreeLibrary((HMODULE)p_library_handle)) {
 		return FAILED;
 	}
@@ -417,6 +426,10 @@ Error OS_Windows::close_dynamic_library(void *p_library_handle) {
 }
 
 Error OS_Windows::get_dynamic_library_symbol_handle(void *p_library_handle, const String p_name, void *&p_symbol_handle, bool p_optional) {
+	if (libgodot_get_dynamic_library_symbol_handle(p_library_handle, p_name, p_symbol_handle, p_optional)) {
+		return OK;
+	}
+
 	p_symbol_handle = (void *)GetProcAddress((HMODULE)p_library_handle, p_name.utf8().get_data());
 	if (!p_symbol_handle) {
 		if (!p_optional) {

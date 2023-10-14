@@ -41,6 +41,7 @@
 #include "core/config/project_settings.h"
 #include "core/extension/gdextension_manager.h"
 #include "core/io/xml_parser.h"
+#include "core/libgodot/libgodot_internal.h"
 #include "drivers/unix/dir_access_unix.h"
 #include "drivers/unix/file_access_unix.h"
 #include "main/main.h"
@@ -163,6 +164,10 @@ Vector<String> OS_Android::get_granted_permissions() const {
 }
 
 Error OS_Android::open_dynamic_library(const String p_path, void *&p_library_handle, bool p_also_set_library_path, String *r_resolved_path) {
+	if (libgodot_open_dynamic_library(p_path, p_library_handle, p_also_set_library_path, r_resolved_path)) {
+		return OK;
+	}
+
 	String path = p_path;
 	bool so_file_exists = true;
 	if (!FileAccess::exists(path)) {

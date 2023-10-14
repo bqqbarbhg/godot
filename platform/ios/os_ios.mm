@@ -41,6 +41,7 @@
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/file_access_pack.h"
+#include "core/libgodot/libgodot_internal.h"
 #include "drivers/unix/syslog_logger.h"
 #include "main/main.h"
 
@@ -223,6 +224,10 @@ _FORCE_INLINE_ String OS_IOS::get_framework_executable(const String &p_path) {
 }
 
 Error OS_IOS::open_dynamic_library(const String p_path, void *&p_library_handle, bool p_also_set_library_path, String *r_resolved_path) {
+	if (libgodot_open_dynamic_library(p_path, p_library_handle, p_also_set_library_path, r_resolved_path)) {
+		return OK;
+	}
+
 	if (p_path.length() == 0) {
 		// Static xcframework.
 		p_library_handle = RTLD_SELF;
@@ -267,6 +272,10 @@ Error OS_IOS::open_dynamic_library(const String p_path, void *&p_library_handle,
 }
 
 Error OS_IOS::close_dynamic_library(void *p_library_handle) {
+	if (libgodot_close_dynamic_library(p_library_handle)) {
+		return OK;
+	}
+
 	if (p_library_handle == RTLD_SELF) {
 		return OK;
 	}
@@ -274,6 +283,10 @@ Error OS_IOS::close_dynamic_library(void *p_library_handle) {
 }
 
 Error OS_IOS::get_dynamic_library_symbol_handle(void *p_library_handle, const String p_name, void *&p_symbol_handle, bool p_optional) {
+	if (libgodot_get_dynamic_library_symbol_handle(p_library_handle, p_name, p_symbol_handle, p_optional)) {
+		return OK;
+	}
+
 	if (p_library_handle == RTLD_SELF) {
 		void **ptr = OS_IOS::dynamic_symbol_lookup_table.getptr(p_name);
 		if (ptr) {
