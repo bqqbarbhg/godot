@@ -1162,8 +1162,20 @@ void SurfaceTool::generate_tangents() {
 
 	SMikkTSpaceContext msc;
 	msc.m_pInterface = &mkif;
+    
+	msc.m_FastPosition = (char *)vertex_array.ptr() + offset_of(&Vertex::vertex);
+	msc.m_FastPositionStride = sizeof(Vertex);
+	msc.m_FastPositionIndex = index_array.ptr();
 
-	TangentGenerationContextUserData triangle_data;
+	msc.m_FastNormal = (char *)vertex_array.ptr() + offset_of(&Vertex::normal);
+	msc.m_FastNormalStride = sizeof(Vertex);
+	msc.m_FastNormalIndex = index_array.ptr();
+
+	msc.m_FastUV = (char *)vertex_array.ptr() + offset_of(&Vertex::uv);
+	msc.m_FastUVStride = sizeof(Vertex);
+	msc.m_FastUVIndex = index_array.ptr();
+
+	TangentGenerationContextUserData triangle_data{};
 	triangle_data.vertices = &vertex_array;
 	for (Vertex &vertex : vertex_array) {
 		vertex.binormal = Vector3();
