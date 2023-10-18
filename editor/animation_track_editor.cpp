@@ -306,8 +306,9 @@ bool AnimationTrackKeyEdit::_set(const StringName &p_name, const Variant &p_valu
 				setting = true;
 				undo_redo->create_action(TTR("Animation Change Keyframe Value"), UndoRedo::MERGE_ENDS);
 				int prev = animation->bezier_track_get_key_handle_mode(track, key);
-				undo_redo->add_do_method(this, "_bezier_track_set_key_handle_mode", animation.ptr(), track, key, value);
-				undo_redo->add_undo_method(this, "_bezier_track_set_key_handle_mode", animation.ptr(), track, key, prev);
+				ERR_FAIL_COND_V(!editor, false);
+				undo_redo->add_do_method(editor, "_bezier_track_set_key_handle_mode", animation.ptr(), track, key, value);
+				undo_redo->add_undo_method(editor, "_bezier_track_set_key_handle_mode", animation.ptr(), track, key, prev);
 				undo_redo->add_do_method(this, "_update_obj", animation);
 				undo_redo->add_undo_method(this, "_update_obj", animation);
 				undo_redo->commit_action();
@@ -878,8 +879,10 @@ bool AnimationMultiTrackKeyEdit::_set(const StringName &p_name, const Variant &p
 							undo_redo->create_action(TTR("Animation Multi Change Keyframe Value"), UndoRedo::MERGE_ENDS);
 						}
 						int prev = animation->bezier_track_get_key_handle_mode(track, key);
-						undo_redo->add_do_method(this, "_bezier_track_set_key_handle_mode", animation.ptr(), track, key, value);
-						undo_redo->add_undo_method(this, "_bezier_track_set_key_handle_mode", animation.ptr(), track, key, prev);
+
+						ERR_FAIL_COND_V(!editor, false);
+						undo_redo->add_do_method(editor, "_bezier_track_set_key_handle_mode", animation.ptr(), track, key, value);
+						undo_redo->add_undo_method(editor, "_bezier_track_set_key_handle_mode", animation.ptr(), track, key, prev);
 						update_obj = true;
 					}
 				} break;
@@ -5168,6 +5171,7 @@ void AnimationTrackEditor::_update_key_edit() {
 		key_edit->animation_read_only = read_only;
 		key_edit->track = selection.front()->key().track;
 		key_edit->use_fps = timeline->is_using_fps();
+		key_edit->editor = this;
 
 		int key_id = selection.front()->key().key;
 		if (key_id >= animation->track_get_key_count(key_edit->track)) {
@@ -5213,6 +5217,7 @@ void AnimationTrackEditor::_update_key_edit() {
 		multi_key_edit->base_map = base_map;
 		multi_key_edit->hint = _find_hint_for_track(first_track, base_map[first_track]);
 		multi_key_edit->use_fps = timeline->is_using_fps();
+		multi_key_edit->editor = this;
 		multi_key_edit->root_path = root;
 
 		EditorNode::get_singleton()->push_item(multi_key_edit);
