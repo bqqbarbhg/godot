@@ -48,6 +48,12 @@ typedef struct {
     float x, y, z, w;
 } MVec3;
 
+#if defined(_M_X64) || defined(__x86_64__)
+	#define ARCH_SSE 1
+#else
+	#define ARCH_SSE 0
+#endif
+
 #ifdef __aarch64__
     #include <arm_neon.h>
     typedef float32x4_t SVec3;
@@ -56,9 +62,9 @@ typedef struct {
     #define vy(v) vgetq_lane_f32(v, 1)
     #define vz(v) vgetq_lane_f32(v, 2)
 
-#elif defined(__SSE4_1__)
-	#include <smmintrin.h>
+#elif ARCH_SSE
 	#include <xmmintrin.h>
+	#include <emmintrin.h>
 
     typedef __m128 SVec3;
 
@@ -78,7 +84,7 @@ static SVec3 vload(const MVec3 *v)
 {
 #ifdef __aarch64__
     return vld1q_f32(&v->x);
-#elif defined(__SSE4_1__)
+#elif ARCH_SSE
     return _mm_loadu_ps(&v->x);
 #else
     SVec3 r;
@@ -94,8 +100,8 @@ static SVec3 vmake(const MVec3 v)
 #ifdef __aarch64__
     float32_t data[4] = {v.x, v.y, v.z, 0.0f};
     return vld1q_f32(data);
-#elif defined(__SSE4_1__)
-    return _mm_set_ps(v.x, v.y, v.z, 0.0f);
+#elif ARCH_SSE
+    return _mm_setr_ps(v.x, v.y, v.z, 0.0f);
 #else
     SVec3 r;
     r.x = v.x;
@@ -119,9 +125,9 @@ static int veq( const SVec3 v1, const SVec3 v2 )
 #ifdef __aarch64__
 	uint32x4_t result = vceqq_f32(v1, v2);
 	return vgetq_lane_u32(result, 0) & vgetq_lane_u32(result, 1) & vgetq_lane_u32(result, 2);
-#elif defined(__SSE4_1__)
+#elif ARCH_SSE
 	__m128 result = _mm_cmpeq_ps(v1, v2);
-	return _mm_movemask_ps(result) == 15;
+	return _mm_movemask_ps(result) == 0x7;
 #else
 	return (v1.x == v2.x) && (v1.y == v2.y) && (v1.z == v2.z);
 #endif
@@ -132,7 +138,7 @@ static SVec3 vadd( const SVec3 v1, const SVec3 v2 )
 #ifdef __aarch64__
     float32x4_t result = vaddq_f32(v1, v2);
     return vsetq_lane_f32(0.0f, result, 3);
-#elif defined(__SSE4_1__)
+#elif ARCH_SSE
     return _mm_add_ps(v1, v2);
 #else
     SVec3 r;
@@ -147,7 +153,7 @@ static SVec3 vsub( const SVec3 v1, const SVec3 v2 )
 {
 #ifdef __aarch64__
     return vsubq_f32(v1, v2);
-#elif defined(__SSE4_1__)
+#elif ARCH_SSE
     return _mm_sub_ps(v1, v2);
 #else
     SVec3 r;
@@ -162,7 +168,7 @@ static SVec3	vscale(const float fS, const SVec3 v)
 {
 #ifdef __aarch64__
     return vmulq_n_f32(v, fS);
-#elif defined(__SSE4_1__)
+#elif ARCH_SSE
     return _mm_mul_ps(v, _mm_set_ps1(fS));
 #else
     SVec3 r;
@@ -177,7 +183,7 @@ static SVec3 vmul( const SVec3 v1, const SVec3 v2 )
 {
 #ifdef __aarch64__
     return vmulq_f32(v1, v2);
-#elif defined(__SSE4_1__)
+#elif ARCH_SSE
     return _mm_mul_ps(v1, v2);
 #else
     SVec3 r;
@@ -192,7 +198,7 @@ static SVec3 vdiv( const SVec3 v1, const SVec3 v2 )
 {
 #ifdef __aarch64__
     return vdivq_f32(v1, v2);
-#elif defined(__SSE4_1__)
+#elif ARCH_SSE
     return _mm_div_ps(v1, v2);
 #else
     SVec3 r;
@@ -207,7 +213,7 @@ static float vdot( const SVec3 v1, const SVec3 v2 )
 {
 #ifdef __aarch64__
     return vaddvq_f32(vmulq_f32(v1, v2));
-#elif defined(__SSE4_1__)
+#elif ARCH_SSE
 	__m128 t = _mm_mul_ps(v1, v2);
 	return vx(t) + vy(t) + vz(t);
 #else
@@ -215,11 +221,41 @@ static float vdot( const SVec3 v1, const SVec3 v2 )
 #endif
 }
 
+static SVec3 vmin( const SVec3 v1, const SVec3 v2 )
+{
+#ifdef __aarch64__
+	return vminq_f32(v1, v2);
+#elif ARCH_SSE
+	return _mm_min_ps(v1, v2);
+#else
+    SVec3 r;
+    r.x = fminf(v1.x, v2.x);
+    r.y = fminf(v1.y, v2.y);
+    r.z = fminf(v1.z, v2.z);
+    return r;
+#endif
+}
+
+static SVec3 vmax( const SVec3 v1, const SVec3 v2 )
+{
+#ifdef __aarch64__
+	return vmaxq_f32(v1, v2);
+#elif ARCH_SSE
+	return _mm_max_ps(v1, v2);
+#else
+    SVec3 r;
+    r.x = fmaxf(v1.x, v2.x);
+    r.y = fmaxf(v1.y, v2.y);
+    r.z = fmaxf(v1.z, v2.z);
+    return r;
+#endif
+}
+
 static float LengthSquared( const SVec3 v )
 {
 #ifdef __aarch64__
     return vaddvq_f32(vmulq_f32(v, v));
-#elif defined(__SSE4_1__)
+#elif ARCH_SSE
     __m128 t = _mm_mul_ps(v, v);
     return vx(t) + vy(t) + vz(t);
 #else
@@ -236,7 +272,7 @@ static SVec3 Normalize( const SVec3 v )
 {
 #ifdef __aarch64__
     return vmulq_n_f32(v, 1.0f / Length(v));
-#elif defined(__SSE4_1__)
+#elif ARCH_SSE
     return _mm_div_ps(v, _mm_set_ps1(Length(v)));
 #else
     float len = Length(v);
@@ -258,14 +294,14 @@ static int VNotZero(const SVec3 v)
 {
 #ifdef __aarch64__
     uint32x4_t result = vcgtq_f32(vabsq_f32(v), vdupq_n_f32(FLT_MIN));
-    return vgetq_lane_u32(result, 0) & vgetq_lane_u32(result, 1) & vgetq_lane_u32(result, 2);
-#elif defined(__SSE4_1__)
+    return vgetq_lane_u32(result, 0) | vgetq_lane_u32(result, 1) | vgetq_lane_u32(result, 2);
+#elif ARCH_SSE
 	// might change this to an epsilon based test
 	__m128 t = _mm_andnot_ps(_mm_set_ps1(-0.0f), v);
 	__m128 c = _mm_cmpgt_ps(t, _mm_set_ps1(FLT_MIN));
 	return (_mm_movemask_ps(c) & 0x7) != 0;
 #else
-    return (fabsf(v.x) > FLT_MIN) && (fabsf(v.y) > FLT_MIN) && (fabsf(v.z) > FLT_MIN);
+    return (fabsf(v.x) > FLT_MIN) || (fabsf(v.y) > FLT_MIN) || (fabsf(v.z) > FLT_MIN);
 #endif
 }
 
@@ -499,8 +535,8 @@ tbool genTangSpace(const SMikkTSpaceContext * pContext, const float fAngularThre
 	memset(psTspace, 0, sizeof(STSpace)*iNrTSPaces);
 	for (t=0; t<iNrTSPaces; t++)
 	{
-		psTspace[t].vOs.x=1.0f; psTspace[t].vOs.y=0.0f; psTspace[t].vOs.z=0.0f; psTspace[t].fMagS = 1.0f;
-		psTspace[t].vOt.x=0.0f; psTspace[t].vOt.y=1.0f; psTspace[t].vOt.z=0.0f; psTspace[t].fMagT = 1.0f;
+		psTspace[t].vOs.x=1.0f; psTspace[t].vOs.y=0.0f; psTspace[t].vOs.z=0.0f; psTspace[t].vOs.w=0.0f; psTspace[t].fMagS = 1.0f;
+		psTspace[t].vOt.x=0.0f; psTspace[t].vOt.y=1.0f; psTspace[t].vOt.z=0.0f; psTspace[t].vOt.w=0.0f; psTspace[t].fMagT = 1.0f;
 	}
 
 	// make tspaces, each group is split up into subgroups if necessary
@@ -623,22 +659,8 @@ static void GenerateSharedVerticesIndexList(int piTriList_in_and_out[], const SM
 		const int index = piTriList_in_and_out[i];
 
 		const SVec3 vP = GetPosition(pContext, index);
-		#ifdef __aarch64__
-				vMin = vminq_f32(vMin, vP);
-				vMax = vmaxq_f32(vMax, vP);
-		#elif __SSE4_1__
-				vMin = _mm_min_ps(vMin, vP);
-				vMax = _mm_max_ps(vMax, vP);
-		#else
-			if (vx(vMin) > vx(vP)) vMin = vmake((MVec3){vx(vP), vy(vMin), vz(vMin)});
-			else if (vx(vMax) < vx(vP)) vMax = vmake((MVec3){vx(vP), vy(vMax), vz(vMax)});
-
-			if (vy(vMin) > vy(vP)) vMin = vmake((MVec3){vx(vMin), vy(vP), vz(vMin)});
-			else if (vy(vMax) < vy(vP)) vMax = vmake((MVec3){vx(vMax), vy(vP), vz(vMax)});
-
-			if (vz(vMin) > vz(vP)) vMin = vmake((MVec3){vx(vMin), vy(vMin), vz(vP)});
-			else if (vz(vMax) < vz(vP)) vMax = vmake((MVec3){vx(vMax), vy(vMax), vz(vP)});
-		#endif
+		vMin = vmin(vMin, vP);
+		vMax = vmax(vMax, vP);
 	}
 
 	vDim = vsub(vMax,vMin);
@@ -1115,8 +1137,8 @@ static void InitTriInfo(STriInfo pTriInfos[], const int piTriListIn[], const SMi
 			pTriInfos[f].FaceNeighbors[i] = -1;
 			pTriInfos[f].AssignedGroup[i] = NULL;
 
-			pTriInfos[f].vOs.x=0.0f; pTriInfos[f].vOs.y=0.0f; pTriInfos[f].vOs.z=0.0f;
-			pTriInfos[f].vOt.x=0.0f; pTriInfos[f].vOt.y=0.0f; pTriInfos[f].vOt.z=0.0f;
+			pTriInfos[f].vOs.x=0.0f; pTriInfos[f].vOs.y=0.0f; pTriInfos[f].vOs.z=0.0f; pTriInfos[f].vOs.w=0.0f;
+			pTriInfos[f].vOt.x=0.0f; pTriInfos[f].vOt.y=0.0f; pTriInfos[f].vOt.z=0.0f; pTriInfos[f].vOt.w=0.0f;
 			pTriInfos[f].fMagS = 0;
 			pTriInfos[f].fMagT = 0;
 
@@ -1532,8 +1554,8 @@ static STSpace EvalTspace(int face_indices[], const int iFaces, const int piTriL
 	STSpace res;
 	float fAngleSum = 0;
 	int face=0;
-	res.vOs.x=0.0f; res.vOs.y=0.0f; res.vOs.z=0.0f;
-	res.vOt.x=0.0f; res.vOt.y=0.0f; res.vOt.z=0.0f;
+	res.vOs.x=0.0f; res.vOs.y=0.0f; res.vOs.z=0.0f; res.vOs.w=0.0f;
+	res.vOt.x=0.0f; res.vOt.y=0.0f; res.vOt.z=0.0f; res.vOt.w=0.0f;
 	res.fMagS = 0; res.fMagT = 0;
 
 	SVec3 vOs = vload(&res.vOs);
