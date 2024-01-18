@@ -722,7 +722,7 @@ void SkinTool::_remove_duplicate_skins(Vector<Ref<GLTFSkin>> &r_skins) {
 	}
 }
 
-String SkinTool::_gen_unique_bone_name(HashSet<String> unique_names, const String &p_name) {
+String SkinTool::_gen_unique_bone_name(HashSet<String> &r_unique_names, const String &p_name) {
 	String s_name = _sanitize_bone_name(p_name);
 	if (s_name.is_empty()) {
 		s_name = "bone";
@@ -735,13 +735,13 @@ String SkinTool::_gen_unique_bone_name(HashSet<String> unique_names, const Strin
 		if (index > 1) {
 			u_name += "_" + itos(index);
 		}
-		if (!unique_names.has(u_name)) {
+		if (!r_unique_names.has(u_name)) {
 			break;
 		}
 		index++;
 	}
 
-	unique_names.insert(u_name);
+	r_unique_names.insert(u_name);
 
 	return u_name;
 }
