@@ -1409,9 +1409,13 @@ Light3D *FBXDocument::_generate_light(Ref<FBXState> p_state, const GLTFNodeIndex
 		light->set_color(l->get_color());
 		light->set_param(Light3D::PARAM_ENERGY, l->get_intensity());
 		Dictionary additional_data = l->get_additional_data("GODOT_fbx_light");
-		if (additional_data.has("shadow")) {
-			light->set_shadow(additional_data["shadow"]);
+		if (additional_data.has("castShadows")) {
+			light->set_shadow(additional_data["castShadows"]);
 		}
+		if (additional_data.has("castLight")) {
+			light->set_visible(additional_data["castLight"]);
+		}
+
 		Transform3D transform;
 		Vector3 up_vector = Vector3(0, 1, 0);
 		DirectionalLight3D *dir_light = Object::cast_to<DirectionalLight3D>(light);
@@ -1427,27 +1431,21 @@ Light3D *FBXDocument::_generate_light(Ref<FBXState> p_state, const GLTFNodeIndex
 			light->set_param(OmniLight3D::PARAM_RANGE, 4096);
 		}
 
-		// This is "correct", but FBX files may have unexpected decay modes.
-		// Also does not match with what FBX2glTF does, so it might be better to not do any of this..
+// This is "correct", but FBX files may have unexpected decay modes.
+// Also does not match with what FBX2glTF does, so it might be better to not do any of this..
 #if 0
 		if (omni_light || spot_light) {
 			float attenuation = 1.0f;
-			switch (decay) {
-				case UFBX_LIGHT_DECAY_NONE: {
+			if (additional_data.has("decay")) {
+				String decay_type = additional_data["decay"];
+				if (decay_type == "none") {
 					attenuation = 0.001f;
-					break;
-				}
-				case UFBX_LIGHT_DECAY_LINEAR: {
+				} else if (decay_type == "linear") {
 					attenuation = 1.0f;
-					break;
-				}
-				case UFBX_LIGHT_DECAY_QUADRATIC: {
+				} else if (decay_type == "quadratic") {
 					attenuation = 2.0f;
-					break;
-				}
-				case UFBX_LIGHT_DECAY_CUBIC: {
+				} else if (decay_type == "cubic") {
 					attenuation = 3.0f;
-					break;
 				}
 			}
 			light->set_param(Light3D::PARAM_ATTENUATION, attenuation);
