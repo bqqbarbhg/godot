@@ -1417,7 +1417,6 @@ Light3D *FBXDocument::_generate_light(Ref<FBXState> p_state, const GLTFNodeIndex
 		}
 
 		Transform3D transform;
-		Vector3 up_vector = Vector3(0, 1, 0);
 		DirectionalLight3D *dir_light = Object::cast_to<DirectionalLight3D>(light);
 		SpotLight3D *spot_light = Object::cast_to<SpotLight3D>(light);
 		OmniLight3D *omni_light = Object::cast_to<OmniLight3D>(light);
