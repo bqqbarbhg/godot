@@ -2167,6 +2167,7 @@ void FBXDocument::_zero_unused_elements(Vector<float> &cur_custom, int start, in
 		}
 	}
 }
+
 Error FBXDocument::_parse_lights(Ref<FBXState> p_state) {
 	const ufbx_scene *fbx_scene = p_state->scene.get();
 	for (size_t i = 0; i < fbx_scene->lights.count; i++) {
@@ -2179,16 +2180,22 @@ Error FBXDocument::_parse_lights(Ref<FBXState> p_state) {
 		switch (fbx_light->type) {
 			case UFBX_LIGHT_POINT:
 				light->set_light_type("point");
+				break;
 			case UFBX_LIGHT_DIRECTIONAL:
 				light->set_light_type("directional");
+				break;
 			case UFBX_LIGHT_SPOT:
 				light->set_light_type("spot");
+				break;
 			case UFBX_LIGHT_AREA:
 				light->set_light_type("area");
+				break;
 			case UFBX_LIGHT_VOLUME:
 				light->set_light_type("volume");
+				break;
 			default:
 				light->set_light_type("unknown");
+				break;
 		}
 
 		Dictionary additional_data;
