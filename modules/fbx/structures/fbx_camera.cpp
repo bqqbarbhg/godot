@@ -34,6 +34,8 @@
 #include "scene/3d/camera_3d.h"
 
 void FBXCamera::_bind_methods() {
+	ClassDB::bind_static_method("FBXCamera", D_METHOD("from_fbx_node", "camera_node"), &FBXCamera::from_node);
+	ClassDB::bind_static_method("FBXCamera", D_METHOD("from_fbx_dictionary", "dictionary"), &FBXCamera::from_dictionary);
 }
 
 Ref<FBXCamera> FBXCamera::from_node(const Camera3D *p_camera) {

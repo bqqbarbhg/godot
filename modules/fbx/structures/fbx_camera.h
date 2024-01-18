@@ -55,22 +55,22 @@ protected:
 	static void _bind_methods();
 
 public:
-	bool get_perspective() const { return perspective; }
-	void set_perspective(bool p_val) { perspective = p_val; }
-	real_t get_fov() const { return fov; }
-	void set_fov(real_t p_val) { fov = p_val; }
-	real_t get_size_mag() const { return size_mag; }
-	void set_size_mag(real_t p_val) { size_mag = p_val; }
-	real_t get_depth_far() const { return depth_far; }
-	void set_depth_far(real_t p_val) { depth_far = p_val; }
-	real_t get_depth_near() const { return depth_near; }
-	void set_depth_near(real_t p_val) { depth_near = p_val; }
+	bool get_perspective() const override { return perspective; }
+	void set_perspective(bool p_val) override { perspective = p_val; }
+	real_t get_fov() const override { return fov; }
+	void set_fov(real_t p_val) override { fov = p_val; }
+	real_t get_size_mag() const override { return size_mag; }
+	void set_size_mag(real_t p_val) override { size_mag = p_val; }
+	real_t get_depth_far() const override { return depth_far; }
+	void set_depth_far(real_t p_val) override { depth_far = p_val; }
+	real_t get_depth_near() const override { return depth_near; }
+	void set_depth_near(real_t p_val) override { depth_near = p_val; }
 
 	static Ref<FBXCamera> from_node(const Camera3D *p_camera);
-	Camera3D *to_node() const;
+	Camera3D *to_node() const override;
 
 	static Ref<FBXCamera> from_dictionary(const Dictionary &p_dictionary);
-	Dictionary to_dictionary() const;
+	Dictionary to_dictionary() const override;
 };
 
 #endif // FBX_CAMERA_H
