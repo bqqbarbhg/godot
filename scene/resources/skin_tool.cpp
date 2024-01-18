@@ -244,7 +244,7 @@ Error SkinTool::_verify_skin(Vector<Ref<GLTFNode>> &r_nodes, Ref<GLTFSkin> p_ski
 
 	out_roots.sort();
 
-	ERR_FAIL_COND_V(out_roots.size() == 0, FAILED);
+	ERR_FAIL_COND_V(out_roots.is_empty(), FAILED);
 
 	// Make sure the roots are the exact same (they better be)
 	ERR_FAIL_COND_V(out_roots.size() != p_skin->roots.size(), FAILED);

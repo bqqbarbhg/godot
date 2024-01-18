@@ -30,6 +30,7 @@
 
 #include "fbx_camera.h"
 
+#include "core/error/error_macros.h"
 #include "scene/3d/camera_3d.h"
 
 void FBXCamera::_bind_methods() {
@@ -39,7 +40,7 @@ Ref<FBXCamera> FBXCamera::from_node(const Camera3D *p_camera) {
 	Ref<FBXCamera> c;
 	c.instantiate();
 	c->set_name(p_camera->get_name());
-	ERR_FAIL_COND_V_MSG(!p_camera, c, "Tried to create a FBXCamera from a Camera3D node, but the given node was null.");
+	ERR_FAIL_NULL_V_MSG(p_camera, c, "Tried to create a FBXCamera from a Camera3D node, but the given node was null.");
 	c->set_perspective(p_camera->get_projection() == Camera3D::ProjectionType::PROJECTION_PERSPECTIVE);
 	// GLTF spec (yfov) is in radians, Godot's camera (fov) is in degrees.
 	c->set_fov(Math::deg_to_rad(p_camera->get_fov()));
@@ -62,7 +63,7 @@ Camera3D *FBXCamera::to_node() const {
 	return camera;
 }
 
-Ref<FBXCamera> FBXCamera::from_dictionary(const Dictionary p_dictionary) {
+Ref<FBXCamera> FBXCamera::from_dictionary(const Dictionary &p_dictionary) {
 	ERR_FAIL_COND_V_MSG(!p_dictionary.has("type"), Ref<FBXCamera>(), "Failed to parse GLTF camera, missing required field 'type'.");
 	Ref<FBXCamera> camera;
 	camera.instantiate();

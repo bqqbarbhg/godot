@@ -69,7 +69,7 @@ public:
 	static Ref<FBXCamera> from_node(const Camera3D *p_camera);
 	Camera3D *to_node() const;
 
-	static Ref<FBXCamera> from_dictionary(const Dictionary p_dictionary);
+	static Ref<FBXCamera> from_dictionary(const Dictionary &p_dictionary);
 	Dictionary to_dictionary() const;
 };
 
