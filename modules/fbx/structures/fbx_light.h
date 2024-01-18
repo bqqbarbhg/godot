@@ -56,9 +56,6 @@ public:
 	static Ref<FBXLight> from_node(const Light3D *p_camera);
 	Light3D *to_node() const;
 
-	static Ref<FBXLight> from_dictionary(const Dictionary &p_dictionary);
-	Dictionary to_dictionary() const;
-
 	void set_local_direction(const Vector3 &p_local_direction) { local_direction = p_local_direction; }
 	void set_type(int p_type) { type = p_type; }
 	void set_decay(int p_decay) { decay = p_decay; }

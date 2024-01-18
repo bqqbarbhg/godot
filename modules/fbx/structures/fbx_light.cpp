@@ -87,7 +87,7 @@ Light3D *FBXLight::to_node() const {
 			break;
 
 		default:
-			ERR_FAIL_COND_V(!light, nullptr);
+			ERR_FAIL_NULL_V(light, nullptr);
 	}
 
 	if (light) {
@@ -151,18 +151,6 @@ Light3D *FBXLight::to_node() const {
 	}
 
 	return light;
-}
-
-Ref<FBXLight> FBXLight::from_dictionary(const Dictionary &p_dictionary) {
-	ERR_FAIL_COND_V_MSG(!p_dictionary.has("type"), Ref<FBXLight>(), "Failed to parse GLTF camera, missing required field 'type'.");
-	Ref<FBXLight> light;
-	light.instantiate();
-	return light;
-}
-
-Dictionary FBXLight::to_dictionary() const {
-	Dictionary d;
-	return d;
 }
 
 void FBXLight::_bind_methods() {
