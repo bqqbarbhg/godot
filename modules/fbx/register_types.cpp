@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  gltf_template_convert.h                                               */
+/*  register_types.cpp                                                    */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,67 +28,50 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef GLTF_TEMPLATE_CONVERT_H
-#define GLTF_TEMPLATE_CONVERT_H
+#include "register_types.h"
 
-#include "core/templates/hash_set.h"
-#include "core/variant/array.h"
-#include "core/variant/dictionary.h"
+#include "fbx_document.h"
 
-namespace GLTFTemplateConvert {
-template <class T>
-static Array to_array(const Vector<T> &p_inp) {
-	Array ret;
-	for (int i = 0; i < p_inp.size(); i++) {
-		ret.push_back(p_inp[i]);
+#ifdef TOOLS_ENABLED
+#include "editor/editor_scene_importer_ufbx.h"
+
+#include "core/config/project_settings.h"
+#include "editor/editor_node.h"
+#include "editor/editor_settings.h"
+
+static void _editor_init() {
+	Ref<EditorSceneFormatImporterUFBX> import_fbx;
+	import_fbx.instantiate();
+	ResourceImporterScene::add_scene_importer(import_fbx);
+}
+#endif // TOOLS_ENABLED
+
+void initialize_fbx_module(ModuleInitializationLevel p_level) {
+	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		GDREGISTER_CLASS(FBXDocument);
+		GDREGISTER_CLASS(FBXCamera);
+		GDREGISTER_CLASS(FBXLight);
+		GDREGISTER_CLASS(FBXState);
 	}
-	return ret;
+
+#ifdef TOOLS_ENABLED
+	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		// Editor-specific API.
+		ClassDB::APIType prev_api = ClassDB::get_current_api();
+		ClassDB::set_current_api(ClassDB::API_EDITOR);
+
+		GDREGISTER_CLASS(EditorSceneFormatImporterUFBX);
+
+		ClassDB::set_current_api(prev_api);
+		EditorNode::add_init_callback(_editor_init);
+	}
+#endif // TOOLS_ENABLED
 }
 
-template <class T>
-static TypedArray<T> to_array(const HashSet<T> &p_inp) {
-	TypedArray<T> ret;
-	typename HashSet<T>::Iterator elem = p_inp.begin();
-	while (elem) {
-		ret.push_back(*elem);
-		++elem;
+void uninitialize_fbx_module(ModuleInitializationLevel p_level) {
+	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
+		return;
 	}
-	return ret;
+	// TODO: 20240118 // fire
+	// FBXDocument::unregister_all_gltf_document_extensions();
 }
-
-template <class T>
-static void set_from_array(Vector<T> &r_out, const Array &p_inp) {
-	r_out.clear();
-	for (int i = 0; i < p_inp.size(); i++) {
-		r_out.push_back(p_inp[i]);
-	}
-}
-
-template <class T>
-static void set_from_array(HashSet<T> &r_out, const TypedArray<T> &p_inp) {
-	r_out.clear();
-	for (int i = 0; i < p_inp.size(); i++) {
-		r_out.insert(p_inp[i]);
-	}
-}
-
-template <class K, class V>
-static Dictionary to_dict(const HashMap<K, V> &p_inp) {
-	Dictionary ret;
-	for (const KeyValue<K, V> &E : p_inp) {
-		ret[E.key] = E.value;
-	}
-	return ret;
-}
-
-template <class K, class V>
-static void set_from_dict(HashMap<K, V> &r_out, const Dictionary &p_inp) {
-	r_out.clear();
-	Array keys = p_inp.keys();
-	for (int i = 0; i < keys.size(); i++) {
-		r_out[keys[i]] = p_inp[keys[i]];
-	}
-}
-} //namespace GLTFTemplateConvert
-
-#endif // GLTF_TEMPLATE_CONVERT_H
