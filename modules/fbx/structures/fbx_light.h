@@ -40,7 +40,6 @@ class FBXLight : public GLTFLight {
 	GDCLASS(FBXLight, GLTFLight);
 
 private:
-	Vector3 local_direction = Vector3(0, 1, 0);
 	int type = -1;
 	int decay = 0;
 	int area_shape = -1;
@@ -56,7 +55,6 @@ public:
 	static Ref<FBXLight> from_node(const Light3D *p_camera);
 	Light3D *to_node() const;
 
-	void set_local_direction(const Vector3 &p_local_direction) { local_direction = p_local_direction; }
 	void set_type(int p_type) { type = p_type; }
 	void set_decay(int p_decay) { decay = p_decay; }
 	void set_area_shape(int p_area_shape) { area_shape = p_area_shape; }
@@ -64,7 +62,6 @@ public:
 	void set_outer_angle(float p_outer_angle) { outer_angle = p_outer_angle; }
 	void set_cast_light(bool p_cast_light) { cast_light = p_cast_light; }
 	void set_cast_shadows(bool p_cast_shadows) { cast_shadows = p_cast_shadows; }
-	Vector3 get_local_direction() const { return local_direction; }
 	int get_type() const { return type; }
 	int get_decay() const { return decay; }
 	int get_area_shape() const { return area_shape; }

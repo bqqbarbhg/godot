@@ -46,20 +46,13 @@ Ref<FBXLight> FBXLight::from_node(const Light3D *p_light) {
 	light->set_color(p_light->get_color());
 	light->set_intensity(p_light->get_param(Light3D::PARAM_ENERGY) / 54.61296099232f);
 	light->set_cast_shadows(p_light->has_shadow());
-
-	Transform3D light_local_transform = p_light->get_transform();
-
 	if (cast_to<DirectionalLight3D>(p_light)) {
 		light->set_type(int(UFBX_LIGHT_DIRECTIONAL));
-		Vector3 direction = -light_local_transform.basis.get_column(Vector3::AXIS_Z);
-		light->set_local_direction(direction.normalized());
 	} else if (cast_to<OmniLight3D>(p_light)) {
 		light->set_type(int(UFBX_LIGHT_POINT));
 	} else if (cast_to<SpotLight3D>(p_light)) {
 		const SpotLight3D *spot_light = cast_to<SpotLight3D>(p_light);
 		light->set_type(int(UFBX_LIGHT_SPOT));
-		Vector3 direction = -light_local_transform.basis.get_column(Vector3::AXIS_Z);
-		light->set_local_direction(direction.normalized());
 		light->set_outer_angle(spot_light->get_param(SpotLight3D::PARAM_SPOT_ANGLE) * 2.0f);
 		light->set_inner_angle(0 * 2.0f);
 	} else {
@@ -103,10 +96,8 @@ Light3D *FBXLight::to_node() const {
 		SpotLight3D *spot_light = Object::cast_to<SpotLight3D>(light);
 		OmniLight3D *omni_light = Object::cast_to<OmniLight3D>(light);
 		if (dir_light) {
-			transform.set_look_at(Vector3(), -local_direction.normalized(), up_vector);
 			dir_light->set_transform(transform);
 		} else if (spot_light) {
-			transform.set_look_at(Vector3(), -local_direction.normalized(), up_vector);
 			spot_light->set_transform(transform);
 			spot_light->set_param(SpotLight3D::PARAM_SPOT_ANGLE, outer_angle / 2.0f);
 		}
@@ -154,9 +145,6 @@ Light3D *FBXLight::to_node() const {
 }
 
 void FBXLight::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_local_direction", "local_direction"), &FBXLight::set_local_direction);
-	ClassDB::bind_method(D_METHOD("get_local_direction"), &FBXLight::get_local_direction);
-
 	ClassDB::bind_method(D_METHOD("set_type", "type"), &FBXLight::set_type);
 	ClassDB::bind_method(D_METHOD("get_type"), &FBXLight::get_type);
 
@@ -178,7 +166,6 @@ void FBXLight::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_cast_shadows", "cast_shadows"), &FBXLight::set_cast_shadows);
 	ClassDB::bind_method(D_METHOD("is_casting_shadows"), &FBXLight::is_casting_shadows);
 
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "local_direction"), "set_local_direction", "get_local_direction");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "type"), "set_type", "get_type");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "decay"), "set_decay", "get_decay");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "area_shape"), "set_area_shape", "get_area_shape");
