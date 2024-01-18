@@ -2191,7 +2191,7 @@ Error FBXDocument::_parse_skins(Ref<FBXState> p_state) {
 			}
 		}
 	}
-	TypedArray<Dictionary> skins;
+	Vector<Dictionary> skins;
 	for (Ref<GLTFSkin> skin : p_state->skins) {
 		Dictionary new_skin_dictionary;
 		if (skin.is_valid()) {
@@ -2200,7 +2200,7 @@ Error FBXDocument::_parse_skins(Ref<FBXState> p_state) {
 		skins.push_back(new_skin_dictionary);
 	}
 
-	TypedArray<Dictionary> nodes;
+	Vector<Dictionary> nodes;
 	for (Ref<GLTFNode> node : p_state->nodes) {
 		Dictionary new_node_dictionary;
 		if (node.is_valid()) {
@@ -2210,8 +2210,8 @@ Error FBXDocument::_parse_skins(Ref<FBXState> p_state) {
 	}
 	Error err = SkinTool::_asset_parse_skins(
 			p_state->skin_indices.duplicate(),
-			skins.duplicate(),
-			nodes.duplicate(),
+			skins,
+			nodes,
 			p_state->skin_indices,
 			skins,
 			joint_mapping);

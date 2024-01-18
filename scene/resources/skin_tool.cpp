@@ -748,10 +748,10 @@ String SkinTool::_gen_unique_bone_name(HashSet<String> &r_unique_names, const St
 
 Error SkinTool::_asset_parse_skins(
 		const Vector<SkinNodeIndex> &input_skin_indices, // Input indices of the skins
-		const TypedArray<Dictionary> &input_skins, // Input skins as an array of dictionaries
-		const TypedArray<Dictionary> &input_nodes, // Input nodes as an array of dictionaries
+		const Vector<Dictionary> &input_skins, // Input skins as an array of dictionaries
+		const Vector<Dictionary> &input_nodes, // Input nodes as an array of dictionaries
 		Vector<SkinNodeIndex> &output_skin_indices, // Output indices that will hold the valid skin indices
-		TypedArray<Dictionary> &output_skins, // Output skins that will hold the corresponding skins for the valid indices
+		Vector<Dictionary> &output_skins, // Output skins that will hold the corresponding skins for the valid indices
 		HashMap<GLTFNodeIndex, bool> &joint_mapping) { // Mapping of joint indices to a boolean indicating whether they exist or not
 
 	output_skin_indices.clear();
