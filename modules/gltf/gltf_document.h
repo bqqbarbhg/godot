@@ -80,7 +80,7 @@ public:
 public:
 	virtual Error append_data_from_file(String p_path, Ref<AssetState3D> p_state, uint32_t p_flags = 0, String p_base_path = String()) override {
 		return append_from_file(p_path, p_state, p_flags, p_base_path);
-	};
+	}
 	virtual Error append_data_from_buffer(PackedByteArray p_bytes, String p_base_path, Ref<AssetState3D> p_state, uint32_t p_flags = 0) override {
 		return append_from_buffer(p_bytes, p_base_path, p_state, p_flags);
 	}
