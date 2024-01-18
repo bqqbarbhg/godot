@@ -32,7 +32,6 @@
 #define FBX_DOCUMENT_H
 
 #include "modules/fbx/fbx_state.h"
-#include "modules/fbx/structures/fbx_light.h"
 #include "modules/gltf/gltf_defines.h"
 #include "scene/resources/asset_document_3d.h"
 
@@ -82,7 +81,7 @@ private:
 			const GLTFTextureIndex p_texture, int p_texture_type);
 	Error _parse_meshes(Ref<FBXState> p_state);
 	Ref<Image> _parse_image_bytes_into_image(Ref<FBXState> p_state, const Vector<uint8_t> &p_bytes, const String &p_filename, int p_index);
-	FBXImageIndex _parse_image_save_image(Ref<FBXState> p_state, const Vector<uint8_t> &p_bytes, const String &p_file_extension, int p_index, Ref<Image> p_image);
+	GLTFImageIndex _parse_image_save_image(Ref<FBXState> p_state, const Vector<uint8_t> &p_bytes, const String &p_file_extension, int p_index, Ref<Image> p_image);
 	Error _parse_images(Ref<FBXState> p_state, const String &p_base_path);
 	Error _parse_materials(Ref<FBXState> p_state);
 	Error _parse_skins(Ref<FBXState> p_state);
@@ -105,7 +104,7 @@ public:
 	void _generate_scene_node(Ref<FBXState> p_state, const GLTFNodeIndex p_node_index, Node *p_scene_parent, Node *p_scene_root);
 	void _generate_skeleton_bone_node(Ref<FBXState> p_state, const GLTFNodeIndex p_node_index, Node *p_scene_parent, Node *p_scene_root);
 	void _import_animation(Ref<FBXState> p_state, AnimationPlayer *p_animation_player,
-			const FBXAnimationIndex p_index, const float p_bake_fps, const bool p_trimming, const bool p_remove_immutable_tracks);
+			const GLTFAnimationIndex p_index, const float p_bake_fps, const bool p_trimming, const bool p_remove_immutable_tracks);
 	Error _parse(Ref<FBXState> p_state, String p_path, Ref<FileAccess> p_file);
 };
 

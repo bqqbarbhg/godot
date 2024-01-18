@@ -36,18 +36,20 @@
 #include "core/io/file_access_memory.h"
 #include "core/io/image.h"
 #include "core/math/color.h"
-#include "fbx_defines.h"
+#include "modules/gltf/extensions/gltf_light.h"
+#include "modules/gltf/gltf_defines.h"
 #include "modules/gltf/gltf_state.h"
 #include "modules/gltf/structures/gltf_animation.h"
+#include "modules/gltf/structures/gltf_camera.h"
 #include "scene/3d/bone_attachment_3d.h"
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/importer_mesh_instance_3d.h"
+#include "scene/3d/light_3d.h"
 #include "scene/resources/image_texture.h"
 #include "scene/resources/material.h"
 #include "scene/resources/portable_compressed_texture.h"
 #include "scene/resources/skin_tool.h"
 #include "scene/resources/surface_tool.h"
-#include "structures/fbx_light.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_file_system.h"
@@ -839,7 +841,7 @@ Ref<Image> FBXDocument::_parse_image_bytes_into_image(Ref<FBXState> p_state, con
 	return r_image;
 }
 
-FBXImageIndex FBXDocument::_parse_image_save_image(Ref<FBXState> p_state, const Vector<uint8_t> &p_bytes, const String &p_file_extension, int p_index, Ref<Image> p_image) {
+GLTFImageIndex FBXDocument::_parse_image_save_image(Ref<FBXState> p_state, const Vector<uint8_t> &p_bytes, const String &p_file_extension, int p_index, Ref<Image> p_image) {
 	FBXState::GLTFHandleBinary handling = FBXState::GLTFHandleBinary(p_state->handle_binary_image);
 	if (p_image->is_empty() || handling == FBXState::GLTFHandleBinary::HANDLE_BINARY_DISCARD_TEXTURES) {
 		if (p_index < 0) {
@@ -989,7 +991,7 @@ Error FBXDocument::_parse_images(Ref<FBXState> p_state, const String &p_base_pat
 	for (int texture_file_i = 0; texture_file_i < static_cast<int>(fbx_scene->texture_files.count); texture_file_i++) {
 		Ref<GLTFTexture> texture;
 		texture.instantiate();
-		texture->set_src_image(FBXImageIndex(texture_file_i));
+		texture->set_src_image(GLTFImageIndex(texture_file_i));
 		p_state->textures.push_back(texture);
 	}
 
@@ -1000,7 +1002,7 @@ Error FBXDocument::_parse_images(Ref<FBXState> p_state, const String &p_base_pat
 
 Ref<Texture2D> FBXDocument::_get_texture(Ref<FBXState> p_state, const GLTFTextureIndex p_texture, int p_texture_types) {
 	ERR_FAIL_INDEX_V(p_texture, p_state->textures.size(), Ref<Texture2D>());
-	const FBXImageIndex image = p_state->textures[p_texture]->get_src_image();
+	const GLTFImageIndex image = p_state->textures[p_texture]->get_src_image();
 	ERR_FAIL_INDEX_V(image, p_state->images.size(), Ref<Texture2D>());
 	if (FBXState::GLTFHandleBinary(p_state->handle_binary_image) == FBXState::HANDLE_BINARY_EMBED_AS_BASISU) {
 		ERR_FAIL_INDEX_V(image, p_state->source_images.size(), Ref<Texture2D>());
@@ -1023,7 +1025,7 @@ Ref<Texture2D> FBXDocument::_get_texture(Ref<FBXState> p_state, const GLTFTextur
 
 Error FBXDocument::_parse_materials(Ref<FBXState> p_state) {
 	const ufbx_scene *fbx_scene = p_state->scene.get();
-	for (FBXMaterialIndex material_i = 0; material_i < static_cast<FBXMaterialIndex>(fbx_scene->materials.count); material_i++) {
+	for (GLTFMaterialIndex material_i = 0; material_i < static_cast<GLTFMaterialIndex>(fbx_scene->materials.count); material_i++) {
 		const ufbx_material *fbx_material = fbx_scene->materials[material_i];
 
 		Ref<StandardMaterial3D> material;
@@ -1097,11 +1099,11 @@ Error FBXDocument::_parse_materials(Ref<FBXState> p_state) {
 
 						albedo_image->set_name(vformat("alpha_%d", p_state->albedo_transparency_textures.size()));
 
-						FBXImageIndex new_image = _parse_image_save_image(p_state, PackedByteArray(), "", -1, albedo_image);
+						GLTFImageIndex new_image = _parse_image_save_image(p_state, PackedByteArray(), "", -1, albedo_image);
 						if (new_image >= 0) {
 							Ref<GLTFTexture> new_texture;
 							new_texture.instantiate();
-							new_texture->set_src_image(FBXImageIndex(new_image));
+							new_texture->set_src_image(GLTFImageIndex(new_image));
 							p_state->textures.push_back(new_texture);
 
 							GLTFTextureIndex texture_index = p_state->textures.size() - 1;
@@ -1213,10 +1215,10 @@ Error FBXDocument::_parse_materials(Ref<FBXState> p_state) {
 }
 Error FBXDocument::_parse_cameras(Ref<FBXState> p_state) {
 	const ufbx_scene *fbx_scene = p_state->scene.get();
-	for (FBXCameraIndex i = 0; i < static_cast<FBXCameraIndex>(fbx_scene->cameras.count); i++) {
+	for (GLTFCameraIndex i = 0; i < static_cast<GLTFCameraIndex>(fbx_scene->cameras.count); i++) {
 		const ufbx_camera *fbx_camera = fbx_scene->cameras[i];
 
-		Ref<FBXCamera> camera;
+		Ref<GLTFCamera> camera;
 		camera.instantiate();
 		camera->set_name(_as_string(fbx_camera->name));
 		if (fbx_camera->projection_mode == UFBX_PROJECTION_MODE_PERSPECTIVE) {
@@ -1242,7 +1244,7 @@ Error FBXDocument::_parse_cameras(Ref<FBXState> p_state) {
 
 Error FBXDocument::_parse_animations(Ref<FBXState> p_state) {
 	const ufbx_scene *fbx_scene = p_state->scene.get();
-	for (FBXAnimationIndex animation_i = 0; animation_i < static_cast<FBXAnimationIndex>(fbx_scene->anim_stacks.count); animation_i++) {
+	for (GLTFAnimationIndex animation_i = 0; animation_i < static_cast<GLTFAnimationIndex>(fbx_scene->anim_stacks.count); animation_i++) {
 		const ufbx_anim_stack *fbx_anim_stack = fbx_scene->anim_stacks[animation_i];
 
 		Ref<GLTFAnimation> animation;
@@ -1378,7 +1380,7 @@ Camera3D *FBXDocument::_generate_camera(Ref<FBXState> p_state, const GLTFNodeInd
 
 	print_verbose("FBX: Creating camera for: " + fbx_node->get_name());
 
-	Ref<FBXCamera> c = p_state->cameras[fbx_node->camera];
+	Ref<GLTFCamera> c = p_state->cameras[fbx_node->camera];
 	return c->to_node();
 }
 
@@ -1389,8 +1391,79 @@ Light3D *FBXDocument::_generate_light(Ref<FBXState> p_state, const GLTFNodeIndex
 
 	print_verbose("FBX: Creating light for: " + fbx_node->get_name());
 
-	Ref<FBXLight> l = p_state->lights[fbx_node->light];
-	return l->to_node();
+	Ref<GLTFLight> l = p_state->lights[fbx_node->light];
+	Light3D *light = nullptr;
+
+	if (l->get_light_type() == "point") {
+		light = memnew(OmniLight3D);
+	} else if (l->get_light_type() == "directional") {
+		light = memnew(DirectionalLight3D);
+	} else if (l->get_light_type() == "spot") {
+		light = memnew(SpotLight3D);
+	} else {
+		ERR_FAIL_NULL_V(light, nullptr);
+	}
+
+	if (light) {
+		light->set_name(l->get_name());
+		light->set_color(l->get_color());
+		light->set_param(Light3D::PARAM_ENERGY, l->get_intensity());
+		Dictionary additional_data = l->get_additional_data("GODOT_fbx_light");
+		if (additional_data.has("shadow")) {
+			light->set_shadow(additional_data["shadow"]);
+		}
+		Transform3D transform;
+		Vector3 up_vector = Vector3(0, 1, 0);
+		DirectionalLight3D *dir_light = Object::cast_to<DirectionalLight3D>(light);
+		SpotLight3D *spot_light = Object::cast_to<SpotLight3D>(light);
+		OmniLight3D *omni_light = Object::cast_to<OmniLight3D>(light);
+		if (dir_light) {
+			dir_light->set_transform(transform);
+		} else if (spot_light) {
+			spot_light->set_transform(transform);
+			spot_light->set_param(SpotLight3D::PARAM_SPOT_ANGLE, l->get_outer_cone_angle() / 2.0f);
+		}
+		if (omni_light || spot_light) {
+			light->set_param(OmniLight3D::PARAM_RANGE, 4096);
+		}
+
+		// This is "correct", but FBX files may have unexpected decay modes.
+		// Also does not match with what FBX2glTF does, so it might be better to not do any of this..
+#if 0
+		if (omni_light || spot_light) {
+			float attenuation = 1.0f;
+			switch (decay) {
+				case UFBX_LIGHT_DECAY_NONE: {
+					attenuation = 0.001f;
+					break;
+				}
+				case UFBX_LIGHT_DECAY_LINEAR: {
+					attenuation = 1.0f;
+					break;
+				}
+				case UFBX_LIGHT_DECAY_QUADRATIC: {
+					attenuation = 2.0f;
+					break;
+				}
+				case UFBX_LIGHT_DECAY_CUBIC: {
+					attenuation = 3.0f;
+					break;
+				}
+			}
+			light->set_param(Light3D::PARAM_ATTENUATION, attenuation);
+		}
+#endif
+
+		if (spot_light) {
+			// Line of best fit derived from guessing, see https://www.desmos.com/calculator/biiflubp8b
+			// The points in desmos are not exact, except for (1, infinity).
+			float angle_ratio = l->get_inner_cone_angle() / l->get_outer_cone_angle();
+			float angle_attenuation = 0.2 / (1 - angle_ratio) - 0.1;
+			light->set_param(SpotLight3D::PARAM_SPOT_ATTENUATION, angle_attenuation);
+		}
+	}
+
+	return light;
 }
 
 Node3D *FBXDocument::_generate_spatial(Ref<FBXState> p_state, const GLTFNodeIndex p_node_index) {
@@ -1605,7 +1678,7 @@ struct SceneFormatImporterGLTFInterpolate<Quaternion> {
 	}
 };
 
-void FBXDocument::_import_animation(Ref<FBXState> p_state, AnimationPlayer *p_animation_player, const FBXAnimationIndex p_index, const float p_bake_fps, const bool p_trimming, const bool p_remove_immutable_tracks) {
+void FBXDocument::_import_animation(Ref<FBXState> p_state, AnimationPlayer *p_animation_player, const GLTFAnimationIndex p_index, const float p_bake_fps, const bool p_trimming, const bool p_remove_immutable_tracks) {
 	Ref<GLTFAnimation> anim = p_state->animations[p_index];
 
 	String anim_name = anim->get_name();
@@ -2100,18 +2173,53 @@ Error FBXDocument::_parse_lights(Ref<FBXState> p_state) {
 	const ufbx_scene *fbx_scene = p_state->scene.get();
 	for (size_t i = 0; i < fbx_scene->lights.count; i++) {
 		const ufbx_light *fbx_light = fbx_scene->lights.data[i];
-		Ref<FBXLight> light;
+		Ref<GLTFLight> light;
 		light.instantiate();
 		light->set_name(_as_string(fbx_light->name));
 		light->set_color(Color(fbx_light->color.x, fbx_light->color.y, fbx_light->color.z));
 		light->set_intensity(fbx_light->intensity);
-		light->set_type(fbx_light->type);
-		light->set_decay(fbx_light->decay);
-		light->set_area_shape(fbx_light->area_shape);
-		light->set_inner_angle(fbx_light->inner_angle);
-		light->set_outer_angle(fbx_light->outer_angle);
-		light->set_cast_light(fbx_light->cast_light);
-		light->set_cast_shadows(fbx_light->cast_shadows);
+		switch (fbx_light->type) {
+			case UFBX_LIGHT_POINT:
+				light->set_light_type("point");
+			case UFBX_LIGHT_DIRECTIONAL:
+				light->set_light_type("directional");
+			case UFBX_LIGHT_SPOT:
+				light->set_light_type("spot");
+			case UFBX_LIGHT_AREA:
+				light->set_light_type("area");
+			case UFBX_LIGHT_VOLUME:
+				light->set_light_type("volume");
+			default:
+				light->set_light_type("unknown");
+		}
+
+		Dictionary additional_data;
+		additional_data["shadow"] = fbx_light->cast_shadows;
+		if (fbx_light->decay == UFBX_LIGHT_DECAY_NONE) {
+			additional_data["decay"] = "none";
+
+		} else if (fbx_light->decay == UFBX_LIGHT_DECAY_LINEAR) {
+			additional_data["decay"] = "linear";
+
+		} else if (fbx_light->decay == UFBX_LIGHT_DECAY_QUADRATIC) {
+			additional_data["decay"] = "quadratic";
+
+		} else if (fbx_light->decay == UFBX_LIGHT_DECAY_CUBIC) {
+			additional_data["decay"] = "cubic";
+		}
+
+		if (fbx_light->area_shape == UFBX_LIGHT_AREA_SHAPE_RECTANGLE) {
+			additional_data["areaShape"] = "rectangle";
+		} else if (fbx_light->area_shape == UFBX_LIGHT_AREA_SHAPE_SPHERE) {
+			additional_data["areaShape"] = "sphere";
+		}
+
+		light->set_inner_cone_angle(fbx_light->inner_angle);
+		light->set_outer_cone_angle(fbx_light->outer_angle);
+
+		additional_data["castLight"] = fbx_light->cast_light;
+		additional_data["castShadows"] = fbx_light->cast_shadows;
+		light->set_additional_data("GODOT_fbx_light", additional_data);
 		p_state->lights.push_back(light);
 	}
 	print_verbose("FBX: Total lights: " + itos(p_state->lights.size()));

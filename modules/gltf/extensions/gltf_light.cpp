@@ -220,3 +220,11 @@ Dictionary GLTFLight::to_dictionary() const {
 	d["range"] = range;
 	return d;
 }
+
+Variant GLTFLight::get_additional_data(const StringName &p_extension_name) {
+	return additional_data[p_extension_name];
+}
+
+void GLTFLight::set_additional_data(const StringName &p_extension_name, Variant p_additional_data) {
+	additional_data[p_extension_name] = p_additional_data;
+}
