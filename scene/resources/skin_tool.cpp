@@ -753,7 +753,6 @@ Error SkinTool::_asset_parse_skins(
 		Vector<SkinNodeIndex> &output_skin_indices,
 		Vector<Ref<GLTFSkin>> &output_skins,
 		HashMap<GLTFNodeIndex, bool> &joint_mapping) {
-
 	output_skin_indices.clear();
 	output_skins.clear();
 	joint_mapping.clear();
