@@ -111,7 +111,7 @@ void SceneExporterGLTFPlugin::_export_scene_as_gltf(const String &p_file_path) {
 	if (err != OK) {
 		ERR_PRINT(vformat("glTF2 save scene error %s.", itos(err)));
 	}
-	err = _gltf_document->write_to_filesystem(state, p_file_path);
+	err = _gltf_document->write_asset_to_filesystem(state, p_file_path);
 	if (err != OK) {
 		ERR_PRINT(vformat("glTF2 save scene error %s.", itos(err)));
 	}
