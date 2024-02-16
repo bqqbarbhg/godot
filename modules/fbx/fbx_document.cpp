@@ -2332,6 +2332,7 @@ Error FBXDocument::_parse_skins(Ref<FBXState> p_state) {
 					skin->joints.push_back(node);
 					skin->joints_original.push_back(node);
 					skin->set_name(vformat("skin_%s", itos(p_state->skins.size())));
+					p_state->skin_indices.push_back(p_state->skins.size());
 					p_state->skins.push_back(skin);
 				}
 			}
