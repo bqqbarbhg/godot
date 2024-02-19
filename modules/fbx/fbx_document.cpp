@@ -1331,23 +1331,38 @@ Error FBXDocument::_parse_animations(Ref<FBXState> p_state) {
 				track.scale_track.values.push_back(_as_vec3(key.value));
 			}
 		}
+
+		Dictionary blend_shape_animations;
+
 		for (const ufbx_baked_element &fbx_baked_element : fbx_baked_anim->elements) {
 			const ufbx_element *fbx_element = fbx_scene->elements[fbx_baked_element.element_id];
-			const GLTFNodeIndex node = fbx_element->typed_id;
-			ERR_CONTINUE(static_cast<uint32_t>(node) >= animation->get_tracks().size());
+
 			for (const ufbx_baked_prop &fbx_baked_prop : fbx_baked_element.props) {
 				String prop_name = _as_string(fbx_baked_prop.name);
 
 				if (fbx_element->type == UFBX_ELEMENT_BLEND_CHANNEL && prop_name == UFBX_DeformPercent) {
-					GLTFAnimation::Channel<real_t> blend_shape_track;
+					const ufbx_blend_channel *fbx_blend_channel = ufbx_as_blend_channel(fbx_element);
+
+					int blend_i = fbx_blend_channel->typed_id;
+					Vector<real_t> track_times;
+					Vector<real_t> track_values;
+
+
 					for (const ufbx_baked_vec3 &key : fbx_baked_prop.keys) {
-						blend_shape_track.times.push_back(float(key.time));
-						blend_shape_track.values.push_back(real_t(key.value.x / 100.0));
+						track_times.push_back(float(key.time));
+						track_values.push_back(real_t(key.value.x / 100.0));
 					}
-					animation->get_tracks()[node].weight_tracks.push_back(blend_shape_track);
+
+					Dictionary track;
+					track["times"] = track_times;
+					track["values"] = track_values;
+					blend_shape_animations[blend_i] = track;
 				}
 			}
 		}
+
+		animation->set_additional_data("GODOT_blend_shape_animations", blend_shape_animations);
+
 		p_state->animations.push_back(animation);
 	}
 
@@ -1811,6 +1826,8 @@ void FBXDocument::_import_animation(Ref<FBXState> p_state, AnimationPlayer *p_an
 		}
 	}
 
+	Dictionary blend_shape_animations = anim->get_additional_data("GODOT_blend_shape_animations");
+
 	for (GLTFNodeIndex node_index = 0; node_index < p_state->nodes.size(); node_index++) {
 		Ref<GLTFNode> node = p_state->nodes[node_index];
 		if (node->mesh < 0) {
@@ -1837,24 +1854,31 @@ void FBXDocument::_import_animation(Ref<FBXState> p_state, AnimationPlayer *p_an
 		ERR_CONTINUE(mesh->get_mesh().is_null());
 		ERR_CONTINUE(mesh->get_mesh()->get_mesh().is_null());
 		GLTFAnimation::Track track = anim->get_tracks()[node_index];
+
 		Dictionary mesh_additional_data = mesh->get_additional_data("GODOT_mesh_blend_channels");
 		Vector<int> blend_channels = mesh_additional_data["blend_channels"];
-		for (int i = 0; i < blend_channels.size(); i++) {
-			GLTFAnimation::Track tracks = anim->get_tracks()[blend_channels[i]];
-			for (int channel_i = 0; channel_i < tracks.weight_tracks.size(); channel_i++) {
-				GLTFAnimation::Channel<real_t> weights = tracks.weight_tracks[channel_i];
-				const String blend_path = String(mesh_instance_node_path) + ":" + String(mesh->get_mesh()->get_blend_shape_name(i));
-				const int track_idx = animation->get_track_count();
-				animation->add_track(Animation::TYPE_BLEND_SHAPE);
-				animation->track_set_path(track_idx, blend_path);
-				animation->track_set_imported(track_idx, true); // Helps merging later.
 
-				animation->track_set_interpolation_type(track_idx, Animation::INTERPOLATION_LINEAR);
-				for (int j = 0; j < weights.times.size(); j++) {
-					const double t = weights.times[j] - anim_start_offset;
-					const real_t attribs = weights.values[j];
-					animation->blend_shape_track_insert_key(track_idx, t, attribs);
-				}
+		for (int i = 0; i < blend_channels.size(); i++) {
+			int blend_i = blend_channels[i];
+			if (!blend_shape_animations.has(blend_i)) continue;
+			Dictionary track = blend_shape_animations[blend_i];
+
+			GLTFAnimation::Channel<real_t> weights;
+			weights.interpolation = GLTFAnimation::INTERP_LINEAR;
+			weights.times = track["times"];
+			weights.values = track["values"];
+
+			const String blend_path = String(mesh_instance_node_path) + ":" + String(mesh->get_mesh()->get_blend_shape_name(i));
+			const int track_idx = animation->get_track_count();
+			animation->add_track(Animation::TYPE_BLEND_SHAPE);
+			animation->track_set_path(track_idx, blend_path);
+			animation->track_set_imported(track_idx, true); // Helps merging later.
+
+			animation->track_set_interpolation_type(track_idx, Animation::INTERPOLATION_LINEAR);
+			for (int j = 0; j < weights.times.size(); j++) {
+				const double t = weights.times[j] - anim_start_offset;
+				const real_t attribs = weights.values[j];
+				animation->blend_shape_track_insert_key(track_idx, t, attribs);
 			}
 		}
 	}
