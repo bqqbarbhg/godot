@@ -196,6 +196,18 @@ static uint32_t _decode_vertex_index(const Vector3 &p_vertex) {
 	return uint32_t(p_vertex.x) | uint32_t(p_vertex.y) << 16;
 }
 
+// TODO: Consider adding this as an utility into ufbx.
+static ufbx_skin_cluster *_find_skin_cluster(const ufbx_node *p_node) {
+	if (!p_node) return nullptr;
+	for (const ufbx_connection &conn : p_node->element.connections_src) {
+		ufbx_skin_cluster *cluster = ufbx_as_skin_cluster(conn.dst);
+		if (cluster) {
+			return cluster;
+		}
+	}
+	return nullptr;
+}
+
 struct ThreadPoolFBX {
 	struct Group {
 		ufbx_thread_pool_context ctx = {};
@@ -336,20 +348,24 @@ Error FBXDocument::_parse_nodes(Ref<FBXState> p_state) {
 			node->transform.origin = _as_vec3(fbx_node->local_transform.translation);
 			node->transform.basis.set_quaternion_scale(_as_quaternion(fbx_node->local_transform.rotation), _as_vec3(fbx_node->local_transform.scale));
 
-			if (fbx_node->bind_pose) {
-				ufbx_bone_pose *pose = ufbx_get_bone_pose(fbx_node->bind_pose, fbx_node);
-				ufbx_transform rest_transform = ufbx_matrix_to_transform(&pose->bone_to_parent);
-
-				Vector3 rest_position = _as_vec3(rest_transform.translation);
-				Quaternion rest_rotation = _as_quaternion(rest_transform.rotation);
-				Vector3 rest_scale = _as_vec3(rest_transform.scale);
-				Transform3D godot_rest_xform;
-				godot_rest_xform.basis.set_quaternion_scale(rest_rotation, rest_scale);
-				godot_rest_xform.origin = rest_position;
-				node->set_additional_data("GODOT_rest_transform", godot_rest_xform);
-			} else {
-				node->set_additional_data("GODOT_rest_transform", node->transform);
+			// Fetch the bind pose from two successive skin clusters if possible
+			ufbx_transform rest_transform = fbx_node->local_transform;
+			ufbx_skin_cluster *self_cluster = _find_skin_cluster(fbx_node);
+			ufbx_skin_cluster *parent_cluster = _find_skin_cluster(fbx_node->parent);
+			if (self_cluster && (parent_cluster || !fbx_node->parent)) {
+				ufbx_matrix self_to_world = self_cluster->bind_to_world;
+				ufbx_matrix world_to_parent = parent_cluster ? ufbx_matrix_invert(&parent_cluster->bind_to_world) : ufbx_identity_matrix;
+				ufbx_matrix self_to_parent = ufbx_matrix_mul(&world_to_parent, &self_to_world);
+				rest_transform = ufbx_matrix_to_transform(&self_to_parent);
 			}
+
+			Vector3 rest_position = _as_vec3(rest_transform.translation);
+			Quaternion rest_rotation = _as_quaternion(rest_transform.rotation);
+			Vector3 rest_scale = _as_vec3(rest_transform.scale);
+			Transform3D godot_rest_xform;
+			godot_rest_xform.origin = rest_position;
+			godot_rest_xform.basis.set_quaternion_scale(rest_rotation, rest_scale);
+			node->set_additional_data("GODOT_rest_transform", godot_rest_xform);
 		}
 
 		for (const ufbx_node *child : fbx_node->children) {
@@ -1963,7 +1979,7 @@ Error FBXDocument::_parse(Ref<FBXState> p_state, String p_path, Ref<FileAccess> 
 	opts.space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY;
 	if (!p_state->get_allow_geometry_helper_nodes()) {
 		opts.geometry_transform_handling = UFBX_GEOMETRY_TRANSFORM_HANDLING_MODIFY_GEOMETRY_NO_FALLBACK;
-		opts.inherit_mode_handling = UFBX_INHERIT_MODE_HANDLING_IGNORE;
+		opts.inherit_mode_handling = UFBX_INHERIT_MODE_HANDLING_COMPENSATE_NO_FALLBACK;
 	} else {
 		opts.geometry_transform_handling = UFBX_GEOMETRY_TRANSFORM_HANDLING_HELPER_NODES;
 		opts.inherit_mode_handling = UFBX_INHERIT_MODE_HANDLING_COMPENSATE;

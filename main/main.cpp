@@ -126,6 +126,14 @@
 #endif // TOOLS_ENABLED && !GDSCRIPT_NO_LSP
 #endif // MODULE_GDSCRIPT_ENABLED
 
+// HACK
+#include "editor/import/3d/resource_importer_scene.h"
+#include "editor/plugins/node_3d_editor_plugin.h"
+#include "editor/editor_interface.h"
+#include "scene/3d/light_3d.h"
+#include "scene/3d/mesh_instance_3d.h"
+#include "scene/animation/animation_player.h"
+
 /* Static members */
 
 // Singletons
@@ -161,6 +169,25 @@ static XRServer *xr_server = nullptr;
 #endif // _3D_DISABLED
 // We error out if setup2() doesn't turn this true
 static bool _start_success = false;
+
+enum FbxImportStep {
+	FBX_IMPORT_STEP_NONE,
+	FBX_IMPORT_STEP_START,
+	FBX_IMPORT_STEP_COPY,
+	FBX_IMPORT_STEP_IMPORT,
+	FBX_IMPORT_STEP_WAIT,
+	FBX_IMPORT_STEP_LOAD,
+	FBX_IMPORT_STEP_SCREENSHOT,
+	FBX_IMPORT_STEP_DONE,
+};
+
+static String fbx_import_path;
+static String fbx_import_dst;
+static FbxImportStep fbx_import_step;
+static int fbx_import_frame;
+static bool fbx_import_gltf;
+static bool fbx_import_keep_open;
+static int fbx_anim_index = -1;
 
 // Drivers
 
@@ -1058,6 +1085,46 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 		} else if (I->get() == "--no-header") {
 			Engine::get_singleton()->_print_header = false;
+
+		} else if (I->get() == "--import-fbx") {
+			fbx_import_step = FBX_IMPORT_STEP_START;
+			String type = I->next()->get();
+			if (type != "ufbx" && type != "gltf") {
+				print_line("Bad --import-fbx type");
+				goto error;
+			}
+			fbx_import_dst = I->next()->next()->get();
+			fbx_import_path = I->next()->next()->next()->get();
+
+			fbx_import_gltf = type == "gltf";
+
+			String base_path = fbx_import_path;
+			int ext_pos = base_path.rfind(".");
+			if (ext_pos > 0) {
+				base_path = base_path.substr(0, ext_pos);
+			}
+
+			String base_name;
+			bool prev_underscore = false;
+			for (int i = 0; i < base_path.length(); i++) {
+				char c = base_path[i];
+				if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-') {
+					base_name += c;
+					prev_underscore = false;
+				} else if (!prev_underscore) {
+					base_name += '_';
+					prev_underscore = true;
+				}
+			}
+
+			fbx_import_dst = fbx_import_dst.path_join(base_name) + "_" + type;
+
+			OS::get_singleton()->add_logger(memnew(RotatedFileLogger(fbx_import_dst + ".txt", 0)));
+
+			N = I->next()->next()->next()->next();
+
+		} else if (I->get() == "--import-fbx-keep-open") {
+			fbx_import_keep_open = true;
 
 		} else if (I->get() == "--audio-driver") { // audio driver
 
@@ -3914,6 +3981,130 @@ static uint64_t physics_process_max = 0;
 static uint64_t process_max = 0;
 static uint64_t navigation_process_max = 0;
 
+static void _calculate_spatial_bounds(bool &has_bounds, AABB &total_bounds, const Node3D *p_parent, const Node3D *p_top_level_parent) {
+	if (!p_parent) {
+		return;
+	}
+	if (p_top_level_parent) {
+		if (Object::cast_to<Camera3D>(p_parent)) {
+			return;
+		} else if (Object::cast_to<Light3D>(p_parent)) {
+			return;
+		}
+	}
+
+	if (!p_top_level_parent) {
+		p_top_level_parent = p_parent;
+	}
+
+	Transform3D xform_to_world = p_parent->get_global_transform();
+
+	const MeshInstance3D *mesh = Object::cast_to<MeshInstance3D>(p_parent);
+	const Skeleton3D *skeleton = Object::cast_to<Skeleton3D>(p_parent);
+	bool self_bounds = false;
+	AABB bounds;
+	if (mesh) {
+		if (mesh->get_skin().is_null()) {
+			bounds = mesh->get_aabb();
+			self_bounds = true;
+		}
+	} else if (skeleton) {
+		for (int i = 0; i < skeleton->get_bone_count(); i++) {
+			Transform3D pose = skeleton->get_bone_global_pose(i);
+			AABB b = AABB(pose.origin, Vector3(0.000001f, 0.000001f, 0.000001f));
+			if (self_bounds) {
+				bounds.merge_with(b);
+			} else {
+				bounds = b;
+				self_bounds = true;
+			}
+		}
+	}
+
+	if (self_bounds) {
+		bounds = xform_to_world.xform(bounds);
+		if (has_bounds) {
+			total_bounds.merge_with(bounds);
+		} else {
+			total_bounds = bounds;
+			has_bounds = true;
+		}
+	}
+
+	for (int i = 0; i < p_parent->get_child_count(); i++) {
+		Node3D *child = Object::cast_to<Node3D>(p_parent->get_child(i));
+		if (child) {
+			_calculate_spatial_bounds(has_bounds, total_bounds, child, p_top_level_parent);
+		}
+	}
+}
+
+static void _print_nodes(const Node *p_node, int indent) {
+	String indent_str;
+	for (int i = 0; i < indent; i++) {
+		indent_str += "| ";
+	}
+	print_line(vformat("%s%s : %s", indent_str, p_node->get_class(), p_node->get_name()));
+	for (int i = 0; i < p_node->get_child_count(); i++) {
+		Node *child = p_node->get_child(i);
+		if (child) {
+			_print_nodes(child, indent + 1);
+		}
+	}
+}
+
+static void _fbx_import_clean() {
+	const char *remove_extensions[] = {
+		".fbx",
+		".fbx.import",
+		".png",
+		".png.import",
+		".jpg",
+		".jpg.import",
+		".jpeg",
+		".jpeg.import",
+	};
+
+	List<String> to_remove;
+
+	Ref<DirAccess> d = DirAccess::open("res://");
+	d->list_dir_begin();
+	for (;;) {
+		String file = d->get_next();
+		if (file.is_empty()) break;
+
+		for (const char *ext : remove_extensions) {
+			if (file.to_lower().ends_with(ext)) {
+				to_remove.push_back(file);
+				break;
+			}
+		}
+	}
+	d->list_dir_end();
+
+	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_RESOURCES);
+	if (da->exists("res://source.fbm")) {
+		Ref<DirAccess> d = DirAccess::open("res://source.fbm");
+		d->list_dir_begin();
+		for (;;) {
+			String file = d->get_next();
+			if (file.is_empty()) break;
+
+			for (const char *ext : remove_extensions) {
+				if (file.to_lower().ends_with(ext)) {
+					to_remove.push_back("source.fbm/" + file);
+					break;
+				}
+			}
+		}
+		d->list_dir_end();
+	}
+
+	for (String s : to_remove) {
+		da->remove("res://" + s);
+	}
+}
+
 // Return false means iterating further, returning true means `OS::run`
 // will terminate the program. In case of failure, the OS exit code needs
 // to be set explicitly here (defaults to EXIT_SUCCESS).
@@ -4064,6 +4255,173 @@ bool Main::iteration() {
 
 	frames++;
 	Engine::get_singleton()->_process_frames++;
+
+	fbx_import_frame++;
+
+	if (fbx_import_step == FBX_IMPORT_STEP_SCREENSHOT || fbx_import_step == FBX_IMPORT_STEP_DONE) {
+		Node *scene = EditorNode::get_singleton()->get_edited_scene();
+
+		AnimationPlayer *player = Object::cast_to<AnimationPlayer>(scene->find_child("AnimationPlayer", false));
+		if (player) {
+			List<StringName> animations;
+			player->get_animation_list(&animations);
+			if (animations.size() > 0) {
+				if (fbx_anim_index < 0) {
+					int anim_i = 0;
+					double best_score = 0.0;
+					for (int ai = 0; ai < animations.size(); ai++) {
+						Ref<Animation> anim = player->get_animation(animations[ai]);
+						double score = anim->get_length() * 0.01;
+						int tracks = anim->get_track_count();
+						for (int i = 0; i < tracks; i++) {
+							score += anim->track_get_key_count(i);
+						}
+						if (score > best_score) {
+							best_score = score;
+							anim_i = ai;
+						}
+					}
+					print_line(vformat("[ufbx] Playing animation: %s", animations[anim_i]));
+					player->play(animations[anim_i], 0, 0.0001f);
+					fbx_anim_index = anim_i;
+				}
+
+
+				Ref<Animation> anim = player->get_animation(animations[fbx_anim_index]);
+				player->seek(anim->get_length() / 2.0f);
+			}
+		}
+
+		AABB total_bounds;
+		bool has_bounds = false;
+		_calculate_spatial_bounds(has_bounds, total_bounds, Object::cast_to<Node3D>(scene), NULL);
+		Camera3D *camera = Node3DEditor::get_singleton()->get_editor_viewport(0)->get_camera_3d();
+		Control *editor_main_screen = EditorInterface::get_singleton()->get_editor_main_screen();
+		SubViewport *viewport = EditorInterface::get_singleton()->get_editor_viewport_3d(0);
+		if (has_bounds) {
+			Vector3 size = total_bounds.get_size();
+			size.x = MAX(size.x, 0.000001f);
+			size.y = MAX(size.y, 0.000001f);
+			size.z = MAX(size.z, 0.000001f);
+			Vector3 dist { size.z, size.y * 0.5f, size.x };
+
+			float rad_z = atan(MAX(size.z / size.x - 0.5f, 0.3f));
+			float rad_y = atan(MAX(MAX(size.x, size.z) / size.y - 0.3f, 0.1f)) * 0.6f;
+			float raw_y = atan(MAX(MAX(size.x, size.z) / size.y - 1.1f, 0.0f)) * 0.3f;
+
+			Quaternion angle = Quaternion::from_euler(Vector3(-rad_y, rad_z, 0.0f));
+			Vector3 direction = angle.xform(Vector3(0.0f, 0.0f, 1.0f));
+			Vector3 origin = total_bounds.get_center();
+			origin.y -= size.y * raw_y;
+			Basis basis = Basis::looking_at(direction);
+			Transform3D xform = Transform3D(basis, origin);
+
+			float distance = 0.0f;
+
+			float fov = camera->get_fov();
+			float aspect = viewport->get_size().aspect();
+			float fov_rad = Math::deg_to_rad(fov);
+			float y_tan = Math::tan(fov_rad * 0.5f);
+			float x_tan = y_tan * aspect;
+
+			for (int i = 0; i < 8; i++) {
+				Vector3 corner = total_bounds.get_endpoint(i);
+				Vector3 local_corner = xform.xform_inv(corner);
+				float dist = local_corner.z + MAX(Math::abs(local_corner.y) / y_tan, Math::abs(local_corner.x) / x_tan);
+				distance = MAX(distance, dist);
+			}
+
+			distance *= 1.25f;
+
+			camera->look_at_from_position(origin + direction * distance, origin);
+		}
+	}
+
+	if (fbx_import_frame > 8) {
+		fbx_import_frame = 0;
+		if (fbx_import_step == FBX_IMPORT_STEP_START) {
+			fbx_import_step = FBX_IMPORT_STEP_COPY;
+			_fbx_import_clean();
+		} else if (fbx_import_step == FBX_IMPORT_STEP_COPY) {
+			fbx_import_step = FBX_IMPORT_STEP_IMPORT;
+			Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
+			da->copy(fbx_import_path, "res://source.fbx");
+		} else if (fbx_import_step == FBX_IMPORT_STEP_IMPORT) {
+			fbx_import_step = FBX_IMPORT_STEP_WAIT;
+			HashMap<StringName, Variant> options;
+			options["animation/import"] = true;
+			options["skins/use_named_skins"] = false;
+			options["meshes/ensure_tangents"] = false;
+			options["meshes/force_disable_compression"] = false;
+			options["_subresources"] = Dictionary();
+			options["animation/fps"] = 30.0f;
+			options["animation/trimming"] = true;
+			options["nodes/root_type"] = "";
+			options["nodes/root_name"] = "";
+			options["meshes/generate_lods"] = false; 
+			options["meshes/create_shadow_meshes"] = false;
+			options["meshes/light_baking"] = false;
+			options["meshes/lightmap_texel_size"] = 1.0f;
+			options["import_script/path"] = "";
+
+			if (fbx_import_gltf) {
+				options["fbx/importer"] = 1;
+			}
+
+			uint64_t start_time = OS::get_singleton()->get_ticks_usec();
+
+			List<String> variants;
+			ResourceImporterScene::get_scene_singleton()->import(
+				"res://source.fbx",
+				"res://model",
+				options,
+				&variants);
+
+			uint64_t end_time = OS::get_singleton()->get_ticks_usec();
+			uint64_t duration = end_time - start_time;
+			print_line(vformat("[ufbx] Import: %.2f seconds", (double)duration / 1e6));
+
+			fbx_import_step = FBX_IMPORT_STEP_LOAD;
+			fbx_import_frame = 0;
+
+		} else if (fbx_import_step == FBX_IMPORT_STEP_LOAD) {
+			fbx_import_step = FBX_IMPORT_STEP_WAIT;
+			Error error = EditorNode::get_singleton()->load_scene("res://model.scn", true, false, false);
+
+			fbx_import_step = FBX_IMPORT_STEP_SCREENSHOT;
+			fbx_import_frame = 0;
+		} else if (fbx_import_step == FBX_IMPORT_STEP_SCREENSHOT) {
+			fbx_import_step = FBX_IMPORT_STEP_DONE;
+
+			Node *scene = EditorNode::get_singleton()->get_edited_scene();
+			print_line(vformat("[ufbx] scene graph:"));
+			_print_nodes(scene, 0);
+
+			AnimationPlayer *player = Object::cast_to<AnimationPlayer>(scene->find_child("AnimationPlayer", false));
+			if (player) {
+				List<StringName> animations;
+				player->get_animation_list(&animations);
+				print_line(vformat("[ufbx] animations:"));
+				for (StringName name : animations) {
+					Ref<Animation> anim = player->get_animation(name);
+					print_line(vformat("%s : %d tracks, %.2f seconds", name, anim->get_track_count(), anim->get_length()));
+				}
+			}
+
+			Control *editor_main_screen = EditorInterface::get_singleton()->get_editor_main_screen();
+			SubViewport *viewport = EditorInterface::get_singleton()->get_editor_viewport_3d(0);
+			Ref<ViewportTexture> texture = viewport->get_texture();
+			Ref<Image> img = texture->get_image();
+
+			String dst_path = fbx_import_dst + ".png";
+			Error error = img->save_png(dst_path);
+		} else if (fbx_import_step == FBX_IMPORT_STEP_DONE) {
+			if (!fbx_import_keep_open) {
+				_fbx_import_clean();
+				exit = true;
+			}
+		}
+	}
 
 	if (frame > 1000000) {
 		// Wait a few seconds before printing FPS, as FPS reporting just after the engine has started is inaccurate.
