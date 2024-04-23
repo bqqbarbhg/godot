@@ -4355,7 +4355,7 @@ bool Main::iteration() {
 			options["meshes/force_disable_compression"] = false;
 			options["_subresources"] = Dictionary();
 			options["animation/fps"] = 30.0f;
-			options["animation/trimming"] = true;
+			options["animation/trimming"] = false;
 			options["nodes/root_type"] = "";
 			options["nodes/root_name"] = "";
 			options["meshes/generate_lods"] = false; 
