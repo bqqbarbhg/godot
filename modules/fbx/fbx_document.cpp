@@ -86,6 +86,17 @@ static Quaternion _as_quaternion(const ufbx_quat &p_quat) {
 	return Quaternion(real_t(p_quat.x), real_t(p_quat.y), real_t(p_quat.z), real_t(p_quat.w));
 }
 
+static Transform3D _as_transform(const ufbx_transform &p_xform) {
+	Transform3D result;
+	result.origin = FBXDocument::_as_vec3(p_xform.translation);
+	result.basis.set_quaternion_scale(_as_quaternion(p_xform.rotation), FBXDocument::_as_vec3(p_xform.scale));
+	return result;
+}
+
+static real_t _relative_error(const Vector3 &p_a, const Vector3 &p_b) {
+	return p_a.distance_to(p_b) / MAX(p_a.length(), p_b.length());
+}
+
 static Color _material_color(const ufbx_material_map &p_map) {
 	if (p_map.value_components == 1) {
 		float r = float(p_map.value_real);
@@ -196,13 +207,11 @@ static uint32_t _decode_vertex_index(const Vector3 &p_vertex) {
 	return uint32_t(p_vertex.x) | uint32_t(p_vertex.y) << 16;
 }
 
-// TODO: Consider adding this as an utility into ufbx.
-static ufbx_skin_cluster *_find_skin_cluster(const ufbx_node *p_node) {
-	if (!p_node) return nullptr;
-	for (const ufbx_connection &conn : p_node->element.connections_src) {
-		ufbx_skin_cluster *cluster = ufbx_as_skin_cluster(conn.dst);
-		if (cluster) {
-			return cluster;
+static ufbx_skin_deformer *_find_skin_deformer(ufbx_skin_cluster *p_cluster) {
+	for (const ufbx_connection &conn : p_cluster->element.connections_src) {
+		ufbx_skin_deformer *deformer = ufbx_as_skin_deformer(conn.dst);
+		if (deformer) {
+			return deformer;
 		}
 	}
 	return nullptr;
@@ -345,26 +354,66 @@ Error FBXDocument::_parse_nodes(Ref<FBXState> p_state) {
 		}
 
 		{
-			node->transform.origin = _as_vec3(fbx_node->local_transform.translation);
-			node->transform.basis.set_quaternion_scale(_as_quaternion(fbx_node->local_transform.rotation), _as_vec3(fbx_node->local_transform.scale));
+			node->transform = _as_transform(fbx_node->local_transform);
 
-			// Fetch the bind pose from two successive skin clusters if possible
-			ufbx_transform rest_transform = fbx_node->local_transform;
-			ufbx_skin_cluster *self_cluster = _find_skin_cluster(fbx_node);
-			ufbx_skin_cluster *parent_cluster = _find_skin_cluster(fbx_node->parent);
-			if (self_cluster && (parent_cluster || !fbx_node->parent)) {
-				ufbx_matrix self_to_world = self_cluster->bind_to_world;
-				ufbx_matrix world_to_parent = parent_cluster ? ufbx_matrix_invert(&parent_cluster->bind_to_world) : ufbx_identity_matrix;
-				ufbx_matrix self_to_parent = ufbx_matrix_mul(&world_to_parent, &self_to_world);
-				rest_transform = ufbx_matrix_to_transform(&self_to_parent);
+			bool found_rest_xform = false;
+			bool bad_rest_xform = false;
+			Transform3D candidate_rest_xform;
+
+			if (fbx_node->parent) {
+				// Attempt to resolve a rest pose for bones: This uses internal FBX connections to find
+				// all skin clusters connected to the bone.
+				for (const ufbx_connection &child_conn : fbx_node->element.connections_src) {
+					ufbx_skin_cluster *child_cluster = ufbx_as_skin_cluster(child_conn.dst);
+					if (!child_cluster)
+						continue;
+					ufbx_skin_deformer *child_deformer = _find_skin_deformer(child_cluster);
+					if (!child_deformer)
+						continue;
+
+					// Found a skin cluster: Now iterate through all the skin clusters of the parent and
+					// try to find one that used by the same deformer.
+					for (const ufbx_connection &parent_conn : fbx_node->parent->element.connections_src) {
+						ufbx_skin_cluster *parent_cluster = ufbx_as_skin_cluster(parent_conn.dst);
+						if (!parent_cluster)
+							continue;
+						ufbx_skin_deformer *parent_deformer = _find_skin_deformer(parent_cluster);
+						if (parent_deformer != child_deformer)
+							continue;
+
+						// Success: Found two skin clusters from the same deformer, now we can resolve the
+						// local bind pose from the difference between the two world-space bind poses.
+						ufbx_matrix child_to_world = child_cluster->bind_to_world;
+						ufbx_matrix world_to_parent = ufbx_matrix_invert(&parent_cluster->bind_to_world);
+						ufbx_matrix child_to_parent = ufbx_matrix_mul(&world_to_parent, &child_to_world);
+						Transform3D xform = _as_transform(ufbx_matrix_to_transform(&child_to_parent));
+
+						if (!found_rest_xform) {
+							// Found the first bind pose for the node, assume that this one is good
+							found_rest_xform = true;
+							candidate_rest_xform = xform;
+						} else if (!bad_rest_xform) {
+							// Found another: Let's hope it's similar to the previous one, if not warn and
+							// use the initial pose, which is used by default if rest pose is not found.
+							real_t error = 0.0f;
+							error += _relative_error(candidate_rest_xform.origin, xform.origin);
+							for (int i = 0; i < 3; i++) {
+								error += _relative_error(candidate_rest_xform.basis.rows[i], xform.basis.rows[i]);
+							}
+							const real_t max_error = 0.01f;
+							if (error >= max_error) {
+								WARN_PRINT(vformat("FBX: Node '%s' has multiple bind poses, using initial pose as rest pose.", node->get_name()));
+								bad_rest_xform = true;
+							}
+						}
+					}
+				}
 			}
 
-			Vector3 rest_position = _as_vec3(rest_transform.translation);
-			Quaternion rest_rotation = _as_quaternion(rest_transform.rotation);
-			Vector3 rest_scale = _as_vec3(rest_transform.scale);
-			Transform3D godot_rest_xform;
-			godot_rest_xform.origin = rest_position;
-			godot_rest_xform.basis.set_quaternion_scale(rest_rotation, rest_scale);
+			Transform3D godot_rest_xform = node->transform;
+			if (found_rest_xform && !bad_rest_xform) {
+				godot_rest_xform = candidate_rest_xform;
+			}
 			node->set_additional_data("GODOT_rest_transform", godot_rest_xform);
 		}
 
