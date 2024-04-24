@@ -188,6 +188,7 @@ static int fbx_import_frame;
 static bool fbx_import_gltf;
 static bool fbx_import_keep_open;
 static int fbx_anim_index = -1;
+static double fbx_anim_time = 0.0;
 
 // Drivers
 
@@ -4269,26 +4270,40 @@ bool Main::iteration() {
 				if (fbx_anim_index < 0) {
 					int anim_i = 0;
 					double best_score = 0.0;
+					double min_time = INFINITY;
+					double max_time = -INFINITY;
 					for (int ai = 0; ai < animations.size(); ai++) {
 						Ref<Animation> anim = player->get_animation(animations[ai]);
 						double score = anim->get_length() * 0.01;
 						int tracks = anim->get_track_count();
 						for (int i = 0; i < tracks; i++) {
-							score += anim->track_get_key_count(i);
+							int key_count = anim->track_get_key_count(i);
+							score += key_count;
+							for (int j = 0; j < key_count; j++) {
+								double time = anim->track_get_key_time(i, j);
+								min_time = MIN(min_time, time);
+								max_time = MAX(max_time, time);
+							}
 						}
 						if (score > best_score) {
 							best_score = score;
 							anim_i = ai;
 						}
 					}
-					print_line(vformat("[ufbx] Playing animation: %s", animations[anim_i]));
+
+					if (min_time <= 1.0 && max_time >= 3.0) {
+						fbx_anim_time = 2.0;
+					} else {
+						fbx_anim_time = (round(min_time) + round(max_time)) * 0.5;
+					}
+					print_line(vformat("[ufbx] Playing animation: %s at %fs", animations[anim_i], fbx_anim_time));
 					player->play(animations[anim_i], 0, 0.0001f);
 					fbx_anim_index = anim_i;
 				}
 
 
 				Ref<Animation> anim = player->get_animation(animations[fbx_anim_index]);
-				player->seek(anim->get_length() / 2.0f);
+				player->seek(fbx_anim_time);
 			}
 		}
 
