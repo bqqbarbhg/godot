@@ -4293,7 +4293,7 @@ bool Main::iteration() {
 
 					if (min_time <= 1.0 && max_time >= 3.0) {
 						fbx_anim_time = 2.0;
-					} else {
+					} else if (max_time >= min_time) {
 						fbx_anim_time = (round(min_time) + round(max_time)) * 0.5;
 					}
 					print_line(vformat("[ufbx] Playing animation: %s at %fs", animations[anim_i], fbx_anim_time));
@@ -4386,25 +4386,35 @@ bool Main::iteration() {
 			uint64_t start_time = OS::get_singleton()->get_ticks_usec();
 
 			List<String> variants;
-			ResourceImporterScene::get_scene_singleton()->import(
+			Error error = ResourceImporterScene::get_scene_singleton()->import(
 				"res://source.fbx",
 				"res://model",
 				options,
 				&variants);
 
-			uint64_t end_time = OS::get_singleton()->get_ticks_usec();
-			uint64_t duration = end_time - start_time;
-			print_line(vformat("[ufbx] Import: %.2f seconds", (double)duration / 1e6));
+			if (error != OK) {
+				print_line(vformat("[ufbx] Failed to import scene: %s", error_names[error]));
+				fbx_import_step = FBX_IMPORT_STEP_DONE;
+				fbx_import_frame = 0;
+			} else {
+				uint64_t end_time = OS::get_singleton()->get_ticks_usec();
+				uint64_t duration = end_time - start_time;
+				print_line(vformat("[ufbx] Import: %.2f seconds", (double)duration / 1e6));
 
-			fbx_import_step = FBX_IMPORT_STEP_LOAD;
-			fbx_import_frame = 0;
-
+				fbx_import_step = FBX_IMPORT_STEP_LOAD;
+				fbx_import_frame = 0;
+			}
 		} else if (fbx_import_step == FBX_IMPORT_STEP_LOAD) {
 			fbx_import_step = FBX_IMPORT_STEP_WAIT;
 			Error error = EditorNode::get_singleton()->load_scene("res://model.scn", true, false, false);
-
-			fbx_import_step = FBX_IMPORT_STEP_SCREENSHOT;
-			fbx_import_frame = 0;
+			if (error != OK) {
+				print_line(vformat("[ufbx] Failed to load scene: %s", error_names[error]));
+				fbx_import_step = FBX_IMPORT_STEP_DONE;
+				fbx_import_frame = 0;
+			} else {
+				fbx_import_step = FBX_IMPORT_STEP_SCREENSHOT;
+				fbx_import_frame = 0;
+			}
 		} else if (fbx_import_step == FBX_IMPORT_STEP_SCREENSHOT) {
 			fbx_import_step = FBX_IMPORT_STEP_DONE;
 
