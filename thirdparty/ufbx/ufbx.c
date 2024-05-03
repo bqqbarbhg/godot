@@ -570,7 +570,7 @@ ufbx_static_assert(sizeof_f64, sizeof(double) == 8);
 
 // -- Version
 
-#define UFBX_SOURCE_VERSION ufbx_pack_version(0, 13, 0)
+#define UFBX_SOURCE_VERSION ufbx_pack_version(0, 14, 0)
 ufbx_abi_data_def const uint32_t ufbx_source_version = UFBX_SOURCE_VERSION;
 
 ufbx_static_assert(source_header_version, UFBX_SOURCE_VERSION/1000u == UFBX_HEADER_VERSION/1000u);
@@ -5399,6 +5399,11 @@ ufbx_inline ufbx_vec3 ufbxi_normalize3(ufbx_vec3 a) {
 		ufbx_vec3 zero = { (ufbx_real)0 };
 		return zero;
 	}
+}
+
+ufbx_inline ufbx_real ufbxi_distsq2(ufbx_vec2 a, ufbx_vec2 b) {
+	ufbx_real dx = a.x - b.x, dy = a.y - b.y;
+	return dx*dx + dy*dy;
 }
 
 static ufbxi_noinline ufbx_vec3 ufbxi_slow_normalize3(const ufbx_vec3 *a) {
@@ -11912,6 +11917,17 @@ ufbxi_nodiscard ufbxi_noinline static int ufbxi_check_indices(ufbxi_context *uc,
 	return 1;
 }
 
+ufbx_static_assert(vertex_real_size, sizeof(ufbx_vertex_real) == sizeof(ufbx_vertex_attrib));
+ufbx_static_assert(vertex_vec2_size, sizeof(ufbx_vertex_vec2) == sizeof(ufbx_vertex_attrib));
+ufbx_static_assert(vertex_vec3_size, sizeof(ufbx_vertex_vec3) == sizeof(ufbx_vertex_attrib));
+ufbx_static_assert(vertex_vec4_size, sizeof(ufbx_vertex_vec4) == sizeof(ufbx_vertex_attrib));
+
+ufbxi_nodiscard ufbxi_noinline static int ufbxi_warn_polygon_mapping(ufbxi_context *uc, const char *data_name, const char *mapping)
+{
+	ufbxi_check(ufbxi_warnf(UFBX_WARNING_MISSING_POLYGON_MAPPING, "Ignoring geometry '%s' with bad mapping mode '%s'", data_name, mapping));
+	return 1;
+}
+
 ufbxi_nodiscard ufbxi_noinline static int ufbxi_read_vertex_element(ufbxi_context *uc, ufbx_mesh *mesh, ufbxi_node *node,
 	ufbx_vertex_attrib *attrib, const char *data_name, const char *index_name, const char *w_name, char data_type, size_t num_components)
 {
@@ -11940,8 +11956,8 @@ ufbxi_nodiscard ufbxi_noinline static int ufbxi_read_vertex_element(ufbxi_contex
 	attrib->exists = true;
 	attrib->indices.count = mesh->num_indices;
 
-	const char *mapping = NULL;
-	ufbxi_check(ufbxi_find_val1(node, ufbxi_MappingInformationType, "C", (char**)&mapping));
+	const char *mapping = "";
+	ufbxi_ignore(ufbxi_find_val1(node, ufbxi_MappingInformationType, "C", (char**)&mapping));
 
 	attrib->values.count = num_elems ? num_elems : 1;
 
@@ -12024,7 +12040,9 @@ ufbxi_nodiscard ufbxi_noinline static int ufbxi_read_vertex_element(ufbxi_contex
 			attrib->unique_per_vertex = true;
 
 		} else {
-			ufbxi_fail("Invalid mapping");
+			memset(attrib, 0, sizeof(ufbx_vertex_attrib));
+			ufbxi_check(ufbxi_warn_polygon_mapping(uc, data_name, mapping));
+			return 1;
 		}
 
 	} else {
@@ -12075,7 +12093,9 @@ ufbxi_nodiscard ufbxi_noinline static int ufbxi_read_vertex_element(ufbxi_contex
 			attrib->unique_per_vertex = true;
 
 		} else {
-			ufbxi_fail("Invalid mapping");
+			memset(attrib, 0, sizeof(ufbx_vertex_attrib));
+			ufbxi_check(ufbxi_warn_polygon_mapping(uc, data_name, mapping));
+			return 1;
 		}
 	}
 
@@ -12771,33 +12791,39 @@ ufbxi_nodiscard ufbxi_noinline static int ufbxi_read_mesh(ufbxi_context *uc, ufb
 			ufbxi_check(ufbxi_read_vertex_element(uc, mesh, n, (ufbx_vertex_attrib*)&mesh->vertex_crease,
 				ufbxi_VertexCrease, ufbxi_VertexCreaseIndex, NULL, 'r', 1));
 		} else if (n->name == ufbxi_LayerElementEdgeCrease) {
-			const char *mapping = NULL;
-			ufbxi_check(ufbxi_find_val1(n, ufbxi_MappingInformationType, "c", (char**)&mapping));
+			const char *mapping = "";
+			ufbxi_ignore(ufbxi_find_val1(n, ufbxi_MappingInformationType, "c", (char**)&mapping));
 			if (mapping == ufbxi_ByEdge) {
 				if (mesh->edge_crease.count) continue;
 				ufbxi_check(ufbxi_read_truncated_array(uc, &mesh->edge_crease.data, &mesh->edge_crease.count, n, ufbxi_EdgeCrease, 'r', mesh->num_edges));
+			} else {
+				ufbxi_check(ufbxi_warn_polygon_mapping(uc, ufbxi_EdgeCrease, mapping));
 			}
 		} else if (n->name == ufbxi_LayerElementSmoothing) {
-			const char *mapping = NULL;
-			ufbxi_check(ufbxi_find_val1(n, ufbxi_MappingInformationType, "c", (char**)&mapping));
+			const char *mapping = "";
+			ufbxi_ignore(ufbxi_find_val1(n, ufbxi_MappingInformationType, "c", (char**)&mapping));
 			if (mapping == ufbxi_ByEdge) {
 				if (mesh->edge_smoothing.count) continue;
 				ufbxi_check(ufbxi_read_truncated_array(uc, &mesh->edge_smoothing.data, &mesh->edge_smoothing.count, n, ufbxi_Smoothing, 'b', mesh->num_edges));
 			} else if (mapping == ufbxi_ByPolygon) {
 				if (mesh->face_smoothing.count) continue;
 				ufbxi_check(ufbxi_read_truncated_array(uc, &mesh->face_smoothing.data, &mesh->face_smoothing.count, n, ufbxi_Smoothing, 'b', mesh->num_faces));
+			} else {
+				ufbxi_check(ufbxi_warn_polygon_mapping(uc, ufbxi_Smoothing, mapping));
 			}
 		} else if (n->name == ufbxi_LayerElementVisibility) {
-			const char *mapping = NULL;
-			ufbxi_check(ufbxi_find_val1(n, ufbxi_MappingInformationType, "c", (char**)&mapping));
+			const char *mapping = "";
+			ufbxi_ignore(ufbxi_find_val1(n, ufbxi_MappingInformationType, "c", (char**)&mapping));
 			if (mapping == ufbxi_ByEdge) {
 				if (mesh->edge_visibility.count) continue;
 				ufbxi_check(ufbxi_read_truncated_array(uc, &mesh->edge_visibility.data, &mesh->edge_visibility.count, n, ufbxi_Visibility, 'b', mesh->num_edges));
+			} else {
+				ufbxi_check(ufbxi_warn_polygon_mapping(uc, ufbxi_Visibility, mapping));
 			}
 		} else if (n->name == ufbxi_LayerElementMaterial) {
 			if (mesh->face_material.count) continue;
-			const char *mapping = NULL;
-			ufbxi_check(ufbxi_find_val1(n, ufbxi_MappingInformationType, "c", (char**)&mapping));
+			const char *mapping = "";
+			ufbxi_ignore(ufbxi_find_val1(n, ufbxi_MappingInformationType, "c", (char**)&mapping));
 			if (mapping == ufbxi_ByPolygon) {
 				ufbxi_check(ufbxi_read_truncated_array(uc, &mesh->face_material.data, &mesh->face_material.count, n, ufbxi_Materials, 'i', mesh->num_faces));
 			} else if (mapping == ufbxi_AllSame) {
@@ -12814,6 +12840,8 @@ ufbxi_nodiscard ufbxi_noinline static int ufbxi_read_mesh(ufbxi_context *uc, ufb
 						*p_mat = material;
 					}
 				}
+			} else {
+				ufbxi_check(ufbxi_warn_polygon_mapping(uc, ufbxi_Materials, mapping));
 			}
 		} else if (n->name == ufbxi_LayerElementPolygonGroup) {
 			if (mesh->face_group.count) continue;
@@ -20671,6 +20699,7 @@ ufbxi_nodiscard ufbxi_noinline static int ufbxi_finalize_scene(ufbxi_context *uc
 			case UFBX_ELEMENT_MESH: node->mesh = (ufbx_mesh*)elem; break;
 			case UFBX_ELEMENT_LIGHT: node->light = (ufbx_light*)elem; break;
 			case UFBX_ELEMENT_CAMERA: node->camera = (ufbx_camera*)elem; break;
+			case UFBX_ELEMENT_BONE: node->bone = (ufbx_bone*)elem; break;
 			default: /* No shorthand */ break;
 			}
 		}
@@ -22782,6 +22811,19 @@ static ufbxi_noinline void ufbxi_update_scene_settings(ufbx_scene_settings *sett
 	}
 }
 
+static ufbxi_noinline void ufbxi_update_scene_settings_obj(ufbxi_context *uc)
+{
+	ufbx_scene_settings *settings = &uc->scene.settings;
+	settings->original_unit_meters = settings->unit_meters = uc->opts.obj_unit_meters;
+	if (ufbx_coordinate_axes_valid(uc->opts.obj_axes)) {
+		settings->axes = uc->opts.obj_axes;
+	} else {
+		settings->axes.right = UFBX_COORDINATE_AXIS_UNKNOWN;
+		settings->axes.up = UFBX_COORDINATE_AXIS_UNKNOWN;
+		settings->axes.front = UFBX_COORDINATE_AXIS_UNKNOWN;
+	}
+}
+
 // -- Geometry caches
 
 #if UFBXI_FEATURE_GEOMETRY_CACHE
@@ -23475,10 +23517,6 @@ static ufbxi_noinline int ufbxi_cache_setup_channels(ufbxi_cache_context *cc)
 
 static ufbxi_noinline int ufbxi_cache_load_imp(ufbxi_cache_context *cc, ufbx_string filename)
 {
-	// `ufbx_geometry_cache_opts` must be cleared to zero first!
-	ufbx_assert(cc->opts._begin_zero == 0 && cc->opts._end_zero == 0);
-	ufbxi_check_err_msg(&cc->error, cc->opts._begin_zero == 0 && cc->opts._end_zero == 0, "Uninitialized options");
-
 	cc->tmp.ator = cc->ator_tmp;
 	cc->tmp_stack.ator = cc->ator_tmp;
 
@@ -24048,10 +24086,6 @@ ufbxi_nodiscard static ufbxi_noinline int ufbxi_load_imp(ufbxi_context *uc)
 {
 	// Check for deferred failure
 	if (uc->deferred_failure) return 0;
-
-	// `ufbx_load_opts` must be cleared to zero first!
-	ufbx_assert(uc->opts._begin_zero == 0 && uc->opts._end_zero == 0);
-	ufbxi_check_msg(uc->opts._begin_zero == 0 && uc->opts._end_zero == 0, "Uninitialized options");
 	ufbxi_check(uc->opts.path_separator >= 0x20 && uc->opts.path_separator <= 0x7e);
 
 	ufbxi_check(ufbxi_fixup_opts_string(uc, &uc->opts.filename, false));
@@ -24125,6 +24159,9 @@ ufbxi_nodiscard static ufbxi_noinline int ufbxi_load_imp(ufbxi_context *uc)
 	ufbxi_check(ufbxi_finalize_scene(uc));
 
 	ufbxi_update_scene_settings(&uc->scene.settings);
+	if (uc->scene.metadata.file_format == UFBX_FILE_FORMAT_OBJ) {
+		ufbxi_update_scene_settings_obj(uc);
+	}
 
 	// Axis conversion
 	if (ufbx_coordinate_axes_valid(uc->opts.target_axes)) {
@@ -24830,10 +24867,6 @@ ufbxi_nodiscard static ufbxi_noinline int ufbxi_translate_anim(ufbxi_eval_contex
 
 ufbxi_nodiscard static ufbxi_noinline int ufbxi_evaluate_imp(ufbxi_eval_context *ec)
 {
-	// `ufbx_evaluate_opts` must be cleared to zero first!
-	ufbx_assert(ec->opts._begin_zero == 0 && ec->opts._end_zero == 0);
-	ufbxi_check_err_msg(&ec->error, ec->opts._begin_zero == 0 && ec->opts._end_zero == 0, "Uninitialized options");
-
 	ec->scene = ec->src_scene;
 	size_t num_elements = ec->scene.elements.count;
 
@@ -24903,6 +24936,7 @@ ufbxi_nodiscard static ufbxi_noinline int ufbxi_evaluate_imp(ufbxi_eval_context 
 		node->mesh = (ufbx_mesh*)ufbxi_translate_element(ec, node->mesh);
 		node->light = (ufbx_light*)ufbxi_translate_element(ec, node->light);
 		node->camera = (ufbx_camera*)ufbxi_translate_element(ec, node->camera);
+		node->bone = (ufbx_bone*)ufbxi_translate_element(ec, node->bone);
 		node->inherit_scale_node = (ufbx_node*)ufbxi_translate_element(ec, node->inherit_scale_node);
 		node->scale_helper = (ufbx_node*)ufbxi_translate_element(ec, node->scale_helper);
 		node->bind_pose = (ufbx_pose*)ufbxi_translate_element(ec, node->bind_pose);
@@ -25283,10 +25317,6 @@ ufbxi_nodiscard static ufbxi_noinline int ufbxi_create_anim_imp(ufbxi_create_ani
 {
 	const ufbx_scene *scene = ac->scene;
 	ufbx_anim *anim = &ac->anim;
-
-	// `ufbx_anim_opts` must be cleared to zero first!
-	ufbx_assert(ac->opts._begin_zero == 0 && ac->opts._end_zero == 0);
-	ufbxi_check_err_msg(&ac->error, ac->opts._begin_zero == 0 && ac->opts._end_zero == 0, "Uninitialized options");
 
 	ufbxi_init_ator(&ac->error, &ac->ator_result, &ac->opts.result_allocator, "result");
 	ac->result.unordered = true;
@@ -26313,12 +26343,22 @@ ufbxi_nodiscard static ufbxi_noinline int ufbxi_bake_element(ufbxi_bake_context 
 	return 1;
 }
 
+static ufbxi_noinline bool ufbxi_baked_node_less(void *user, const void *va, const void *vb)
+{
+	(void)user;
+	const ufbx_baked_node *a = (const ufbx_baked_node*)va, *b = (const ufbx_baked_node*)vb;
+	return a->typed_id < b->typed_id;
+}
+
+static ufbxi_noinline bool ufbxi_baked_element_less(void *user, const void *va, const void *vb)
+{
+	(void)user;
+	const ufbx_baked_element *a = (const ufbx_baked_element*)va, *b = (const ufbx_baked_element*)vb;
+	return a->element_id < b->element_id;
+}
+
 ufbxi_nodiscard static ufbxi_noinline int ufbxi_bake_anim(ufbxi_bake_context *bc)
 {
-	// `ufbx_bake_opts` must be cleared to zero first!
-	ufbx_assert(bc->opts._begin_zero == 0 && bc->opts._end_zero == 0);
-	ufbxi_check_err_msg(&bc->error, bc->opts._begin_zero == 0 && bc->opts._end_zero == 0, "Uninitialized options");
-
 	const ufbx_anim *anim = bc->anim;
 	const ufbx_scene *scene = bc->scene;
 
@@ -26407,6 +26447,9 @@ ufbxi_nodiscard static ufbxi_noinline int ufbxi_bake_anim(ufbxi_bake_context *bc
 	bc->bake.elements.data = ufbxi_push_pop(&bc->result, &bc->tmp_elements, ufbx_baked_element, num_elements);
 	ufbxi_check_err(&bc->error, bc->bake.elements.data);
 
+	ufbxi_unstable_sort(bc->bake.nodes.data, bc->bake.nodes.count, sizeof(ufbx_baked_node), &ufbxi_baked_node_less, NULL);
+	ufbxi_unstable_sort(bc->bake.elements.data, bc->bake.elements.count, sizeof(ufbx_baked_element), &ufbxi_baked_element_less, NULL);
+
 	if (bc->time_min < bc->time_max) {
 		bc->bake.key_time_min = bc->time_min;
 		bc->bake.key_time_max = bc->time_max;
@@ -26468,10 +26511,16 @@ ufbxi_nodiscard static ufbxi_noinline int ufbxi_bake_anim_imp(ufbxi_bake_context
 
 	ufbxi_init_ref(&bc->imp->refcount, UFBXI_BAKED_ANIM_IMP_MAGIC, NULL);
 
+	bc->bake.metadata.result_memory_used = bc->ator_result.current_size;
+	bc->bake.metadata.temp_memory_used = bc->ator_tmp.current_size;
+	bc->bake.metadata.result_allocs = bc->ator_result.num_allocs;
+	bc->bake.metadata.temp_allocs = bc->ator_tmp.num_allocs;
+
 	bc->imp->magic = UFBXI_BAKED_ANIM_IMP_MAGIC;
 	bc->imp->bake = bc->bake;
 	bc->imp->refcount.ator = bc->ator_result;
 	bc->imp->refcount.buf = bc->result;
+
 	return 1;
 }
 
@@ -26550,10 +26599,6 @@ typedef struct {
 
 ufbxi_nodiscard static ufbxi_noinline int ufbxi_tessellate_nurbs_curve_imp(ufbxi_tessellate_curve_context *tc)
 {
-	// `ufbx_tessellate_opts` must be cleared to zero first!
-	ufbx_assert(tc->opts._begin_zero == 0 && tc->opts._end_zero == 0);
-	ufbxi_check_err_msg(&tc->error, tc->opts._begin_zero == 0 && tc->opts._end_zero == 0, "Uninitialized options");
-
 	if (tc->opts.span_subdivision <= 0) {
 		tc->opts.span_subdivision = 4;
 	}
@@ -26647,10 +26692,6 @@ ufbxi_nodiscard static ufbxi_noinline int ufbxi_tessellate_nurbs_curve_imp(ufbxi
 
 ufbxi_nodiscard static ufbxi_noinline int ufbxi_tessellate_nurbs_surface_imp(ufbxi_tessellate_surface_context *tc)
 {
-	// `ufbx_tessellate_opts` must be cleared to zero first!
-	ufbx_assert(tc->opts._begin_zero == 0 && tc->opts._end_zero == 0);
-	ufbxi_check_err_msg(&tc->error, tc->opts._begin_zero == 0 && tc->opts._end_zero == 0, "Uninitialized options");
-
 	if (tc->opts.span_subdivision_u <= 0) {
 		tc->opts.span_subdivision_u = 4;
 	}
@@ -26965,7 +27006,7 @@ ufbxi_nodiscard static ufbxi_noinline int ufbxi_tessellate_nurbs_surface_imp(ufb
 
 typedef struct {
 	ufbx_real split;
-	uint32_t index;
+	uint32_t index_plus_one; // 0 for empty
 	uint32_t slow_left;
 	uint32_t slow_right;
 	uint32_t slow_end;
@@ -26990,11 +27031,13 @@ typedef struct {
 	uint32_t indices[3];
 } ufbxi_kd_triangle;
 
-ufbxi_noinline static ufbx_vec2 ufbxi_ngon_project(ufbxi_ngon_context *nc, const ufbx_vec3 *point)
+ufbxi_noinline static ufbx_vec2 ufbxi_ngon_project(ufbxi_ngon_context *nc, uint32_t index)
 {
+	ufbx_vec3 point = nc->positions.values.data[nc->positions.indices.data[nc->face.index_begin + index]];
+
 	ufbx_vec2 p;
-	p.x = ufbxi_dot3(nc->axes[0], *point);
-	p.y = ufbxi_dot3(nc->axes[1], *point);
+	p.x = ufbxi_dot3(nc->axes[0], point);
+	p.y = ufbxi_dot3(nc->axes[1], point);
 	return p;
 }
 
@@ -27003,10 +27046,10 @@ ufbxi_forceinline static ufbx_real ufbxi_orient2d(ufbx_vec2 a, ufbx_vec2 b, ufbx
 	return (b.x - a.x)*(c.y - a.y) - (b.y - a.y)*(c.x - a.x);
 }
 
-ufbxi_noinline static bool ufbxi_kd_check_point(ufbxi_ngon_context *nc, const ufbxi_kd_triangle *tri, uint32_t index, const ufbx_vec3 *point)
+ufbxi_noinline static bool ufbxi_kd_check_point(ufbxi_ngon_context *nc, const ufbxi_kd_triangle *tri, uint32_t index)
 {
 	if (index == tri->indices[0] || index == tri->indices[1] || index == tri->indices[2]) return false;
-	ufbx_vec2 p = ufbxi_ngon_project(nc, point);
+	ufbx_vec2 p = ufbxi_ngon_project(nc, index);
 
 	ufbx_real u = ufbxi_orient2d(p, tri->points[0], tri->points[1]);
 	ufbx_real v = ufbxi_orient2d(p, tri->points[1], tri->points[2]);
@@ -27037,7 +27080,7 @@ ufbxi_noinline static bool ufbxi_kd_check_slow(ufbxi_ngon_context *nc, const ufb
 		bool hit_right = tri->max_t[axis] >= split;
 
 		if (hit_left && hit_right) {
-			if (ufbxi_kd_check_point(nc, tri, index, &point)) {
+			if (ufbxi_kd_check_point(nc, tri, index)) {
 				return true;
 			}
 
@@ -27063,11 +27106,9 @@ ufbxi_noinline static bool ufbxi_kd_check_fast(ufbxi_ngon_context *nc, const ufb
 	ufbxi_recursive_function(bool, ufbxi_kd_check_fast, (nc, tri, kd_index, axis, depth), UFBXI_KD_FAST_DEPTH,
 		(ufbxi_ngon_context *nc, const ufbxi_kd_triangle *tri, uint32_t kd_index, uint32_t axis, uint32_t depth))
 {
-	ufbx_vertex_vec3 pos = nc->positions;
-
 	for (;;) {
 		ufbxi_kd_node node = nc->kd_nodes[kd_index];
-		if (node.slow_end == 0) return false;
+		if (node.index_plus_one == 0) return false;
 
 		bool hit_left = tri->min_t[axis] <= node.split;
 		bool hit_right = tri->max_t[axis] >= node.split;
@@ -27077,8 +27118,8 @@ ufbxi_noinline static bool ufbxi_kd_check_fast(ufbxi_ngon_context *nc, const ufb
 		if (hit_left && hit_right) {
 
 			// Check for the point on the split plane
-			const ufbx_vec3 *point = &pos.values.data[pos.indices.data[nc->face.index_begin + node.index]];
-			if (ufbxi_kd_check_point(nc, tri, node.index, point)) {
+			uint32_t index = node.index_plus_one - 1;
+			if (ufbxi_kd_check_point(nc, tri, index)) {
 				return true;
 			}
 
@@ -27106,6 +27147,22 @@ ufbxi_noinline static bool ufbxi_kd_check_fast(ufbxi_ngon_context *nc, const ufb
 			}
 		}
 	}
+}
+
+ufbxi_noinline static bool ufbxi_kd_check(ufbxi_ngon_context *nc, const ufbx_vec2 *points, const uint32_t *indices)
+{
+	ufbxi_kd_triangle tri; // ufbxi_uninit
+	tri.points[0] = points[0];
+	tri.points[1] = points[1];
+	tri.points[2] = points[2];
+	tri.indices[0] = indices[0];
+	tri.indices[1] = indices[1];
+	tri.indices[2] = indices[2];
+	tri.min_t[0] = ufbxi_min_real(ufbxi_min_real(points[0].x, points[1].x), points[2].x);
+	tri.min_t[1] = ufbxi_min_real(ufbxi_min_real(points[0].y, points[1].y), points[2].y);
+	tri.max_t[0] = ufbxi_max_real(ufbxi_max_real(points[0].x, points[1].x), points[2].x);
+	tri.max_t[1] = ufbxi_max_real(ufbxi_max_real(points[0].y, points[1].y), points[2].y);
+	return ufbxi_kd_check_fast(nc, &tri, 0, 0, 0);
 }
 
 ufbxi_noinline static bool ufbxi_kd_index_less(void *user, const void *va, const void *vb)
@@ -27147,7 +27204,7 @@ ufbxi_noinline static void ufbxi_kd_build(ufbxi_ngon_context *nc, uint32_t *indi
 		ufbxi_kd_node *kd = &nc->kd_nodes[fast_index];
 
 		kd->split = ufbxi_dot3(axis_dir, pos.values.data[pos.indices.data[face.index_begin + index]]);
-		kd->index = index;
+		kd->index_plus_one = index + 1;
 
 		if (depth + 1 == UFBXI_KD_FAST_DEPTH) {
 			kd->slow_left = (uint32_t)(indices - nc->kd_indices);
@@ -27173,6 +27230,21 @@ ufbxi_noinline static void ufbxi_kd_build(ufbxi_ngon_context *nc, uint32_t *indi
 #endif
 
 #if UFBXI_FEATURE_TRIANGULATION
+
+ufbxi_noinline static ufbx_real ufbxi_ngon_tri_weight(const ufbx_vec2 *points)
+{
+	ufbx_vec2 p0 = points[0], p1 = points[1], p2 = points[2];
+	ufbx_real orient = ufbxi_orient2d(p0, p1, p2);
+	if (orient <= 0.0f) return -1.0f;
+
+	ufbx_real a = ufbxi_distsq2(p0, p1);
+	ufbx_real b = ufbxi_distsq2(p1, p2);
+	ufbx_real c = ufbxi_distsq2(p2, p0);
+	ufbx_real ab = (a + b - c) / (ufbx_real)ufbx_sqrt(4.0f * a * b);
+	ufbx_real bc = (b + c - a) / (ufbx_real)ufbx_sqrt(4.0f * b * c);
+	ufbx_real ca = (c + a - b) / (ufbx_real)ufbx_sqrt(4.0f * c * a);
+	return (ufbx_real)ufbx_fmax(UFBX_EPSILON, 2.0f - ufbx_fmax(ufbx_fmax(ab, bc), ca));
+}
 
 ufbxi_noinline static uint32_t ufbxi_triangulate_ngon(ufbxi_ngon_context *nc, uint32_t *indices, uint32_t num_indices)
 {
@@ -27208,18 +27280,17 @@ ufbxi_noinline static uint32_t ufbxi_triangulate_ngon(ufbxi_ngon_context *nc, ui
 	nc->kd_indices = kd_indices;
 
 	uint32_t *kd_tmp = indices + face.num_indices;
-	ufbx_vertex_vec3 pos = nc->positions;
 
 	// Collect all the reflex corners for intersection testing.
 	uint32_t num_kd_indices = 0;
 	{
-		ufbx_vec2 a = ufbxi_ngon_project(nc, &pos.values.data[pos.indices.data[face.index_begin + face.num_indices - 1]]);
-		ufbx_vec2 b = ufbxi_ngon_project(nc, &pos.values.data[pos.indices.data[face.index_begin + 0]]);
+		ufbx_vec2 a = ufbxi_ngon_project(nc, face.num_indices - 1);
+		ufbx_vec2 b = ufbxi_ngon_project(nc, 0);
 		for (uint32_t i = 0; i < face.num_indices; i++) {
 			uint32_t next = i + 1 < face.num_indices ? i + 1 : 0;
-			ufbx_vec2 c = ufbxi_ngon_project(nc, &pos.values.data[pos.indices.data[face.index_begin + next]]);
+			ufbx_vec2 c = ufbxi_ngon_project(nc, next);
 
-			if (ufbxi_orient2d(a, b, c) < 0.0f) {
+			if (ufbxi_orient2d(a, b, c) <= 0.0f) {
 				kd_indices[num_kd_indices++] = i;
 			}
 
@@ -27228,7 +27299,7 @@ ufbxi_noinline static uint32_t ufbxi_triangulate_ngon(ufbxi_ngon_context *nc, ui
 		}
 	}
 
-	// Build a KD-tree out of the collected reflex vertices.
+	// Build a KD-tree of the vertices.
 	uint32_t num_skip_indices = (1u << (UFBXI_KD_FAST_DEPTH + 1)) - 1;
 	uint32_t kd_slow_indices = num_kd_indices > num_skip_indices ? num_kd_indices - num_skip_indices : 0;
 	ufbxi_ignore(kd_slow_indices);
@@ -27254,73 +27325,64 @@ ufbxi_noinline static uint32_t ufbxi_triangulate_ngon(ufbxi_ngon_context *nc, ui
 	// to iterate the polygon once if we move backwards one step every time we clip an ear.
 	uint32_t indices_left = face.num_indices;
 	{
-		ufbxi_kd_triangle tri; // ufbxi_uninit
-
-		uint32_t ix = 1;
-		ufbx_vec2 a = ufbxi_ngon_project(nc, &pos.values.data[pos.indices.data[face.index_begin + 0]]);
-		ufbx_vec2 b = ufbxi_ngon_project(nc, &pos.values.data[pos.indices.data[face.index_begin + 1]]);
-		ufbx_vec2 c = ufbxi_ngon_project(nc, &pos.values.data[pos.indices.data[face.index_begin + 2]]);
-		bool prev_was_reflex = false;
+		uint32_t point_indices[4] = { 0, 1, 2, 3 };
+		ufbx_real weights[2]; // ufbxi_uninit
+		ufbx_vec2 points[4]; // ufbxi_uninit
 
 		uint32_t num_steps = 0;
-
 		while (indices_left > 3) {
-			uint32_t prev = edges[ix*2 + 0];
-			uint32_t next = edges[ix*2 + 1];
-			if (ufbxi_orient2d(a, b, c) > 0.0f) {
+			points[0] = ufbxi_ngon_project(nc, point_indices[0]);
+			points[1] = ufbxi_ngon_project(nc, point_indices[1]);
+			points[2] = ufbxi_ngon_project(nc, point_indices[2]);
+			points[3] = ufbxi_ngon_project(nc, point_indices[3]);
 
-				tri.points[0] = a;
-				tri.points[1] = b;
-				tri.points[2] = c;
-				tri.indices[0] = prev;
-				tri.indices[1] = ix;
-				tri.indices[2] = next;
-				tri.min_t[0] = ufbxi_min_real(ufbxi_min_real(a.x, b.x), c.x);
-				tri.min_t[1] = ufbxi_min_real(ufbxi_min_real(a.y, b.y), c.y);
-				tri.max_t[0] = ufbxi_max_real(ufbxi_max_real(a.x, b.x), c.x);
-				tri.max_t[1] = ufbxi_max_real(ufbxi_max_real(a.y, b.y), c.y);
+			weights[0] = ufbxi_ngon_tri_weight(points + 0);
+			weights[1] = ufbxi_ngon_tri_weight(points + 1);
+
+			uint32_t first_side = weights[1] > weights[0] ? 1 : 0;
+			bool clipped = false;
+			ufbxi_nounroll for (uint32_t side_ix = 0; side_ix < 2; side_ix++) {
+				uint32_t side = side_ix ^ first_side;
+				if (!(weights[side] >= 0.0f)) break;
 
 				// If there is no reflex angle contained within the triangle formed
 				// by `{ a, b, c }` connect the vertices `a - c` (prev, next) directly.
-				if (!ufbxi_kd_check_fast(nc, &tri, 0, 0, 0)) {
+				if (!ufbxi_kd_check(nc, points + side, point_indices + side)) {
+					uint32_t ia = point_indices[side + 0];
+					uint32_t ib = point_indices[side + 1];
+					uint32_t ic = point_indices[side + 2];
 
 					// Mark as clipped
-					edges[ix*2 + 0] |= 0x80000000;
-					edges[ix*2 + 1] |= 0x80000000;
+					edges[ib*2 + 0] |= 0x80000000;
+					edges[ib*2 + 1] |= 0x80000000;
 
-					edges[next*2 + 0] = prev;
-					edges[prev*2 + 1] = next;
+					edges[ic*2 + 0] = ia;
+					edges[ia*2 + 1] = ic;
 
 					indices_left -= 1;
 
-					// Move backwards only if the previous was reflex as now it would
-					// cover a superset of the previous area, failing the intersection test.
-					if (prev_was_reflex) {
-						prev_was_reflex = false;
-						ix = prev;
-						b = a;
-						uint32_t prev_prev = edges[prev*2 + 0];
-						a = ufbxi_ngon_project(nc, &pos.values.data[pos.indices.data[face.index_begin + prev_prev]]);
-					} else {
-						ix = next;
-						b = c;
-						uint32_t next_next = edges[next*2 + 1];
-						c = ufbxi_ngon_project(nc, &pos.values.data[pos.indices.data[face.index_begin + next_next]]);
-					}
-					continue;
-				}
+					// TODO: This may cause O(n^2) behavior!
+					num_steps = 0;
 
-				prev_was_reflex = false;
-			} else {
-				prev_was_reflex = true;
+					if (side == 1) {
+						point_indices[2] = point_indices[3];
+						point_indices[3] = edges[point_indices[3]*2 + 1];
+					} else {
+						point_indices[1] = point_indices[0];
+						point_indices[0] = edges[point_indices[0]*2 + 0];
+					}
+
+					clipped = true;
+					break;
+				}
 			}
+			if (clipped) continue;
 
 			// Continue forward
-			ix = next;
-			a = b;
-			b = c;
-			next = edges[next*2 + 1];
-			c = ufbxi_ngon_project(nc, &pos.values.data[pos.indices.data[face.index_begin + next]]);
+			point_indices[0] = point_indices[1];
+			point_indices[1] = point_indices[2];
+			point_indices[2] = point_indices[3];
+			point_indices[3] = edges[point_indices[3]*2 + 1];
 			num_steps++;
 
 			// If we have walked around the entire polygon it is irregular and
@@ -27331,6 +27393,7 @@ ufbxi_noinline static uint32_t ufbxi_triangulate_ngon(ufbxi_ngon_context *nc, ui
 
 		// Fallback: Cut non-ears until the polygon is completed.
 		// TODO: Could do something better here..
+		uint32_t ix = point_indices[1];
 		while (indices_left > 3) {
 			uint32_t prev = edges[ix*2 + 0];
 			uint32_t next = edges[ix*2 + 1];
@@ -28624,10 +28687,6 @@ ufbxi_nodiscard static ufbxi_noinline int ufbxi_subdivide_mesh_level(ufbxi_subdi
 
 ufbxi_nodiscard static ufbxi_noinline int ufbxi_subdivide_mesh_imp(ufbxi_subdivide_context *sc, size_t level)
 {
-	// `ufbx_subdivide_opts` must be cleared to zero first!
-	ufbx_assert(sc->opts._begin_zero == 0 && sc->opts._end_zero == 0);
-	ufbxi_check_err_msg(&sc->error, sc->opts._begin_zero == 0 && sc->opts._end_zero == 0, "Uninitialized options");
-
 	if (sc->opts.boundary == UFBX_SUBDIVISION_BOUNDARY_DEFAULT) {
 		sc->opts.boundary = sc->src_mesh.subdivision_boundary;
 	}
@@ -29002,6 +29061,37 @@ static ufbxi_noinline void ufbxi_release_ref(ufbxi_refcount *refcount)
 	}
 }
 
+static ufbxi_noinline void *ufbxi_uninitialized_options(ufbx_error *p_error)
+{
+	if (p_error) {
+		memset(p_error, 0, sizeof(ufbx_error));
+		p_error->type = UFBX_ERROR_UNINITIALIZED_OPTIONS;
+		p_error->description.data = "Uninitialized options";
+		p_error->description.length = strlen("Uninitialized options");
+	}
+	return NULL;
+}
+
+#define ufbxi_check_opts_ptr(m_type, m_opts, m_error) do { if (m_opts) { \
+		uint32_t opts_cleared_to_zero = m_opts->_begin_zero | m_opts->_end_zero; \
+		ufbx_assert(opts_cleared_to_zero == 0); \
+		if (opts_cleared_to_zero != 0) return (m_type*)ufbxi_uninitialized_options(m_error); \
+	} } while (0)
+
+#define ufbxi_check_opts_return(m_value, m_opts, m_error) do { if (m_opts) { \
+		uint32_t opts_cleared_to_zero = m_opts->_begin_zero | m_opts->_end_zero; \
+		ufbx_assert(opts_cleared_to_zero == 0); \
+		if (opts_cleared_to_zero != 0) { \
+			ufbxi_uninitialized_options(m_error); \
+			return m_value; \
+		} \
+	} } while (0)
+
+#define ufbxi_check_opts_return_no_error(m_value, m_opts) do { if (m_opts) { \
+		uint32_t opts_cleared_to_zero = m_opts->_begin_zero | m_opts->_end_zero; \
+		if (opts_cleared_to_zero != 0) return m_value; \
+	} } while (0)
+
 // -- API
 
 #ifdef __cplusplus
@@ -29158,6 +29248,7 @@ ufbx_abi bool ufbx_is_thread_safe(void)
 
 ufbx_abi ufbx_scene *ufbx_load_memory(const void *data, size_t size, const ufbx_load_opts *opts, ufbx_error *error)
 {
+	ufbxi_check_opts_ptr(ufbx_scene, opts, error);
 	ufbxi_context uc = { UFBX_ERROR_NONE };
 	uc.data_begin = uc.data = (const char *)data;
 	uc.data_size = size;
@@ -29172,6 +29263,7 @@ ufbx_abi ufbx_scene *ufbx_load_file(const char *filename, const ufbx_load_opts *
 
 ufbx_abi ufbx_scene *ufbx_load_file_len(const char *filename, size_t filename_len, const ufbx_load_opts *opts, ufbx_error *error)
 {
+	ufbxi_check_opts_ptr(ufbx_scene, opts, error);
 	ufbx_load_opts opts_copy;
 	if (opts) {
 		opts_copy = *opts;
@@ -29217,6 +29309,7 @@ ufbx_abi ufbx_scene *ufbx_load_stdio(void *file_void, const ufbx_load_opts *opts
 
 ufbx_abi ufbx_scene *ufbx_load_stdio_prefix(void *file_void, const void *prefix, size_t prefix_size, const ufbx_load_opts *opts, ufbx_error *error)
 {
+	ufbxi_check_opts_ptr(ufbx_scene, opts, error);
 	FILE *file = (FILE*)file_void;
 
 	ufbxi_context uc = { UFBX_ERROR_NONE };
@@ -29256,6 +29349,7 @@ ufbx_abi ufbx_scene *ufbx_load_stream(const ufbx_stream *stream, const ufbx_load
 
 ufbx_abi ufbx_scene *ufbx_load_stream_prefix(const ufbx_stream *stream, const void *prefix, size_t prefix_size, const ufbx_load_opts *opts, ufbx_error *error)
 {
+	ufbxi_check_opts_ptr(ufbx_scene, opts, error);
 	ufbxi_context uc = { UFBX_ERROR_NONE };
 	uc.data_begin = uc.data = (const char *)prefix;
 	uc.data_size = prefix_size;
@@ -29827,6 +29921,7 @@ ufbx_abi ufbx_real ufbx_evaluate_blend_weight(const ufbx_anim *anim, const ufbx_
 
 ufbx_abi ufbx_scene *ufbx_evaluate_scene(const ufbx_scene *scene, const ufbx_anim *anim, double time, const ufbx_evaluate_opts *opts, ufbx_error *error)
 {
+	ufbxi_check_opts_ptr(ufbx_scene, opts, error);
 #if UFBXI_FEATURE_SCENE_EVALUATION
 	ufbxi_eval_context ec = { 0 };
 	return ufbxi_evaluate_scene(&ec, (ufbx_scene*)scene, anim, time, opts, error);
@@ -29842,6 +29937,7 @@ ufbx_abi ufbx_scene *ufbx_evaluate_scene(const ufbx_scene *scene, const ufbx_ani
 
 ufbx_abi ufbx_anim *ufbx_create_anim(const ufbx_scene *scene, const ufbx_anim_opts *opts, ufbx_error *error)
 {
+	ufbxi_check_opts_ptr(ufbx_anim, opts, error);
 	ufbx_assert(scene);
 
 	ufbxi_create_anim_context ac = { UFBX_ERROR_NONE };
@@ -29892,6 +29988,7 @@ ufbx_abi ufbx_baked_anim *ufbx_bake_anim(const ufbx_scene *scene, const ufbx_ani
 {
 	ufbx_assert(scene);
 #if UFBXI_FEATURE_ANIMATION_BAKING
+	ufbxi_check_opts_ptr(ufbx_baked_anim, opts, error);
 	if (!anim) {
 		anim = scene->anim;
 	}
@@ -29954,6 +30051,35 @@ ufbx_abi void ufbx_free_baked_anim(ufbx_baked_anim *bake)
 	ufbx_assert(imp->magic == UFBXI_BAKED_ANIM_IMP_MAGIC);
 	if (imp->magic != UFBXI_BAKED_ANIM_IMP_MAGIC) return;
 	ufbxi_release_ref(&imp->refcount);
+}
+
+
+ufbx_abi ufbx_baked_node *ufbx_find_baked_node_by_typed_id(ufbx_baked_anim *bake, uint32_t typed_id)
+{
+	size_t index = SIZE_MAX;
+	ufbxi_macro_lower_bound_eq(ufbx_baked_node, 8, &index, bake->nodes.data, 0, bake->nodes.count,
+		( a->typed_id < typed_id ), ( a->typed_id == typed_id) );
+	return index < SIZE_MAX ? &bake->nodes.data[index] : NULL;
+}
+
+ufbx_abi ufbx_baked_node *ufbx_find_baked_node(ufbx_baked_anim *bake, ufbx_node *node)
+{
+	if (!bake || !node) return NULL;
+	return ufbx_find_baked_node_by_typed_id(bake, node->typed_id);
+}
+
+ufbx_abi ufbx_baked_element *ufbx_find_baked_element_by_element_id(ufbx_baked_anim *bake, uint32_t element_id)
+{
+	size_t index = SIZE_MAX;
+	ufbxi_macro_lower_bound_eq(ufbx_baked_element, 8, &index, bake->elements.data, 0, bake->elements.count,
+		( a->element_id < element_id ), ( a->element_id == element_id) );
+	return index < SIZE_MAX ? &bake->elements.data[index] : NULL;
+}
+
+ufbx_abi ufbx_baked_element *ufbx_find_baked_element(ufbx_baked_anim *bake, ufbx_element *element)
+{
+	if (!bake || !element) return NULL;
+	return ufbx_find_baked_element_by_element_id(bake, element->element_id);
 }
 
 ufbx_abi ufbx_vec3 ufbx_evaluate_baked_vec3(ufbx_baked_vec3_list keyframes, double time)
@@ -30111,6 +30237,11 @@ ufbx_abi bool ufbx_coordinate_axes_valid(ufbx_coordinate_axes axes)
 ufbx_abi ufbx_quat ufbx_quat_mul(ufbx_quat a, ufbx_quat b)
 {
 	return ufbxi_mul_quat(a, b);
+}
+
+ufbx_abi ufbx_vec3 ufbx_vec3_normalize(ufbx_vec3 v)
+{
+	return ufbxi_normalize3(v);
 }
 
 ufbx_abi ufbxi_noinline ufbx_real ufbx_quat_dot(ufbx_quat a, ufbx_quat b)
@@ -30398,24 +30529,18 @@ ufbx_abi ufbx_matrix ufbx_matrix_invert(const ufbx_matrix *m)
 ufbx_abi ufbxi_noinline ufbx_matrix ufbx_matrix_for_normals(const ufbx_matrix *m)
 {
 	ufbx_real det = ufbx_matrix_determinant(m);
+	ufbx_real det_sign = det >= 0.0f ? 1.0f : -1.0f;
 
 	ufbx_matrix r;
-	if (ufbx_fabs(det) <= UFBX_EPSILON) {
-		memset(&r, 0, sizeof(r));
-		return r;
-	}
-
-	ufbx_real rcp_det = 1.0f / det;
-
-	r.m00 = ( - m->m12*m->m21 + m->m11*m->m22) * rcp_det;
-	r.m01 = ( + m->m12*m->m20 - m->m10*m->m22) * rcp_det;
-	r.m02 = ( - m->m11*m->m20 + m->m10*m->m21) * rcp_det;
-	r.m10 = ( + m->m02*m->m21 - m->m01*m->m22) * rcp_det;
-	r.m11 = ( - m->m02*m->m20 + m->m00*m->m22) * rcp_det;
-	r.m12 = ( + m->m01*m->m20 - m->m00*m->m21) * rcp_det;
-	r.m20 = ( - m->m02*m->m11 + m->m01*m->m12) * rcp_det;
-	r.m21 = ( + m->m02*m->m10 - m->m00*m->m12) * rcp_det;
-	r.m22 = ( - m->m01*m->m10 + m->m00*m->m11) * rcp_det;
+	r.m00 = ( - m->m12*m->m21 + m->m11*m->m22) * det_sign;
+	r.m01 = ( + m->m12*m->m20 - m->m10*m->m22) * det_sign;
+	r.m02 = ( - m->m11*m->m20 + m->m10*m->m21) * det_sign;
+	r.m10 = ( + m->m02*m->m21 - m->m01*m->m22) * det_sign;
+	r.m11 = ( - m->m02*m->m20 + m->m00*m->m22) * det_sign;
+	r.m12 = ( + m->m01*m->m20 - m->m00*m->m21) * det_sign;
+	r.m20 = ( - m->m02*m->m11 + m->m01*m->m12) * det_sign;
+	r.m21 = ( + m->m02*m->m10 - m->m00*m->m12) * det_sign;
+	r.m22 = ( - m->m01*m->m10 + m->m00*m->m11) * det_sign;
 	r.m03 = r.m13 = r.m23 = 0.0f;
 
 	return r;
@@ -30897,6 +31022,7 @@ ufbx_abi ufbxi_noinline ufbx_surface_point ufbx_evaluate_nurbs_surface(const ufb
 ufbx_abi ufbx_line_curve *ufbx_tessellate_nurbs_curve(const ufbx_nurbs_curve *curve, const ufbx_tessellate_curve_opts *opts, ufbx_error *error)
 {
 #if UFBXI_FEATURE_TESSELLATION
+	ufbxi_check_opts_ptr(ufbx_line_curve, opts, error);
 	ufbx_assert(curve);
 	if (!curve) return NULL;
 
@@ -30936,6 +31062,7 @@ ufbx_abi ufbx_mesh *ufbx_tessellate_nurbs_surface(const ufbx_nurbs_surface *surf
 {
 #if UFBXI_FEATURE_TESSELLATION
 	ufbx_assert(surface);
+	ufbxi_check_opts_ptr(ufbx_mesh, opts, error);
 	if (!surface) return NULL;
 
 	ufbxi_tessellate_surface_context tc = { UFBX_ERROR_NONE };
@@ -31233,6 +31360,7 @@ ufbx_abi void ufbx_compute_normals(const ufbx_mesh *mesh, const ufbx_vertex_vec3
 
 ufbx_abi ufbx_mesh *ufbx_subdivide_mesh(const ufbx_mesh *mesh, size_t level, const ufbx_subdivide_opts *opts, ufbx_error *error)
 {
+	ufbxi_check_opts_ptr(ufbx_mesh, opts, error);
 	if (!mesh) return NULL;
 	if (level == 0) return (ufbx_mesh*)mesh;
 	return ufbxi_subdivide_mesh(mesh, level, opts, error);
@@ -31272,6 +31400,7 @@ ufbx_abi ufbx_geometry_cache *ufbx_load_geometry_cache_len(
 	const char *filename, size_t filename_len,
 	const ufbx_geometry_cache_opts *opts, ufbx_error *error)
 {
+	ufbxi_check_opts_ptr(ufbx_geometry_cache, opts, error);
 	ufbx_string str = ufbxi_safe_string(filename, filename_len);
 	return ufbxi_load_geometry_cache(str, opts, error);
 }
@@ -31309,6 +31438,7 @@ typedef struct {
 ufbx_abi ufbxi_noinline size_t ufbx_read_geometry_cache_real(const ufbx_cache_frame *frame, ufbx_real *data, size_t count, const ufbx_geometry_cache_data_opts *user_opts)
 {
 #if UFBXI_FEATURE_GEOMETRY_CACHE
+	ufbxi_check_opts_return_no_error(0, user_opts);
 	if (!frame || count == 0) return 0;
 	ufbx_assert(data);
 	if (!data) return 0;
@@ -31323,10 +31453,6 @@ ufbx_abi ufbxi_noinline size_t ufbx_read_geometry_cache_real(const ufbx_cache_fr
 	if (!opts.open_file_cb.fn) {
 		opts.open_file_cb.fn = ufbx_default_open_file;
 	}
-
-	// `ufbx_geometry_cache_data_opts` must be cleared to zero first!
-	ufbx_assert(opts._begin_zero == 0 && opts._end_zero == 0);
-	if (!(opts._begin_zero == 0 && opts._end_zero == 0)) return 0;
 
 	bool use_double = false;
 
@@ -31477,6 +31603,7 @@ ufbx_abi ufbxi_noinline size_t ufbx_read_geometry_cache_real(const ufbx_cache_fr
 ufbx_abi ufbxi_noinline size_t ufbx_sample_geometry_cache_real(const ufbx_cache_channel *channel, double time, ufbx_real *data, size_t count, const ufbx_geometry_cache_data_opts *user_opts)
 {
 #if UFBXI_FEATURE_GEOMETRY_CACHE
+	ufbxi_check_opts_return_no_error(0, user_opts);
 	if (!channel || count == 0) return 0;
 	ufbx_assert(data);
 	if (!data) return 0;
@@ -31488,10 +31615,6 @@ ufbx_abi ufbxi_noinline size_t ufbx_sample_geometry_cache_real(const ufbx_cache_
 	} else {
 		memset(&opts, 0, sizeof(opts));
 	}
-
-	// `ufbx_geometry_cache_data_opts` must be cleared to zero first!
-	ufbx_assert(opts._begin_zero == 0 && opts._end_zero == 0);
-	if (!(opts._begin_zero == 0 && opts._end_zero == 0)) return 0;
 
 	size_t begin = 0;
 	size_t end = channel->frames.count;

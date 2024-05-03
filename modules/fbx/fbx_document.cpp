@@ -693,10 +693,7 @@ Error FBXDocument::_parse_meshes(Ref<FBXState> p_state) {
 
 				// Find the first imported skin deformer
 				for (ufbx_skin_deformer *fbx_skin : fbx_mesh->skin_deformers) {
-					if (!p_state->skin_indices.has(fbx_skin->typed_id)) {
-						continue;
-					}
-					GLTFSkinIndex skin_i = p_state->skin_indices[fbx_skin->typed_id];
+					GLTFSkinIndex skin_i = p_state->original_skin_indices[fbx_skin->typed_id];
 					if (skin_i < 0) {
 						continue;
 					}
@@ -2047,6 +2044,7 @@ Error FBXDocument::_parse(Ref<FBXState> p_state, String p_path, Ref<FileAccess> 
 		opts.ignore_embedded = true;
 	}
 	opts.generate_missing_normals = true;
+	opts.use_blender_pbr_material = true;
 
 	ThreadPoolFBX thread_pool;
 	thread_pool.pool = WorkerThreadPool::get_singleton();
@@ -2068,6 +2066,14 @@ Error FBXDocument::_parse(Ref<FBXState> p_state, String p_path, Ref<FileAccess> 
 		char err_buf[512];
 		ufbx_format_error(err_buf, sizeof(err_buf), &error);
 		ERR_FAIL_V_MSG(ERR_PARSE_ERROR, err_buf);
+	}
+
+	for (const ufbx_warning &warning : p_state->scene->metadata.warnings) {
+		if (warning.count > 1) {
+			WARN_PRINT(vformat("FBX: ufbx warning: %s (x%d)", _as_string(warning.description), (int)warning.count));
+		} else {
+			WARN_PRINT(vformat("FBX: ufbx warning: %s", _as_string(warning.description)));
+		}
 	}
 
 	err = _parse_fbx_state(p_state, p_path);
@@ -2340,7 +2346,7 @@ Error FBXDocument::_parse_skins(Ref<FBXState> p_state) {
 	HashMap<GLTFNodeIndex, bool> joint_mapping;
 
 	for (const ufbx_skin_deformer *fbx_skin : fbx_scene->skin_deformers) {
-		if (fbx_skin->clusters.count == 0) {
+		if (fbx_skin->clusters.count == 0 || fbx_skin->weights.count == 0) {
 			p_state->skin_indices.push_back(-1);
 			continue;
 		}
@@ -2386,8 +2392,9 @@ Error FBXDocument::_parse_skins(Ref<FBXState> p_state) {
 			}
 		}
 	}
+	p_state->original_skin_indices = p_state->skin_indices.duplicate();
 	Error err = SkinTool::_asset_parse_skins(
-			p_state->skin_indices.duplicate(),
+			p_state->original_skin_indices,
 			p_state->skins.duplicate(),
 			p_state->nodes.duplicate(),
 			p_state->skin_indices,
